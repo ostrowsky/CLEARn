@@ -1,0 +1,12 @@
+{
+  "name": "softskills-platform",
+  "private": true,
+  "packageManager": "pnpm@10.8.0",
+  "scripts": {
+    "dev:api": "node ./node_modules/tsx/dist/cli.mjs watch ./apps/api/src/index.ts",
+    "dev:client": "pnpm --filter @softskills/client start",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test"
+  }
+}

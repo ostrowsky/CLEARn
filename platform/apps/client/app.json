@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "SOFTskills",
+    "slug": "softskills",
+    "scheme": "softskills",
+    "orientation": "portrait",
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

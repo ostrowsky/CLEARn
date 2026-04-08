@@ -1,0 +1,14 @@
+node_modules/
+.git/
+.expo/
+dist/
+build/
+.next/
+coverage/
+brainstorming/
+tmp-platform-*/
+share-preview-links.txt
+share-admin-link.txt
+tmp-write-test.txt
+tmp.txt
+*.log

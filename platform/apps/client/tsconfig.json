@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": [
+      "expo-router/typed-routes"
+    ],
+    "allowJs": false
+  },
+  "include": [
+    "app/**/*",
+    "src/**/*",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
+}

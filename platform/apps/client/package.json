@@ -1,0 +1,35 @@
+{
+    "name":  "@softskills/client",
+    "version":  "0.1.0",
+    "private":  true,
+    "main":  "expo-router/entry",
+    "scripts":  {
+                    "start":  "expo start",
+                    "android":  "expo run:android",
+                    "ios":  "expo run:ios",
+                    "web":  "expo start --web",
+                    "lint":  "tsc --noEmit -p tsconfig.json",
+                    "build":  "expo export --platform web"
+                },
+    "dependencies":  {
+                         "@babel/runtime":  "^7.26.0",
+                         "@expo/vector-icons":  "~14.0.4",
+                         "@react-navigation/bottom-tabs":  "^7.2.0",
+                         "@softskills/contracts":  "workspace:*",
+                         "@softskills/domain":  "workspace:*",
+                         "expo":  "^52.0.11",
+                         "expo-constants":  "~17.0.8",
+                         "expo-router":  "^4.0.22",
+                         "expo-status-bar":  "~2.0.1",
+                         "react":  "18.3.1",
+                         "react-dom":  "18.3.1",
+                         "react-native":  "0.76.9",
+                         "react-native-safe-area-context":  "4.12.0",
+                         "react-native-screens":  "~4.4.0",
+                         "react-native-web":  "~0.19.13"
+                     },
+    "devDependencies":  {
+                            "@types/react":  "~18.3.12",
+                            "typescript":  "^5.6.3"
+                        }
+}
