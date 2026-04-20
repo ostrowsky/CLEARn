@@ -18,6 +18,10 @@ foreach ($fileName in @('content.template.json', 'content.json')) {
         Assert-True -Condition (@($sessionConfig.questionTypes.$type.reactionOptions).Count -ge 1) -Message "$fileName needs at least one reaction option for $type."
         Assert-True -Condition (@($sessionConfig.questionTypes.$type.fallbackQuestions).Count -ge 3) -Message "$fileName needs fallback questions for $type."
     }
+    Assert-True -Condition ([string]$sessionConfig.answeringEvaluationSystemPrompt).Contains('must only correct the learner') -Message "$fileName should forbid adding a reaction phrase to improved answers."
+    Assert-True -Condition ([string]$sessionConfig.answeringEvaluationSystemPrompt).Contains('never a question') -Message "$fileName should forbid improved answers from becoming questions."
+    Assert-True -Condition ([string]$sessionConfig.answeringEvaluationPromptTemplate).Contains('must not include any reaction phrase') -Message "$fileName should keep the improved-answer restriction in the evaluation prompt."
+    Assert-True -Condition ([string]$sessionConfig.answeringEvaluationPromptTemplate).Contains('Do not turn the learner reply into a question') -Message "$fileName should tell the evaluator not to rewrite answers as questions."
 
     Assert-True -Condition ([string]::IsNullOrWhiteSpace([string]$content.meta.ui.labels.reactionDropdownHint) -eq $false) -Message "$fileName is missing reactionDropdownHint label."
     Assert-True -Condition ([string]::IsNullOrWhiteSpace([string]$content.meta.ui.admin.fieldLabels.selectorLabel) -eq $false) -Message "$fileName is missing admin selectorLabel field label."
@@ -40,6 +44,12 @@ foreach ($pattern in @(
     'politenessScore',
     'grammarScore',
     'improvedAnswer',
+    'stripLeadingReactionPhrase',
+    'containsQuestionSentence',
+    'removeQuestionSentences',
+    'sanitizeImprovedAnswerBody',
+    'buildImprovedAnswerWithChosenReaction',
+    'selectedReaction\?\.text \|\| turn\.preferredReactionText',
     'buildSummary',
     'selectorLabel',
     'buildReactionCategories'

@@ -1,4 +1,4 @@
-﻿import { env } from '../../config/env';
+import { env } from '../../config/env';
 import type { AskAfterBrief, ClarifyExercise } from '@softskills/domain';
 import type { ContentService } from '../content/content.service';
 import { withChatProvider } from '../../providers/providerRegistry';
@@ -302,6 +302,124 @@ function buildAskAfterCoachingTip(contextInfo: ReturnType<typeof inferConversati
   return 'Use one short reference to the talk first, then ask for the missing detail with a clear follow-up question.';
 }
 
+function normalizeAskAfterText(value: string) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[’`]/g, "'")
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function tokenizeAskAfter(value: string) {
+  return normalizeAskAfterText(value).split(' ').filter((token) => token.length >= 2);
+}
+
+function getTokenOverlapRatio(left: string, right: string) {
+  const leftTokens = new Set(tokenizeAskAfter(left));
+  const rightTokens = new Set(tokenizeAskAfter(right));
+  if (!leftTokens.size || !rightTokens.size) {
+    return 0;
+  }
+
+  let overlap = 0;
+  for (const token of leftTokens) {
+    if (rightTokens.has(token)) {
+      overlap += 1;
+    }
+  }
+
+  return overlap / Math.max(leftTokens.size, rightTokens.size);
+}
+
+function looksMeaningfulDetail(value: string) {
+  const raw = normalizeWhitespace(value);
+  if (!raw) {
+    return false;
+  }
+
+  if (/(.)\1{4,}/i.test(raw)) {
+    return false;
+  }
+
+  const normalized = normalizeAskAfterText(raw);
+  const compact = normalized.replace(/\s+/g, '');
+  if (!compact) {
+    return false;
+  }
+
+  const uniqueCharacters = new Set(compact.split(''));
+  if (compact.length >= 6 && uniqueCharacters.size <= 2) {
+    return false;
+  }
+
+  const tokens = normalized.split(' ').filter(Boolean);
+  if (!tokens.length) {
+    return false;
+  }
+
+  if (tokens.length === 1) {
+    const token = tokens[0] || '';
+    if (token.length < 3) {
+      return false;
+    }
+
+    if (!/[aeiou]/i.test(token) && token.length >= 5) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function normalizeAskAfterSpeechLines(value: unknown): AskAfterSpeechLine[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const lines: AskAfterSpeechLine[] = [];
+  for (const item of value) {
+    if (typeof item === 'string') {
+      const text = normalizeWhitespace(item);
+      if (text) {
+        lines.push(text);
+      }
+      continue;
+    }
+
+    const record = asRecord(item);
+    const speaker = normalizeWhitespace(asString(record.speaker));
+    const text = normalizeWhitespace(asString(record.text));
+    if (speaker || text) {
+      lines.push({
+        ...(speaker ? { speaker } : {}),
+        ...(text ? { text } : {}),
+      });
+    }
+  }
+
+  return lines;
+}
+
+function normalizeAskAfterBrief(value: unknown, fallback: AskAfterBrief): AskAfterBrief {
+  const record = asRecord(value);
+  const speechLines = normalizeAskAfterSpeechLines(record.speechLines);
+  const sampleQuestion = normalizeWhitespace(asString(record.sampleQuestion, fallback.sampleQuestion));
+  const suggestedFocus = normalizeWhitespace(asString(record.suggestedFocus, fallback.suggestedFocus || ''));
+  const coachingTip = normalizeWhitespace(asString(record.coachingTip, fallback.coachingTip));
+  const generatorMode = normalizeWhitespace(asString(record.generatorMode, fallback.generatorMode));
+  const providerError = normalizeWhitespace(asString(record.providerError, fallback.providerError || ''));
+
+  return {
+    speechLines: speechLines.length ? speechLines : fallback.speechLines,
+    sampleQuestion: sampleQuestion || fallback.sampleQuestion,
+    suggestedFocus: suggestedFocus || fallback.suggestedFocus,
+    coachingTip: coachingTip || fallback.coachingTip,
+    generatorMode: generatorMode || fallback.generatorMode,
+    ...(providerError ? { providerError } : fallback.providerError ? { providerError: fallback.providerError } : {}),
+  };
+}
+
 export class PracticeService {
   constructor(private readonly contentService: ContentService) {}
 
@@ -416,10 +534,11 @@ export class PracticeService {
   async generateAskAfter(context: string, offset = 0) {
     const config = await this.getPracticeConfig();
     const contextInfo = inferConversationContext(context, 'the current project');
+    const fallback = this.buildAskAfterFallback(config, context, offset, '');
     try {
-      return await withChatProvider(env.LLM_TEXT_PROVIDER, (provider) =>
+      const generated = await withChatProvider(env.LLM_TEXT_PROVIDER, (provider) =>
         provider.generateAskAfter({
-          systemPrompt: 'Generate a short workplace talk with keys speechLines, sampleQuestion, suggestedFocus, coachingTip, generatorMode. Keep the talk coherent, vary the details on repeated generations, and keep the follow-up question natural for spoken business English.',
+          systemPrompt: 'Generate a short workplace monologue with keys speechLines, sampleQuestion, suggestedFocus, coachingTip, generatorMode. Return one short spoken update, not a dialogue, vary the details on repeated generations, and keep the follow-up question natural for spoken business English.',
           prompt: [
             `Learner context: ${context || 'Not provided'}`,
             `Conversation scenario: ${contextInfo.scenario}`,
@@ -431,27 +550,45 @@ export class PracticeService {
           responseShape: 'ask-after',
         }),
       );
+      return normalizeAskAfterBrief(generated, fallback);
     } catch (error) {
-      return this.buildAskAfterFallback(config, context, offset, error instanceof Error ? error.message : String(error));
+      return normalizeAskAfterBrief(
+        this.buildAskAfterFallback(config, context, offset, error instanceof Error ? error.message : String(error)),
+        fallback,
+      );
     }
   }
 
-  async checkAskAfter(question: string) {
+  async checkAskAfter(input: string | { question: string; expectedQuestion?: string; detail?: string; contextPhrase?: string; followUpPhrase?: string }) {
     const config = await this.getPracticeConfig();
     const feedback = asRecord(config.askAfterFeedback);
-    const accepted = /\?/.test(question) && /could you|can you|would you/i.test(question);
+    const payload = typeof input === 'string' ? { question: input } : asRecord(input);
+    const question = normalizeWhitespace(asString(payload.question));
+    const expectedQuestion = normalizeWhitespace(asString(payload.expectedQuestion));
+    const detail = normalizeWhitespace(asString(payload.detail));
+
+    const hasQuestionMark = /\?/.test(question);
+    const hasQuestionLead = /could you|can you|would you|what|when|why|who|which|how/i.test(question);
     const hasContext = /(you commented|you spoke about|you referred to|you quoted a figure of|you made the point that|you said something about|i think i misunderstood you|there is one thing i m not clear about|you didn t mention|you mentioned|you highlighted|i may have missed the point about|i wasn't fully clear on)/i.test(question);
     const hasFollow = /(explain|run us through|specific|tell us how|elaborate|say a bit more|go over|talk us through)/i.test(question);
+    const detailAccepted = !detail || looksMeaningfulDetail(detail);
+    const overlap = expectedQuestion ? getTokenOverlapRatio(question, expectedQuestion) : 1;
+    const onTrack = !expectedQuestion || overlap >= 0.45;
+    const accepted = hasQuestionMark && hasQuestionLead && hasContext && hasFollow && detailAccepted && onTrack;
 
     return {
       accepted,
       feedback: accepted
         ? getNestedString(feedback, ['accepted'])
-        : !hasContext
-          ? getNestedString(feedback, ['missingContext'])
-          : !hasFollow
-            ? getNestedString(feedback, ['missingFollow'])
-            : getNestedString(feedback, ['missingQuestion']),
+        : !detailAccepted
+          ? getNestedString(feedback, ['unclearDetail']) || 'Use one real detail from the talk instead of filler or repeated letters.'
+          : !hasContext
+            ? getNestedString(feedback, ['missingContext'])
+            : !hasFollow
+              ? getNestedString(feedback, ['missingFollow'])
+              : !onTrack
+                ? getNestedString(feedback, ['offTrack']) || 'Keep the question closer to the selected lead-in and follow-up phrase so it stays clear and natural.'
+                : getNestedString(feedback, ['missingQuestion']),
     };
   }
 }
