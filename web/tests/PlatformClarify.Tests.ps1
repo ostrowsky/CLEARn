@@ -72,6 +72,27 @@ foreach ($pattern in @(
     Assert-Match -Actual $clarifyScreenSource -Pattern $pattern
 }
 
+$sectionSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\section\[id].tsx') -Raw
+$inlineClarifySource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\src\components\practice\ClarifyPracticeInlineList.tsx') -Raw
+foreach ($pattern in @(
+    'ClarifyPracticeInlineList',
+    "renderer === 'practice-clarify'"
+)) {
+    Assert-Match -Actual $sectionSource -Pattern $pattern
+}
+foreach ($pattern in @(
+    'buildClarifyExamples',
+    'useSpeechDraft',
+    'apiClient\.checkClarify',
+    'startRecording',
+    'stopRecording',
+    'showExpectedAnswer',
+    'acceptedAnswers',
+    'expectedQuestion'
+)) {
+    Assert-Match -Actual $inlineClarifySource -Pattern $pattern
+}
+
 Write-TestStep 'Platform admin exposes editable clarify statement, accepted answers, and exercise templates'
 $adminScreenSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\admin.tsx') -Raw
 foreach ($pattern in @(
@@ -94,5 +115,4 @@ foreach ($pattern in @(
 }
 
 Write-Host 'Platform clarify audio tests passed.'
-
 

@@ -4,6 +4,7 @@ import { ActivityIndicator, Image, Linking, Platform, Pressable, StyleSheet, Tex
 import type { AppContent, ContentBlock, ContentMaterial, ContentSection } from '@softskills/domain';
 import { Screen } from '../../src/components/Screen';
 import { AskAfterComposer } from '../../src/components/practice/AskAfterComposer';
+import { ClarifyPracticeInlineList } from '../../src/components/practice/ClarifyPracticeInlineList';
 import { useContent } from '../../src/hooks/useContent';
 import { findSectionById, findSectionByRoute, getParentSection } from '../../src/lib/contentNavigation';
 import {
@@ -402,7 +403,8 @@ export default function SectionScreen() {
         <View style={styles.blockGrid}>
           {contentBlocks.map((block, index) => {
             const practiceHref = getPracticeHref(content, section, block);
-            const isHalfWidthCard = featuredBlockCount > 0 && index < featuredBlockCount;
+            const renderer = getBlockRenderer(content, block.kind);
+            const isHalfWidthCard = renderer !== 'practice-clarify' && featuredBlockCount > 0 && index < featuredBlockCount;
 
             return (
               <View
@@ -412,7 +414,9 @@ export default function SectionScreen() {
                   isHalfWidthCard ? styles.blockSlotHalf : styles.blockSlotFull,
                 ]}
               >
-                {collapsibleSection ? (
+                {renderer === 'practice-clarify' ? (
+                  <ClarifyPracticeInlineList content={content} section={section} block={block} />
+                ) : collapsibleSection ? (
                   <BlockAccordion
                     block={block}
                     open={Boolean(openBlocks[block.id])}

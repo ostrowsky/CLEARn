@@ -47,13 +47,18 @@ Assert-Match -Actual $routesSource -Pattern 'resolveLocalUploadPath\(`/uploads/\
 Write-TestStep 'Live and template content keep role-aware prompts and STT-ready learning chat'
 foreach ($fileName in @('content.template.json', 'content.json')) {
     $content = Get-Content -LiteralPath (Join-Path $webRoot ('data\' + $fileName)) -Raw | ConvertFrom-Json
+    $goodQuestionType = $content.meta.practice.answeringSession.questionTypes.good
+    $goodGeneratorGuidance = ''
+    if ($goodQuestionType -and $goodQuestionType.PSObject.Properties['generatorGuidance']) {
+        $goodGeneratorGuidance = [string]$goodQuestionType.PSObject.Properties['generatorGuidance'].Value
+    }
     Assert-True -Condition ([string]$content.meta.practice.learningChat.systemPrompt).Contains('Do not default to candidate mode') -Message "$fileName should keep role-aware coach chat instructions."
     Assert-True -Condition ([bool]$content.meta.practice.learningChat.capabilities.speechToText) -Message "$fileName should advertise speech-to-text for learning chat."
     Assert-True -Condition ([string]$content.meta.practice.learningChat.transcriptModeTextLabel).Contains('speech-to-text') -Message "$fileName should describe STT-enabled transcript mode."
     Assert-True -Condition ([string]$content.meta.practice.answeringSession.answeringQuestionSystemPrompt).Contains('interviewer or the interviewee') -Message "$fileName should require role inference for answering question generation."
     Assert-True -Condition ([string]$content.meta.practice.answeringSession.answeringQuestionPromptTemplate).Contains("counterpart's role") -Message "$fileName should generate questions from the counterpart perspective."
     Assert-True -Condition ([string]$content.meta.practice.answeringSession.answeringEvaluationSystemPrompt).Contains('wrong perspective') -Message "$fileName should guard against evaluation rewrites from the wrong role."
-    Assert-True -Condition ([string]$content.meta.practice.answeringSession.questionTypes.good.generatorGuidance).Contains('counterpart perspective') -Message "$fileName should keep role-aware good-question guidance."
+    Assert-True -Condition $goodGeneratorGuidance.Contains('counterpart perspective') -Message "$fileName should keep role-aware good-question guidance."
 }
 
 Write-Host 'Platform AI stack tests passed.'

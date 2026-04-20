@@ -110,14 +110,8 @@ function getSpeechLineText(line: AskAfterSpeechLine) {
     return line;
   }
 
-  const speaker = typeof line?.speaker === 'string' ? line.speaker.trim() : '';
   const text = typeof line?.text === 'string' ? line.text.trim() : '';
-
-  if (speaker && text) {
-    return `${speaker}: ${text}`;
-  }
-
-  return text || speaker || '';
+  return text || '';
 }
 
 function getSpeechLineKey(line: AskAfterSpeechLine, index: number) {
@@ -291,6 +285,8 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
   });
 
   const finalQuestion = questionDraft.trim() || builtQuestion;
+  const speechLines = Array.isArray(brief?.speechLines) ? brief.speechLines : [];
+  const speechParagraph = speechLines.map((line) => getSpeechLineText(line)).filter(Boolean).join(' ');
   const contextColumnTitle = contextBlock?.title || contextLeadIn;
   const contextColumnDescription = contextBlock?.description || dragPhraseHint;
   const followColumnTitle = followUpBlock?.title || followUpRequest;
@@ -329,7 +325,13 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
 
   async function handleReviewQuestion() {
     try {
-      setFeedback(await apiClient.checkAskAfter(finalQuestion));
+      setFeedback(await apiClient.checkAskAfter({
+        question: finalQuestion,
+        expectedQuestion: builtQuestion,
+        detail: tail,
+        contextPhrase: selectedContextPhrase,
+        followUpPhrase: selectedFollowPhrase,
+      }));
       setLocalError('');
     } catch (nextError) {
       setLocalError(nextError instanceof Error ? nextError.message : String(nextError));
@@ -367,49 +369,61 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
           <View style={styles.panel}>
             <Text style={styles.eyebrow}>{generatedTalkEyebrow}</Text>
             <Text style={styles.panelTitle}>{generatedTalkTitle}</Text>
-            <View style={styles.linesList}>
-              {brief.speechLines.map((line, index) => {
-                const lineText = getSpeechLineText(line);
-                if (!lineText) {
-                  return null;
-                }
-
-                return <Text key={getSpeechLineKey(line, index)} style={styles.lineItem}>{lineText}</Text>;
-              })}
-            </View>
+            <Text style={styles.speechParagraph}>{speechParagraph}</Text>
             <Text style={styles.tip}><Text style={styles.tipStrong}>{coachingTip}: </Text>{brief.coachingTip}</Text>
           </View>
 
           <View style={styles.builderShell}>
-            <View style={styles.bankColumn}>
-              <Text style={styles.columnTitle}>{contextColumnTitle}</Text>
-              <Text style={styles.columnHint}>{contextColumnDescription}</Text>
-              <View style={styles.bankList}>
-                {contextPhrases.map((item) => (
-                  <Pressable
-                    key={item}
-                    {...(createPhraseDragProps('context', item) as any)}
-                    style={[styles.bankItem, selectedContextPhrase === item ? styles.bankItemActive : null]}
-                    onPress={() => setSelectedContextPhrase(item)}
-                  >
-                    <Text style={[styles.bankItemText, selectedContextPhrase === item ? styles.bankItemTextActive : null]}>{item}</Text>
-                  </Pressable>
-                ))}
+            <View style={styles.banksRow}>
+              <View style={styles.bankColumn}>
+                <Text style={styles.columnTitle}>{contextColumnTitle}</Text>
+                <Text style={styles.columnHint}>{contextColumnDescription}</Text>
+                <View style={styles.bankList}>
+                  {contextPhrases.map((item) => (
+                    <Pressable
+                      key={item}
+                      {...(createPhraseDragProps('context', item) as any)}
+                      style={[styles.bankItem, selectedContextPhrase === item ? styles.bankItemActive : null]}
+                      onPress={() => setSelectedContextPhrase(item)}
+                    >
+                      <Text style={[styles.bankItemText, selectedContextPhrase === item ? styles.bankItemTextActive : null]}>{item}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.bankColumn}>
+                <Text style={styles.columnTitle}>{followColumnTitle}</Text>
+                <Text style={styles.columnHint}>{followColumnDescription}</Text>
+                <View style={styles.bankList}>
+                  {followUpPhrases.map((item) => (
+                    <Pressable
+                      key={item}
+                      {...(createPhraseDragProps('follow', item) as any)}
+                      style={[styles.bankItem, selectedFollowPhrase === item ? styles.bankItemActive : null]}
+                      onPress={() => setSelectedFollowPhrase(item)}
+                    >
+                      <Text style={[styles.bankItemText, selectedFollowPhrase === item ? styles.bankItemTextActive : null]}>{item}</Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
             </View>
 
             <View style={styles.builderColumn}>
-              <Text style={styles.eyebrow}>{questionBuilderTitle}</Text>
-              <Text style={styles.builderTitle}>{builderTitle}</Text>
-              <Text style={styles.builderDescription}>{builderDescription}</Text>
+              <View style={styles.builderMeta}>
+                <Text style={styles.builderMetaEyebrow}>{questionBuilderTitle}</Text>
+                <Text style={styles.builderMetaTitle}>{builderTitle}</Text>
+                <Text style={styles.builderMetaDescription}>{builderDescription}</Text>
+              </View>
 
-              <View style={styles.previewCard}>
+              <View style={styles.previewHeroCard}>
                 <Text style={styles.previewLabel}>{questionPreviewLabel}</Text>
                 <TextInput
                   value={questionDraft}
                   onChangeText={setQuestionDraft}
                   placeholder={builtQuestion || askAfterTail}
-                  style={[styles.input, styles.previewInput]}
+                  style={[styles.input, styles.previewHeroInput]}
                   multiline
                 />
               </View>
@@ -457,23 +471,6 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
                 </Text>
               </View>
             </View>
-
-            <View style={styles.bankColumn}>
-              <Text style={styles.columnTitle}>{followColumnTitle}</Text>
-              <Text style={styles.columnHint}>{followColumnDescription}</Text>
-              <View style={styles.bankList}>
-                {followUpPhrases.map((item) => (
-                  <Pressable
-                    key={item}
-                    {...(createPhraseDragProps('follow', item) as any)}
-                    style={[styles.bankItem, selectedFollowPhrase === item ? styles.bankItemActive : null]}
-                    onPress={() => setSelectedFollowPhrase(item)}
-                  >
-                    <Text style={[styles.bankItemText, selectedFollowPhrase === item ? styles.bankItemTextActive : null]}>{item}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
           </View>
 
           <View style={styles.actionsRow}>
@@ -514,12 +511,17 @@ const styles = StyleSheet.create({
     gap: tokens.spacing.md,
   },
   builderShell: {
-    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    flexDirection: 'column',
+    gap: tokens.spacing.md,
+    alignItems: 'stretch',
+  },
+  banksRow: {
+    flexDirection: 'row',
     gap: tokens.spacing.md,
     alignItems: 'stretch',
   },
   bankColumn: {
-    flex: Platform.OS === 'web' ? 1 : 0,
+    flex: 1,
     minWidth: 0,
     backgroundColor: tokens.colors.surfaceMuted,
     borderRadius: tokens.radius.xl,
@@ -529,7 +531,7 @@ const styles = StyleSheet.create({
     gap: tokens.spacing.sm,
   },
   builderColumn: {
-    flex: Platform.OS === 'web' ? 1.15 : 0,
+    width: '100%',
     minWidth: 0,
     backgroundColor: tokens.colors.surface,
     borderRadius: tokens.radius.xl,
@@ -537,6 +539,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: tokens.colors.cardLine,
     gap: tokens.spacing.md,
+  },
+  builderMeta: {
+    gap: 6,
   },
   bankList: {
     gap: tokens.spacing.sm,
@@ -561,15 +566,23 @@ const styles = StyleSheet.create({
   bankItemTextActive: {
     color: tokens.colors.accentDeep,
   },
-  builderTitle: {
-    color: tokens.colors.ink,
-    fontWeight: '900',
-    fontSize: 22,
-    lineHeight: 28,
+  builderMetaEyebrow: {
+    color: tokens.colors.accent,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontWeight: '800',
+    fontSize: 11,
   },
-  builderDescription: {
+  builderMetaTitle: {
     color: tokens.colors.inkSoft,
-    lineHeight: 22,
+    fontWeight: '800',
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  builderMetaDescription: {
+    color: tokens.colors.inkSoft,
+    lineHeight: 20,
+    fontSize: 14,
   },
   builderSlot: {
     borderRadius: tokens.radius.lg,
@@ -612,13 +625,18 @@ const styles = StyleSheet.create({
     color: tokens.colors.inkSoft,
     lineHeight: 20,
   },
-  previewCard: {
-    backgroundColor: tokens.colors.surfaceMuted,
-    borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.md,
-    borderWidth: 1,
-    borderColor: tokens.colors.cardLine,
-    gap: tokens.spacing.sm,
+  previewHeroCard: {
+    backgroundColor: '#fffaf3',
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.lg,
+    borderWidth: 2,
+    borderColor: tokens.colors.accent,
+    gap: tokens.spacing.md,
+    shadowColor: 'rgba(141,38,0,0.18)',
+    shadowOpacity: 1,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
   previewLabel: {
     color: tokens.colors.accentDeep,
@@ -627,8 +645,16 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     fontSize: 12,
   },
-  previewInput: {
-    minHeight: 120,
+  previewHeroInput: {
+    minHeight: 148,
+    fontSize: 24,
+    lineHeight: 34,
+    fontWeight: '700',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderRadius: tokens.radius.lg,
+    borderColor: 'rgba(141,38,0,0.12)',
+    backgroundColor: tokens.colors.surface,
   },
   label: {
     color: tokens.colors.accentDeep,
@@ -665,10 +691,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 28,
   },
-  linesList: {
-    gap: tokens.spacing.sm,
-  },
-  lineItem: {
+  speechParagraph: {
     color: tokens.colors.ink,
     lineHeight: 24,
   },

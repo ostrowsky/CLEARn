@@ -86,10 +86,18 @@ $askAfterComposerSource = Get-Content -LiteralPath (Join-Path $platformRoot 'app
 foreach ($pattern in @(
     'apiClient\.askAfter',
     'apiClient\.checkAskAfter',
+    'expectedQuestion: builtQuestion',
+    'detail: tail',
+    'Array\.isArray\(brief\?\.speechLines\) \? brief\.speechLines : \[\]',
+    'speechParagraph',
+    'banksRow',
     'getBlockGroupConfig',
     'questionPreviewLabel',
     'useSpeechDraft',
     'questionDraft',
+    'previewHeroCard',
+    'previewHeroInput',
+    'builderMetaTitle',
     'startRecording',
     'stopRecording',
     'selectedContextPhrase',
@@ -100,6 +108,17 @@ foreach ($pattern in @(
     'text'
 )) {
     Assert-Match -Actual $askAfterComposerSource -Pattern $pattern
+}
+
+$practiceServiceSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\modules\practice\practice.service.ts') -Raw
+foreach ($pattern in @(
+    'normalizeAskAfterBrief',
+    'normalizeAskAfterSpeechLines',
+    'looksMeaningfulDetail',
+    "getNestedString\(feedback, \['unclearDetail'\]\)",
+    "getNestedString\(feedback, \['offTrack'\]\)"
+)) {
+    Assert-Match -Actual $practiceServiceSource -Pattern $pattern
 }
 
 $sectionSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\section\[id].tsx') -Raw

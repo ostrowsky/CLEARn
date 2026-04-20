@@ -99,6 +99,80 @@ function uniqueStrings(values: string[]) {
   });
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function stripLeadingReactionPhrase(answerText: string, reactionPhrases: string[]) {
+  let next = normalizeWhitespace(answerText);
+  for (const phrase of uniqueStrings(reactionPhrases.map((item) => normalizeWhitespace(item)).filter(Boolean))) {
+    const pattern = new RegExp(`^${escapeRegExp(phrase)}(?:[,:;.!?\\-]+\\s*|\\s+)`, 'i');
+    next = next.replace(pattern, '').trim();
+  }
+
+  return next;
+}
+
+function splitAnswerSentences(value: string) {
+  return normalizeWhitespace(value).match(/[^.!?]+[.!?]?/g)?.map((item) => normalizeWhitespace(item)).filter(Boolean) || [];
+}
+
+function isQuestionLikeSentence(value: string) {
+  const next = normalizeWhitespace(value).toLowerCase();
+  if (!next) {
+    return false;
+  }
+
+  return /[?]\s*$/.test(next) || /^(can|could|would|will|should|may|might|do|does|did|is|are|was|were|have|has|what|when|where|which|who|whom|whose|why|how)\b/.test(next);
+}
+
+function removeQuestionSentences(value: string) {
+  return splitAnswerSentences(value)
+    .filter((sentence) => !isQuestionLikeSentence(sentence))
+    .join(' ')
+    .trim();
+}
+
+function containsQuestionSentence(value: string) {
+  return splitAnswerSentences(value).some((sentence) => isQuestionLikeSentence(sentence));
+}
+
+function normalizeAnswerStatementBody(value: string) {
+  const clean = normalizeWhitespace(value).replace(/[?]+$/g, '.');
+  if (!clean) {
+    return '';
+  }
+
+  const withCapital = clean.charAt(0).toUpperCase() + clean.slice(1);
+  return /[.!]$/.test(withCapital) ? withCapital : `${withCapital}.`;
+}
+
+function sanitizeImprovedAnswerBody(generatedBody: string, fallbackBody: string, chosenReactionText: string) {
+  const generatedWithoutReaction = stripLeadingReactionPhrase(generatedBody, [chosenReactionText]);
+  const fallbackWithoutReaction = stripLeadingReactionPhrase(fallbackBody, [chosenReactionText]);
+  const sourceBody = containsQuestionSentence(generatedWithoutReaction)
+    ? fallbackWithoutReaction
+    : generatedWithoutReaction || fallbackWithoutReaction;
+  const answerOnly = removeQuestionSentences(sourceBody) || removeQuestionSentences(fallbackWithoutReaction);
+
+  return normalizeAnswerStatementBody(answerOnly || 'I would answer directly with the main priority, result, or next step.');
+}
+
+function buildImprovedAnswerWithChosenReaction(chosenReactionText: string, answerBody: string, fallbackBody = '') {
+  const reaction = normalizeSentence(chosenReactionText);
+  const bodyOnly = sanitizeImprovedAnswerBody(answerBody, fallbackBody, chosenReactionText);
+
+  if (!reaction) {
+    return bodyOnly;
+  }
+
+  if (!bodyOnly) {
+    return reaction;
+  }
+
+  return `${reaction} ${bodyOnly}`.trim();
+}
+
 function toReactionOptions(rawValue: unknown): ReactionOptionConfig[] {
   if (!Array.isArray(rawValue)) {
     return [];
@@ -437,8 +511,11 @@ export class AnsweringSessionService {
       hasPoliteLanguage ? '' : asString(config.politeToneFix, 'Use slightly more polite business language.'),
       asString(typeConfig.professionalFocus),
     ]).slice(0, 3);
-    const baseAnswer = normalizeSentence(answerText);
-    const improvedAnswer = normalizeSentence(`${turn.preferredReactionText} ${baseAnswer}`.trim());
+    const improvedAnswer = buildImprovedAnswerWithChosenReaction(
+      turn.chosenReactionText || turn.preferredReactionText,
+      answerText,
+      answerText,
+    );
     const briefFeedback = reactionAccepted
       ? asString(asRecord(typeConfig.reactionFeedback).accepted, 'Good reaction. Now keep the answer concise and professional.')
       : asString(asRecord(typeConfig.reactionFeedback).incorrect, 'A better reaction phrase would sound calmer and more professional before the answer.');
@@ -500,12 +577,17 @@ export class AnsweringSessionService {
         responseShape: 'answering-evaluation',
       }));
       const payload = generated as AnsweringEvaluationDraft;
+      const sanitizedImprovedAnswer = buildImprovedAnswerWithChosenReaction(
+        selectedReaction?.text || turn.preferredReactionText,
+        asString(payload.improvedAnswer, ''),
+        answerText,
+      );
       return {
         reactionAccepted,
         politenessScore: clampScore(payload.politenessScore),
         grammarScore: clampScore(payload.grammarScore),
         briefFeedback: asString(payload.briefFeedback, ''),
-        improvedAnswer: normalizeSentence(asString(payload.improvedAnswer, '')),
+        improvedAnswer: sanitizedImprovedAnswer,
         grammarFixes: uniqueStrings(asStringArray(payload.grammarFixes)).slice(0, 3),
         toneFixes: uniqueStrings(asStringArray(payload.toneFixes)).slice(0, 3),
       };

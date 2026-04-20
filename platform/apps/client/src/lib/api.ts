@@ -121,8 +121,8 @@ export const apiClient = {
   askAfter(context: string, offset = 0): Promise<AskAfterBrief> {
     return request('/api/practice/after-talk', { method: 'POST', body: JSON.stringify({ context, offset }) });
   },
-  checkAskAfter(question: string) {
-    return request<{ accepted: boolean; feedback: string }>('/api/practice/after-talk/check', { method: 'POST', body: JSON.stringify({ question }) });
+  checkAskAfter(payload: { question: string; expectedQuestion?: string; detail?: string; contextPhrase?: string; followUpPhrase?: string }) {
+    return request<{ accepted: boolean; feedback: string }>('/api/practice/after-talk/check', { method: 'POST', body: JSON.stringify(payload) });
   },
   startAnswering(context: string, mode: AnsweringSessionMode): Promise<AnsweringSession> {
     return request('/api/answering/session/start', { method: 'POST', body: JSON.stringify({ context, mode }) });
