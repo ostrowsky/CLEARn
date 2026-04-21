@@ -114,6 +114,66 @@ function stripLeadingArticle(value: string) {
   return normalizeWhitespace(value).replace(/^(the|a|an)\s+/i, '');
 }
 
+function limitWords(value: string, maxWords: number) {
+  const words = normalizeWhitespace(value).split(' ').filter(Boolean);
+  if (words.length <= maxWords) {
+    return normalizeWhitespace(value);
+  }
+
+  return `${words.slice(0, maxWords).join(' ').replace(/[,.!?;:]+$/g, '')}.`;
+}
+
+function capitalizeFirst(value: string) {
+  const next = normalizeWhitespace(value);
+  if (!next) {
+    return '';
+  }
+
+  return next.charAt(0).toUpperCase() + next.slice(1);
+}
+
+function normalizeSpeechTopic(context: string, fallback: string) {
+  let topic = normalizeWhitespace(context || fallback || 'the current team update');
+
+  topic = topic
+    .replace(/^the\s+speech\s+is\s+about\s+/i, '')
+    .replace(/^speech\s+is\s+about\s+/i, '')
+    .replace(/^this\s+speech\s+is\s+about\s+/i, '')
+    .replace(/^i\s+want\s+to\s+hear\s+about\s+/i, '')
+    .replace(/^i\s+need\s+to\s+listen\s+to\s+/i, '')
+    .replace(/^my\s+manager\s+is\s+telling\s+(us|me)\s+about\s+/i, '')
+    .replace(/^the\s+manager\s+is\s+telling\s+(us|me)\s+about\s+/i, '')
+    .replace(/^someone\s+is\s+telling\s+(us|me)\s+about\s+/i, '')
+    .replace(/^the\s+person\s+is\s+(talking|speaking)\s+about\s+/i, '')
+    .replace(/^a\s+person\s+is\s+(talking|speaking)\s+about\s+/i, '');
+
+  topic = topic
+    .replace(/\bhis\s+new\s+metric\b/gi, 'the new metric')
+    .replace(/\bher\s+new\s+metric\b/gi, 'the new metric')
+    .replace(/\bhis\s+/gi, 'the ')
+    .replace(/\bher\s+/gi, 'the ')
+    .replace(/\bmy\s+/gi, 'the ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[.?!]+$/g, '');
+
+  return topic || fallback || 'the current team update';
+}
+
+function buildLikelyProfessionalSpeech(topic: string, offset: number) {
+  const cleanTopic = normalizeSpeechTopic(topic, 'the current team update');
+  const variant = Math.abs(offset) % 3;
+  const topicSentence = /^(the|a|an)\s+/i.test(cleanTopic) ? cleanTopic : `the ${cleanTopic}`;
+
+  const variants = [
+    `Today I want to talk about ${topicSentence}. The goal is to help everyone understand what will change, why it matters, and how we should use it in our day-to-day work. It should give us a clearer view of progress, make planning conversations more concrete, and help us spot bottlenecks earlier. We will review it together over the next few weeks, learn from the first results, and adjust the approach if it creates confusion or the wrong incentives.`,
+    `I would like to give a quick update on ${topicSentence}. This is intended to make our conversations more practical and evidence-based, especially when we discuss progress, priorities, and delivery risks. It is not meant to add pressure or create another reporting burden. The important thing is that we use it consistently, look at the trend over time, and talk openly about what the data is telling us.`,
+    `The main point today is ${topicSentence}. I want us to see it as a tool for better teamwork, not just another number. If we use it well, it can help us understand where work is flowing smoothly, where it is getting stuck, and where we may need support. Let us start with a simple version, review it regularly, and improve it based on what we learn together.`,
+  ];
+
+  return limitWords(capitalizeFirst(variants[variant] || variants[0] || ''), 100);
+}
+
 function pickAskAfterFocus(contextInfo: ReturnType<typeof inferConversationContext>, rotatedFacts: string[], offset: number) {
   const focusAreas = contextInfo.focusAreas.map((item) => stripLeadingArticle(item)).filter(Boolean);
   const factFragments = rotatedFacts
@@ -131,7 +191,13 @@ function buildAskAfterSpeechLines(
   contextInfo: ReturnType<typeof inferConversationContext>,
   rotatedFacts: string[],
   offset: number,
+  rawContext = '',
 ) {
+  const speechTopic = normalizeSpeechTopic(rawContext, contextInfo.subject || contextInfo.focus || 'the current team update');
+  if (speechTopic) {
+    return [buildLikelyProfessionalSpeech(speechTopic, offset)];
+  }
+
   const areas = contextInfo.focusAreas.length ? contextInfo.focusAreas : [contextInfo.focus].filter(Boolean);
   const primary = stripLeadingArticle(areas[0] || 'the main update');
   const secondary = stripLeadingArticle(areas[1] || areas[0] || 'the current delivery stability');
@@ -373,6 +439,11 @@ function looksMeaningfulDetail(value: string) {
 }
 
 function normalizeAskAfterSpeechLines(value: unknown): AskAfterSpeechLine[] {
+  if (typeof value === 'string') {
+    const text = limitWords(normalizeWhitespace(value), 100);
+    return text ? [text] : [];
+  }
+
   if (!Array.isArray(value)) {
     return [];
   }
@@ -380,7 +451,7 @@ function normalizeAskAfterSpeechLines(value: unknown): AskAfterSpeechLine[] {
   const lines: AskAfterSpeechLine[] = [];
   for (const item of value) {
     if (typeof item === 'string') {
-      const text = normalizeWhitespace(item);
+      const text = limitWords(normalizeWhitespace(item), 100);
       if (text) {
         lines.push(text);
       }
@@ -389,7 +460,7 @@ function normalizeAskAfterSpeechLines(value: unknown): AskAfterSpeechLine[] {
 
     const record = asRecord(item);
     const speaker = normalizeWhitespace(asString(record.speaker));
-    const text = normalizeWhitespace(asString(record.text));
+    const text = limitWords(normalizeWhitespace(asString(record.text)), 100);
     if (speaker || text) {
       lines.push({
         ...(speaker ? { speaker } : {}),
@@ -403,7 +474,12 @@ function normalizeAskAfterSpeechLines(value: unknown): AskAfterSpeechLine[] {
 
 function normalizeAskAfterBrief(value: unknown, fallback: AskAfterBrief): AskAfterBrief {
   const record = asRecord(value);
-  const speechLines = normalizeAskAfterSpeechLines(record.speechLines);
+  const rawSpeechLines = normalizeAskAfterSpeechLines(record.speechLines);
+  const speechText = rawSpeechLines
+    .map((line) => (typeof line === 'string' ? line : normalizeWhitespace(asString(line.text))))
+    .filter(Boolean)
+    .join(' ');
+  const speechLines = speechText ? [limitWords(speechText, 100)] : [];
   const sampleQuestion = normalizeWhitespace(asString(record.sampleQuestion, fallback.sampleQuestion));
   const suggestedFocus = normalizeWhitespace(asString(record.suggestedFocus, fallback.suggestedFocus || ''));
   const coachingTip = normalizeWhitespace(asString(record.coachingTip, fallback.coachingTip));
@@ -461,7 +537,7 @@ export class PracticeService {
     const suggestedFocus = pickAskAfterFocus(contextInfo, rotatedFacts, offset);
 
     return {
-      speechLines: buildAskAfterSpeechLines(contextInfo, rotatedFacts, offset),
+      speechLines: buildAskAfterSpeechLines(contextInfo, rotatedFacts, offset, context),
       sampleQuestion: buildAskAfterSampleQuestion(contextInfo, suggestedFocus, offset),
       suggestedFocus,
       coachingTip: buildAskAfterCoachingTip(contextInfo),
@@ -534,18 +610,20 @@ export class PracticeService {
   async generateAskAfter(context: string, offset = 0) {
     const config = await this.getPracticeConfig();
     const contextInfo = inferConversationContext(context, 'the current project');
+    const speechTopic = normalizeSpeechTopic(context, contextInfo.subject);
     const fallback = this.buildAskAfterFallback(config, context, offset, '');
     try {
       const generated = await withChatProvider(env.LLM_TEXT_PROVIDER, (provider) =>
         provider.generateAskAfter({
-          systemPrompt: 'Generate a short workplace monologue with keys speechLines, sampleQuestion, suggestedFocus, coachingTip, generatorMode. Return one short spoken update, not a dialogue, vary the details on repeated generations, and keep the follow-up question natural for spoken business English.',
+          systemPrompt: 'Generate a likely professional workplace speech for follow-up question practice. Return valid JSON with keys speechLines, sampleQuestion, suggestedFocus, coachingTip, generatorMode. speechLines must be an array containing one professional yet friendly paragraph string only. The speech must be no more than 100 words, must not be a dialogue, and must sound like what a professional would likely say about the topic.',
           prompt: [
-            `Learner context: ${context || 'Not provided'}`,
+            `Speech topic written by learner: ${speechTopic || context || 'Not provided'}`,
+            `Core task: What is likely to be said by a professional when the speech is about ${speechTopic || contextInfo.subject}? Generate a professional yet friendly speech of no more than 100 words.`,
             `Conversation scenario: ${contextInfo.scenario}`,
             `Primary focus: ${contextInfo.subject}`,
             `Learner role: ${contextInfo.learnerRole}`,
             `Counterpart role: ${contextInfo.counterpartRole}`,
-            `Create a short workplace talk for follow-up question practice. Offset: ${offset}.`,
+            `Also generate one natural follow-up sampleQuestion and one suggestedFocus from the speech. Offset: ${offset}.`,
           ].join('\n'),
           responseShape: 'ask-after',
         }),

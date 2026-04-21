@@ -24,7 +24,7 @@
                                              "clarifyEmpty":  "Describe your work and generate the first missing-detail prompt.",
                                              "askAfterEmpty":  "Add your work context and generate a short talk for follow-up question practice.",
                                              "withoutContextEmpty":  "Generate a generic prompt to start the drill.",
-                                             "generatedTalkTitle":  "Short speech with key facts",
+                                            "generatedTalkTitle":  "Likely short speech",
                                              "questionBuilderTitle":  "Compose your follow-up question",
                                              "leadInPhrasesTitle":  "Lead-in phrases",
                                              "followUpPhrasesTitle":  "Follow-up phrases",
@@ -120,7 +120,7 @@
                             "placeholders":  {
                                                  "clarifyContext":  "Example: I am a backend engineer working on billing APIs for enterprise clients.",
                                                  "clarifyAnswer":  "Sorry, the project needs WHAT?",
-                                                 "askAfterContext":  "Example: I work on a product analytics dashboard for retention and onboarding.",
+                                                "askAfterContext":  "Example: The speech is about the new throughput metric that will be introduced in our team.",
                                                  "askAfterTail":  "the release decision",
                                                  "withoutContextAnswer":  "Sorry, it starts WHEN?",
                                                  "answeringContext":  "Example: I am preparing a sprint review about the billing rollout, API stability, and next release risks.",

@@ -76,6 +76,7 @@ Key config:
 
 - `1.1.3` clarify now has inline live practice under each audio example.
 - `Ask after the talk` uses a short generated text, not a dialogue transcript.
+- `Ask after the talk` generated speech should be a likely professional yet friendly speech about the learner-written topic, no more than 100 words, not a fact list that repeats the input.
 - `Review this question` must evaluate the currently composed follow-up question, not a cached first result.
 - `answering-mixed-practice` improved answer must preserve the user-selected reaction phrase and only improve the answer body.
 - `answering-mixed-practice` improved answer must remain an answer statement. It must never rewrite the learner reply as a question or end with a question mark.
@@ -313,3 +314,4 @@ powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\Backup
 - 2026-04-18: Added token-saving context file. Confirmed no active `SOFTskills` Codex automations. Found several local preview/API processes that are operational only, not token automations.
 - 2026-04-18: Added compact change-entry template and screen-to-test map for cheaper future sessions.
 - 2026-04-19: Answering improved answers now strip question-like rewrites and fall back to statement answers. Rule: answering practice user replies must remain answers, not questions. Verified by `PlatformAnswering.Tests.ps1`, `PlatformAiStack.Tests.ps1`, and `ContentDriven.Tests.ps1`.
+- 2026-04-21: Ask-after generated talk now treats user input as a speech topic and creates one likely professional friendly speech paragraph up to 100 words. Verified by `PlatformSyntax.Tests.ps1`, `PlatformFallbacks.Tests.ps1`, `PlatformExerciseTemplates.Tests.ps1`, and `Service.Tests.ps1`.
