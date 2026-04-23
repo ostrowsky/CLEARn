@@ -168,6 +168,11 @@ export async function registerRoutes(app: FastifyInstance) {
     return practiceService.generateAskAfter(body.context, body.offset);
   });
   app.post('/api/practice/after-talk/check', async (request) => practiceService.checkAskAfter(request.body as never));
+  app.post('/api/practice/question-formation', async (request) => {
+    const body = request.body as { context?: string; offset?: number };
+    return practiceService.generateQuestionFormation(body.context || '', body.offset);
+  });
+  app.post('/api/practice/question-formation/check', async (request) => practiceService.checkQuestionFormation(request.body as never));
 
   app.post('/api/answering/session/start', async (request) => {
     const body = request.body as { context: string; mode: 'good' | 'difficult' | 'unnecessary' | 'irrelevant' | 'mixed' };

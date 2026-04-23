@@ -1,4 +1,4 @@
-import type { AskAfterBrief, ClarifyExercise, CoachChatTurn } from '@softskills/domain';
+import type { AskAfterBrief, ClarifyExercise, CoachChatTurn, QuestionFormationExercise } from '@softskills/domain';
 import { env } from '../../config/env';
 import { parseModelJsonContent } from './jsonResponse';
 import type { AnsweringEvaluationDraft, AnsweringQuestionDraft, ChatGenerationInput, ChatProvider } from '../types';
@@ -61,6 +61,9 @@ export const huggingFaceChatProvider: ChatProvider = {
   },
   generateAskAfter(input): Promise<AskAfterBrief> {
     return callHf<AskAfterBrief>(input);
+  },
+  generateQuestionFormation(input): Promise<QuestionFormationExercise> {
+    return callHf<QuestionFormationExercise>(input);
   },
   generateAnsweringQuestion(input): Promise<AnsweringQuestionDraft> {
     return callHf<AnsweringQuestionDraft>(input);

@@ -78,6 +78,7 @@ Key config:
 - `Ask after the talk` uses a short generated text, not a dialogue transcript.
 - `Ask after the talk` generated speech should be a likely professional yet friendly speech about the learner-written topic, no more than 100 words, not a fact list that repeats the input.
 - `Review this question` must evaluate the currently composed follow-up question, not a cached first result.
+- `1.3` is now question formation practice: show a short IT sentence for 3 seconds, hide three answer spans, and validate WH questions by text or STT.
 - `answering-mixed-practice` improved answer must preserve the user-selected reaction phrase and only improve the answer body.
 - `answering-mixed-practice` improved answer must remain an answer statement. It must never rewrite the learner reply as a question or end with a question mark.
 - Admin supports ordering blocks and materials.
@@ -170,6 +171,11 @@ Example:
   - Rule: Improved answer must start with the user-selected reaction phrase and only improve the answer body
   - Verified by: powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\PlatformAnswering.Tests.ps1
 ```
+
+- 2026-04-22: Section 1.3 changed to WH question formation practice
+  - Files: D:\Projects\SOFTskills\platform\apps\client\src\components\practice\QuestionFormationPractice.tsx; D:\Projects\SOFTskills\platform\apps\api\src\modules\practice\practice.service.ts; D:\Projects\SOFTskills\web\data\content.template.json
+  - Rule: The learner sees the full IT sentence for 3 seconds, then asks WH questions for three blanks; correct answers reveal green, hints reveal red
+  - Verified by: powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\PlatformQuestionFormation.Tests.ps1
 
 ## Screen To Test Map
 
@@ -315,3 +321,5 @@ powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\Backup
 - 2026-04-18: Added compact change-entry template and screen-to-test map for cheaper future sessions.
 - 2026-04-19: Answering improved answers now strip question-like rewrites and fall back to statement answers. Rule: answering practice user replies must remain answers, not questions. Verified by `PlatformAnswering.Tests.ps1`, `PlatformAiStack.Tests.ps1`, and `ContentDriven.Tests.ps1`.
 - 2026-04-21: Ask-after generated talk now treats user input as a speech topic and creates one likely professional friendly speech paragraph up to 100 words. Verified by `PlatformSyntax.Tests.ps1`, `PlatformFallbacks.Tests.ps1`, `PlatformExerciseTemplates.Tests.ps1`, and `Service.Tests.ps1`.
+- 2026-04-22: STT defaults moved away from paid Hugging Face Inference Providers to local self-hosted Whisper. Use `D:\Projects\SOFTskills\start-local-stt.bat` to run the free OpenAI-compatible STT server on `http://localhost:8010/v1`; preview auto-starts it. HF live STT tests are opt-in with `RUN_HF_LIVE_STT_TESTS=1` to avoid spending credits.
+- 2026-04-22: Root cause of browser STT `failed to fetch`: first local Whisper request downloaded/loaded the model and exceeded the browser/API timeout; later the API may also be down while local STT is alive. Fixed by adding local STT startup warmup and `/v1/warmup`, then making `open-share-preview.ps1` wait for `modelLoaded=true` before exposing public links. Verified API-to-local-STT with a WAV payload returning `provider=selfhosted`.

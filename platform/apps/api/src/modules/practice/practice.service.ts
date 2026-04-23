@@ -1,5 +1,11 @@
 import { env } from '../../config/env';
-import type { AskAfterBrief, ClarifyExercise } from '@softskills/domain';
+import type {
+  AskAfterBrief,
+  AskAfterSpeechLine,
+  ClarifyExercise,
+  QuestionFormationBlank,
+  QuestionFormationExercise,
+} from '@softskills/domain';
 import type { ContentService } from '../content/content.service';
 import { withChatProvider } from '../../providers/providerRegistry';
 import { detectPracticeProfileKey, inferConversationContext } from '../shared/contextSummary';
@@ -496,6 +502,400 @@ function normalizeAskAfterBrief(value: unknown, fallback: AskAfterBrief): AskAft
   };
 }
 
+const defaultQuestionFormationDeck: QuestionFormationExercise[] = [
+  {
+    sentence: 'Stakeholders will review return on investment at the end of the year.',
+    blanks: [
+      {
+        id: 'stakeholders',
+        index: 1,
+        answer: 'Stakeholders',
+        whWord: 'Who',
+        expectedQuestion: 'Who will review return on investment at the end of the year?',
+      },
+      {
+        id: 'return-on-investment',
+        index: 2,
+        answer: 'return on investment',
+        whWord: 'What',
+        expectedQuestion: 'What will stakeholders review at the end of the year?',
+      },
+      {
+        id: 'end-of-year',
+        index: 3,
+        answer: 'end of the year',
+        whWord: 'When',
+        expectedQuestion: 'When will stakeholders review return on investment?',
+      },
+    ],
+    coachingTip: 'Ask about the hidden detail with the right WH word, but keep the rest of the sentence grammar intact.',
+    generatorMode: 'content-fallback',
+  },
+  {
+    sentence: 'The backend team fixed six API defects in staging yesterday.',
+    blanks: [
+      {
+        id: 'backend-team',
+        index: 1,
+        answer: 'backend team',
+        whWord: 'Who',
+        expectedQuestion: 'Who fixed six API defects in staging yesterday?',
+      },
+      {
+        id: 'api-defects',
+        index: 2,
+        answer: 'six API defects',
+        whWord: 'What',
+        expectedQuestion: 'What did the backend team fix in staging yesterday?',
+      },
+      {
+        id: 'staging',
+        index: 3,
+        answer: 'staging',
+        whWord: 'Where',
+        expectedQuestion: 'Where did the backend team fix six API defects yesterday?',
+      },
+    ],
+    coachingTip: 'Use the auxiliary verb that fits the sentence tense: will, did, does, is, or are.',
+    generatorMode: 'content-fallback',
+  },
+  {
+    sentence: 'Two engineers will migrate customer logs to the new archive tonight.',
+    blanks: [
+      {
+        id: 'two',
+        index: 1,
+        answer: 'Two',
+        whWord: 'How many',
+        expectedQuestion: 'How many engineers will migrate customer logs to the new archive tonight?',
+      },
+      {
+        id: 'customer-logs',
+        index: 2,
+        answer: 'customer logs',
+        whWord: 'What',
+        expectedQuestion: 'What will two engineers migrate to the new archive tonight?',
+      },
+      {
+        id: 'tonight',
+        index: 3,
+        answer: 'tonight',
+        whWord: 'When',
+        expectedQuestion: 'When will two engineers migrate customer logs to the new archive?',
+      },
+    ],
+    coachingTip: 'For numbers, use How many or How much and keep the noun after it.',
+    generatorMode: 'content-fallback',
+  },
+  {
+    sentence: 'The security review will take two hours in the main meeting room.',
+    blanks: [
+      {
+        id: 'security-review',
+        index: 1,
+        answer: 'security review',
+        whWord: 'What',
+        expectedQuestion: 'What will take two hours in the main meeting room?',
+      },
+      {
+        id: 'two-hours',
+        index: 2,
+        answer: 'two hours',
+        whWord: 'How long',
+        expectedQuestion: 'How long will the security review take in the main meeting room?',
+      },
+      {
+        id: 'meeting-room',
+        index: 3,
+        answer: 'main meeting room',
+        whWord: 'Where',
+        expectedQuestion: 'Where will the security review take two hours?',
+      },
+    ],
+    coachingTip: 'When asking about duration, use How long and move the auxiliary before the subject.',
+    generatorMode: 'content-fallback',
+  },
+  {
+    sentence: 'Maya will demo the analytics dashboard for product managers on Friday.',
+    blanks: [
+      {
+        id: 'maya',
+        index: 1,
+        answer: 'Maya',
+        whWord: 'Who',
+        expectedQuestion: 'Who will demo the analytics dashboard for product managers on Friday?',
+      },
+      {
+        id: 'analytics-dashboard',
+        index: 2,
+        answer: 'analytics dashboard',
+        whWord: 'What',
+        expectedQuestion: 'What will Maya demo for product managers on Friday?',
+      },
+      {
+        id: 'friday',
+        index: 3,
+        answer: 'Friday',
+        whWord: 'When',
+        expectedQuestion: 'When will Maya demo the analytics dashboard for product managers?',
+      },
+    ],
+    coachingTip: 'Keep names, objects, and time phrases in the right position when you form the question.',
+    generatorMode: 'content-fallback',
+  },
+];
+
+const proceduralQuestionFormationSubjects = [
+  'The product owner',
+  'Three QA engineers',
+  'The DevOps team',
+  'Security analysts',
+  'The data platform squad',
+  'Customer success managers',
+  'The release coordinator',
+  'Two backend developers',
+];
+
+const proceduralQuestionFormationActions = [
+  {
+    verb: 'will validate',
+    object: 'the billing API',
+    place: 'staging',
+    time: 'tomorrow morning',
+    objectQuestion: 'What will {subject} validate in {place} {time}?',
+  },
+  {
+    verb: 'will present',
+    object: 'the throughput metric',
+    place: 'the sprint review',
+    time: 'on Thursday',
+    objectQuestion: 'What will {subject} present at {place} {time}?',
+  },
+  {
+    verb: 'will deploy',
+    object: 'the search fix',
+    place: 'production',
+    time: 'after approval',
+    objectQuestion: 'What will {subject} deploy to {place} {time}?',
+  },
+  {
+    verb: 'will test',
+    object: 'the onboarding flow',
+    place: 'the mobile build',
+    time: 'this afternoon',
+    objectQuestion: 'What will {subject} test in {place} {time}?',
+  },
+  {
+    verb: 'will review',
+    object: 'access logs',
+    place: 'the security channel',
+    time: 'before release',
+    objectQuestion: 'What will {subject} review in {place} {time}?',
+  },
+  {
+    verb: 'will migrate',
+    object: 'customer reports',
+    place: 'the data warehouse',
+    time: 'next week',
+    objectQuestion: 'What will {subject} migrate to {place} {time}?',
+  },
+];
+
+function countWords(value: string) {
+  return normalizeWhitespace(value).split(/\s+/).filter(Boolean).length;
+}
+
+function normalizeQuestionFormationBlank(value: unknown, fallback: QuestionFormationBlank, index: number): QuestionFormationBlank {
+  const record = asRecord(value);
+  const answer = normalizeWhitespace(asString(record.answer, fallback.answer));
+  const whWord = normalizeWhitespace(asString(record.whWord, fallback.whWord));
+  const expectedQuestion = normalizeWhitespace(asString(record.expectedQuestion, fallback.expectedQuestion));
+  const acceptedQuestions = asStringArray(record.acceptedQuestions)
+    .map((item) => normalizeWhitespace(item))
+    .filter(Boolean);
+
+  return {
+    id: normalizeWhitespace(asString(record.id, fallback.id || `blank-${index}`)) || `blank-${index}`,
+    index,
+    answer: answer || fallback.answer,
+    whWord: whWord || fallback.whWord,
+    expectedQuestion: expectedQuestion || fallback.expectedQuestion,
+    ...(acceptedQuestions.length ? { acceptedQuestions } : fallback.acceptedQuestions?.length ? { acceptedQuestions: fallback.acceptedQuestions } : {}),
+  };
+}
+
+function normalizeQuestionFormationExercise(value: unknown, fallback: QuestionFormationExercise): QuestionFormationExercise {
+  const record = asRecord(value);
+  const sentence = normalizeWhitespace(asString(record.sentence, fallback.sentence)).replace(/[!?]+$/g, '.');
+  const rawBlanks = Array.isArray(record.blanks) ? record.blanks : [];
+  const blanks = fallback.blanks.map((fallbackBlank, index) => normalizeQuestionFormationBlank(rawBlanks[index], fallbackBlank, index + 1));
+  const allAnswersExist = blanks.every((blank) => normalizeAskAfterText(sentence).includes(normalizeAskAfterText(blank.answer)));
+  const safeSentence = sentence && countWords(sentence) <= 15 && allAnswersExist ? sentence : fallback.sentence;
+
+  return {
+    sentence: safeSentence,
+    blanks: safeSentence === sentence ? blanks : fallback.blanks,
+    coachingTip: normalizeWhitespace(asString(record.coachingTip, fallback.coachingTip)) || fallback.coachingTip,
+    generatorMode: normalizeWhitespace(asString(record.generatorMode, fallback.generatorMode)) || fallback.generatorMode,
+    providerError: normalizeWhitespace(asString(record.providerError, fallback.providerError || '')) || fallback.providerError,
+  };
+}
+
+function buildProceduralQuestionFormation(offset: number): QuestionFormationExercise {
+  const subject = proceduralQuestionFormationSubjects[Math.abs(offset) % proceduralQuestionFormationSubjects.length] || 'The engineering team';
+  const action = proceduralQuestionFormationActions[Math.floor(Math.abs(offset) / proceduralQuestionFormationSubjects.length) % proceduralQuestionFormationActions.length] || proceduralQuestionFormationActions[0];
+  const placePreposition = /\b(review|present)\b/i.test(action.verb) ? 'at' : /\b(migrate|deploy)\b/i.test(action.verb) ? 'to' : 'in';
+  const sentence = `${subject} ${action.verb} ${action.object} ${placePreposition} ${action.place} ${action.time}.`;
+  const compactSubject = subject.replace(/^the\s+/i, '');
+  const subjectQuestion = `Who ${action.verb} ${action.object} ${placePreposition} ${action.place} ${action.time}?`;
+  const objectQuestion = formatTemplate(action.objectQuestion, {
+    subject: subject.toLowerCase(),
+    place: action.place,
+    time: action.time,
+  });
+  const timeQuestion = `When ${action.verb} ${compactSubject} ${action.object} ${placePreposition} ${action.place}?`;
+
+  return {
+    sentence,
+    blanks: [
+      {
+        id: `subject-${offset}`,
+        index: 1,
+        answer: subject,
+        whWord: 'Who',
+        expectedQuestion: subjectQuestion,
+        acceptedQuestions: [
+          `Who ${action.verb} it?`,
+          `Who ${action.verb} ${action.object}?`,
+        ],
+      },
+      {
+        id: `object-${offset}`,
+        index: 2,
+        answer: action.object,
+        whWord: 'What',
+        expectedQuestion: objectQuestion,
+        acceptedQuestions: [
+          `What ${action.verb} ${subject.toLowerCase()}?`,
+          `What ${action.verb} ${compactSubject.toLowerCase()}?`,
+        ],
+      },
+      {
+        id: `time-${offset}`,
+        index: 3,
+        answer: action.time.replace(/^on\s+/i, ''),
+        whWord: 'When',
+        expectedQuestion: timeQuestion,
+        acceptedQuestions: [
+          `When ${action.verb} ${subject.toLowerCase()} it?`,
+          `When ${action.verb} ${compactSubject.toLowerCase()} it?`,
+        ],
+      },
+    ],
+    coachingTip: 'Use the visible words first. A short correct WH question is enough.',
+    generatorMode: 'procedural-fallback',
+  };
+}
+
+function getQuestionFormationFallback(config: Record<string, unknown>, offset: number, providerError = ''): QuestionFormationExercise {
+  const configuredDeck = Array.isArray(config.questionFormationDeck)
+    ? config.questionFormationDeck.map((item) => asRecord(item))
+    : [];
+  const uniqueDeck = [...configuredDeck, ...defaultQuestionFormationDeck]
+    .filter((item, index, source) => {
+      const sentence = normalizeAskAfterText(asString(asRecord(item).sentence));
+      return sentence && source.findIndex((candidate) => normalizeAskAfterText(asString(asRecord(candidate).sentence)) === sentence) === index;
+    });
+  const deckOffset = Math.abs(offset);
+  const picked = deckOffset < uniqueDeck.length ? uniqueDeck[deckOffset] : buildProceduralQuestionFormation(deckOffset - uniqueDeck.length);
+  const fallback = defaultQuestionFormationDeck[deckOffset % defaultQuestionFormationDeck.length] || defaultQuestionFormationDeck[0];
+  const normalized = normalizeQuestionFormationExercise(picked, fallback);
+
+  return {
+    ...normalized,
+    generatorMode: asString(asRecord(picked).generatorMode, 'content-fallback'),
+    ...(providerError ? { providerError } : normalized.providerError ? { providerError: normalized.providerError } : {}),
+  };
+}
+
+function startsWithWhWord(question: string, whWord: string) {
+  const normalizedQuestion = normalizeAskAfterText(question);
+  const normalizedWh = normalizeAskAfterText(whWord);
+  return Boolean(normalizedWh) && (normalizedQuestion === normalizedWh || normalizedQuestion.startsWith(`${normalizedWh} `));
+}
+
+function containsAnswerLeak(question: string, answer: string) {
+  const normalizedQuestion = normalizeAskAfterText(question);
+  const answerTokens = normalizeAskAfterText(answer).split(' ').filter((token) => token.length >= 3);
+  if (!answerTokens.length) {
+    return false;
+  }
+
+  return answerTokens.every((token) => normalizedQuestion.includes(token));
+}
+
+function hasQuestionFormationGrammar(value: string) {
+  const tokens = normalizeAskAfterText(value).split(' ').filter(Boolean);
+  const didIndex = tokens.indexOf('did');
+  if (didIndex >= 0) {
+    const afterDid = tokens.slice(didIndex + 1);
+    if (afterDid.some((token) => token.endsWith('ed') && token.length > 4)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function hasQuestionFormationPronounReference(userQuestion: string, expectedQuestion: string) {
+  const userTokens = normalizeAskAfterText(userQuestion).split(' ').filter(Boolean);
+  const expectedTokens = normalizeAskAfterText(expectedQuestion).split(' ').filter(Boolean);
+  const pronouns = new Set(['it', 'this', 'that', 'them']);
+  const auxiliaries = new Set(['who', 'what', 'where', 'when', 'why', 'how', 'long', 'many', 'much', 'will', 'would', 'can', 'could', 'should', 'do', 'does', 'did', 'is', 'are', 'was', 'were']);
+  const hasPronoun = userTokens.some((token) => pronouns.has(token));
+  const expectedVerb = expectedTokens.find((token) => token.length >= 4 && !auxiliaries.has(token));
+
+  return Boolean(hasPronoun && expectedVerb && userTokens.includes(expectedVerb));
+}
+
+function toQuestionFormationVerbBase(value: string) {
+  if (value.endsWith('ied') && value.length > 4) {
+    return `${value.slice(0, -3)}y`;
+  }
+
+  if (value.endsWith('ed') && value.length > 4) {
+    return value.slice(0, -2);
+  }
+
+  if (value.endsWith('es') && value.length > 4) {
+    return value.slice(0, -2);
+  }
+
+  if (value.endsWith('s') && value.length > 3) {
+    return value.slice(0, -1);
+  }
+
+  return value;
+}
+
+function hasQuestionFormationDidVerbReference(userQuestion: string, expectedQuestion: string) {
+  const userTokens = normalizeAskAfterText(userQuestion).split(' ').filter(Boolean);
+  const expectedTokens = normalizeAskAfterText(expectedQuestion).split(' ').filter(Boolean);
+  const ignoredExpectedTokens = new Set(['who', 'what', 'where', 'when', 'why', 'how', 'long', 'many', 'much', 'will', 'would', 'can', 'could', 'should', 'do', 'does', 'did', 'is', 'are', 'was', 'were', 'it', 'this', 'that', 'them']);
+  const didIndex = userTokens.indexOf('did');
+  if (didIndex < 0) {
+    return false;
+  }
+
+  const userVerb = userTokens[didIndex + 1] || '';
+  const expectedDidIndex = expectedTokens.indexOf('did');
+  const expectedVerb = expectedDidIndex >= 0
+    ? expectedTokens[expectedDidIndex + 1] || ''
+    : expectedTokens.find((token) => token.length >= 3 && !ignoredExpectedTokens.has(token)) || '';
+
+  return Boolean(userVerb && expectedVerb && toQuestionFormationVerbBase(userVerb) === toQuestionFormationVerbBase(expectedVerb));
+}
+
 export class PracticeService {
   constructor(private readonly contentService: ContentService) {}
 
@@ -635,6 +1035,75 @@ export class PracticeService {
         fallback,
       );
     }
+  }
+
+  async generateQuestionFormation(context = '', offset = 0) {
+    const config = await this.getPracticeConfig();
+    const fallback = getQuestionFormationFallback(config, offset);
+    const contextInfo = inferConversationContext(context, 'IT workplace communication');
+
+    try {
+      const generated = await withChatProvider(env.LLM_TEXT_PROVIDER, (provider) =>
+        provider.generateQuestionFormation({
+          systemPrompt: 'Generate one workplace IT English question-formation exercise. Return valid JSON with keys sentence, blanks, coachingTip, generatorMode. The sentence must be one short professional statement with no more than 15 words. It must contain exactly three meaningful answer spans suitable for WH questions. Each blank must include id, index, answer, whWord, expectedQuestion, and optional acceptedQuestions.',
+          prompt: [
+            `Learner context: ${context || 'General IT workplace practice'}`,
+            `Conversation scenario: ${contextInfo.scenario}`,
+            `Primary focus: ${contextInfo.subject}`,
+            'Create one sentence only, not a dialogue.',
+            'Use professional IT work context: sprint reviews, APIs, metrics, releases, defects, stakeholders, data, security, demos, or planning.',
+            'The three blanks should cover different WH types when possible: Who, What, Where, When, How long, or How many.',
+            'Choose answer spans that are visible meaningful words or phrases, never tiny function words.',
+            'The sentence must still read naturally when each answer span is replaced with a numbered blank.',
+            'Expected questions may be short and may use "it" when other information is hidden.',
+            'Do not include more than 15 words in the sentence.',
+            `Offset: ${offset}.`,
+          ].join('\n'),
+          responseShape: 'freeform',
+        }),
+      );
+
+      return normalizeQuestionFormationExercise(generated, fallback);
+    } catch (error) {
+      return getQuestionFormationFallback(config, offset, error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  async checkQuestionFormation(input: {
+    userQuestion: string;
+    sentence: string;
+    answer: string;
+    whWord: string;
+    expectedQuestion: string;
+    acceptedQuestions?: string[];
+  }) {
+    const config = await this.getPracticeConfig();
+    const feedback = asRecord(config.questionFormationFeedback);
+    const userQuestion = normalizeWhitespace(input.userQuestion);
+    const expectedQuestion = normalizeWhitespace(input.expectedQuestion);
+    const acceptedQuestions = [expectedQuestion, ...asStringArray(input.acceptedQuestions)].filter(Boolean);
+    const startsCorrectly = startsWithWhWord(userQuestion, input.whWord);
+    const grammarAccepted = hasQuestionFormationGrammar(userQuestion);
+    const leaksAnswer = containsAnswerLeak(userQuestion, input.answer);
+    const overlap = acceptedQuestions.reduce((best, candidate) => Math.max(best, getTokenOverlapRatio(userQuestion, candidate)), 0);
+    const pronounReferenceAccepted = acceptedQuestions.some((candidate) => hasQuestionFormationPronounReference(userQuestion, candidate));
+    const didVerbReferenceAccepted = acceptedQuestions.some((candidate) => hasQuestionFormationDidVerbReference(userQuestion, candidate));
+    const accepted = Boolean(userQuestion) && startsCorrectly && grammarAccepted && !leaksAnswer && (overlap >= 0.28 || pronounReferenceAccepted || didVerbReferenceAccepted);
+
+    return {
+      accepted,
+      feedback: accepted
+        ? getNestedString(feedback, ['accepted'], 'Correct. The question is grammatically clear and targets the hidden information.')
+        : !userQuestion
+          ? getNestedString(feedback, ['empty'], 'Type or dictate a question first.')
+          : !startsCorrectly
+            ? formatTemplate(getNestedString(feedback, ['wrongWhWord'], 'Use {whWord} to ask about this blank.'), { whWord: input.whWord || 'the right WH word' })
+            : !grammarAccepted
+              ? getNestedString(feedback, ['grammar'], 'Check the grammar. After "did", use the base verb form.')
+              : leaksAnswer
+                ? getNestedString(feedback, ['answerLeak'], 'Do not include the hidden answer in your question.')
+                : getNestedString(feedback, ['mismatch'], 'The grammar or meaning does not match the original sentence yet. Try keeping the question close to the visible words.'),
+    };
   }
 
   async checkAskAfter(input: string | { question: string; expectedQuestion?: string; detail?: string; contextPhrase?: string; followUpPhrase?: string }) {

@@ -5,6 +5,7 @@ import type {
   AskAfterBrief,
   ClarifyExercise,
   CoachChatSession,
+  QuestionFormationExercise,
   SpeechToTextResult,
   TextToSpeechResult,
 } from '@softskills/domain';
@@ -33,6 +34,20 @@ export type AskAfterRequest = {
 
 export type CheckAskAfterRequest = {
   question: string;
+};
+
+export type QuestionFormationRequest = {
+  context?: string;
+  offset?: number;
+};
+
+export type CheckQuestionFormationRequest = {
+  userQuestion: string;
+  sentence: string;
+  answer: string;
+  whWord: string;
+  expectedQuestion: string;
+  acceptedQuestions?: string[];
 };
 
 export type StartAnsweringSessionRequest = {
@@ -86,6 +101,8 @@ export type ApiContract = {
   checkClarify(input: CheckClarifyRequest): Promise<{ accepted: boolean; feedback: string }>;
   askAfter(input: AskAfterRequest): Promise<AskAfterBrief>;
   checkAskAfter(input: CheckAskAfterRequest): Promise<{ accepted: boolean; feedback: string }>;
+  generateQuestionFormation(input: QuestionFormationRequest): Promise<QuestionFormationExercise>;
+  checkQuestionFormation(input: CheckQuestionFormationRequest): Promise<{ accepted: boolean; feedback: string }>;
   startAnswering(input: StartAnsweringSessionRequest): Promise<AnsweringSession>;
   continueAnswering(input: ContinueAnsweringSessionRequest): Promise<AnsweringSession>;
   startCoachChat(input: StartCoachChatSessionRequest): Promise<CoachChatSession>;

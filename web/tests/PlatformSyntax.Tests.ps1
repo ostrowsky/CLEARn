@@ -18,7 +18,10 @@ $files = @(
     (Join-Path $platformRoot 'apps\api\src\modules\session\answering.service.ts'),
     (Join-Path $platformRoot 'apps\api\src\modules\session\coach.service.ts'),
     (Join-Path $platformRoot 'apps\client\app\practice\asking\after-talk.tsx'),
-    (Join-Path $platformRoot 'apps\client\app\practice\answering\[mode].tsx')
+    (Join-Path $platformRoot 'apps\client\app\practice\answering\[mode].tsx'),
+    (Join-Path $platformRoot 'apps\client\src\components\practice\QuestionFormationPractice.tsx'),
+    (Join-Path $platformRoot 'packages\domain\src\practice.ts'),
+    (Join-Path $platformRoot 'packages\contracts\src\api.ts')
 )
 
 foreach ($file in $files) {

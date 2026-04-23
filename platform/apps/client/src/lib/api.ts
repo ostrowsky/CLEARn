@@ -5,6 +5,7 @@ import type {
   AskAfterBrief,
   ClarifyExercise,
   CoachChatSession,
+  QuestionFormationExercise,
   SpeechToTextResult,
   TextToSpeechResult,
 } from '@softskills/domain';
@@ -123,6 +124,19 @@ export const apiClient = {
   },
   checkAskAfter(payload: { question: string; expectedQuestion?: string; detail?: string; contextPhrase?: string; followUpPhrase?: string }) {
     return request<{ accepted: boolean; feedback: string }>('/api/practice/after-talk/check', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  generateQuestionFormation(context = '', offset = 0): Promise<QuestionFormationExercise> {
+    return request('/api/practice/question-formation', { method: 'POST', body: JSON.stringify({ context, offset }) });
+  },
+  checkQuestionFormation(payload: {
+    userQuestion: string;
+    sentence: string;
+    answer: string;
+    whWord: string;
+    expectedQuestion: string;
+    acceptedQuestions?: string[];
+  }) {
+    return request<{ accepted: boolean; feedback: string }>('/api/practice/question-formation/check', { method: 'POST', body: JSON.stringify(payload) });
   },
   startAnswering(context: string, mode: AnsweringSessionMode): Promise<AnsweringSession> {
     return request('/api/answering/session/start', { method: 'POST', body: JSON.stringify({ context, mode }) });

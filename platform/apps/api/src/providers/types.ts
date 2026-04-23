@@ -3,6 +3,7 @@ import type {
   ClarifyExercise,
   CoachChatTurn,
   ProviderKind,
+  QuestionFormationExercise,
   SpeechToTextResult,
   TextToSpeechResult,
 } from '@softskills/domain';
@@ -30,6 +31,7 @@ export type ChatProvider = {
   kind: ProviderKind;
   generateClarify(input: ChatGenerationInput): Promise<ClarifyExercise>;
   generateAskAfter(input: ChatGenerationInput): Promise<AskAfterBrief>;
+  generateQuestionFormation(input: ChatGenerationInput): Promise<QuestionFormationExercise>;
   generateAnsweringQuestion(input: ChatGenerationInput): Promise<AnsweringQuestionDraft>;
   generateAnsweringEvaluation(input: ChatGenerationInput): Promise<AnsweringEvaluationDraft>;
   generateCoachTurn(input: ChatGenerationInput): Promise<CoachChatTurn>;

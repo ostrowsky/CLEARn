@@ -22,6 +22,23 @@ export type AskAfterBrief = {
   providerError?: string;
 };
 
+export type QuestionFormationBlank = {
+  id: string;
+  index: number;
+  answer: string;
+  whWord: string;
+  expectedQuestion: string;
+  acceptedQuestions?: string[];
+};
+
+export type QuestionFormationExercise = {
+  sentence: string;
+  blanks: QuestionFormationBlank[];
+  coachingTip: string;
+  generatorMode: string;
+  providerError?: string;
+};
+
 export type AnsweringMode = 'good' | 'difficult' | 'unnecessary' | 'irrelevant';
 export type AnsweringSessionMode = AnsweringMode | 'mixed';
 

@@ -1,7 +1,7 @@
 {
   "meta": {
     "appTitle": "CLEARn",
-    "updatedAt": "2026-04-09T08:59:40.836Z",
+    "updatedAt": "2026-04-23T09:36:33.949Z",
     "ui": {
       "brandTagline": "Shared web + mobile prototype",
       "footerNote": "",
@@ -44,7 +44,12 @@
         "answeringSessionComplete": "You completed the 10-question round. Review the improved answers and restart with the same topic or a new one.",
         "askAfterSampleQuestion": "You mentioned the next step. Could you be a little more specific about that?",
         "missingContext": "Begin with a context phrase such as \"You mentioned ...\" so the speaker knows which point you mean.",
-        "missingFollow": "Add a direct follow-up request such as \"Could you talk us through ... ?\" or \"Could you be a little more specific about ...?\""
+        "missingFollow": "Add a direct follow-up request such as \"Could you talk us through ... ?\" or \"Could you be a little more specific about ...?\"",
+        "questionFormationFullSentenceHint": "Read the full sentence. The key details will be hidden in {seconds} seconds.",
+        "questionFormationLoading": "Loading the next IT workplace sentence...",
+        "questionFormationAllDone": "Good work. Loading the next sentence...",
+        "questionFormationHintUsed": "Hint: start this question with {whWord}.",
+        "questionFormationIncorrectReveal": "The hidden answer is shown in red: {answer}."
       },
       "labels": {
         "generator": "Generator",
@@ -53,7 +58,7 @@
         "coachingTip": "Coaching tip",
         "conversationLines": "Conversation lines",
         "maxFiveLines": "Max: five lines",
-        "yourWorkContext": "Your work context",
+        "yourWorkContext": "What is the talk about?",
         "yourClarifyingQuestion": "Your clarifying question",
         "yourQuestion": "Your question",
         "contextLeadIn": "Context lead-in",
@@ -90,7 +95,9 @@
         "focusQuestionType": "Focus question type",
         "improvementTips": "Improvement tips",
         "questionProgress": "Question",
-        "reactionDropdownHint": "Select opening phrase"
+        "reactionDropdownHint": "Select opening phrase",
+        "questionFormationSentence": "Sentence",
+        "questionFormationQuestionLabel": "Blank {index}"
       },
       "buttons": {
         "checkQuestion": "Check my question",
@@ -108,13 +115,16 @@
         "sendAnswer": "Submit answer",
         "startOver": "Restart session on the same topic",
         "checkAnswer": "Check answer",
+        "checkCorrectness": "Check correctness",
         "generateExercise": "Generate exercise",
         "startCoachChat": "Start learning chat",
         "sendCoachReply": "Send message",
         "restartCoachChat": "Restart chat",
         "startRecording": "Start recording",
         "stopRecording": "Stop and transcribe",
-        "openMedia": "Open media"
+        "openMedia": "Open media",
+        "showHint": "Show hint",
+        "nextSentence": "Next sentence"
       },
       "placeholders": {
         "clarifyContext": "Example: I am a backend engineer working on billing APIs for enterprise clients.",
@@ -122,6 +132,7 @@
         "askAfterContext": "Example: The speech is about the new throughput metric that will be introduced in our team.",
         "askAfterTail": "the release decision",
         "withoutContextAnswer": "Sorry, it starts WHEN?",
+        "questionFormationAnswer": "Type or dictate your question here.",
         "answeringContext": "Example: I am preparing a sprint review about the billing rollout, API stability, and next release risks.",
         "answeringReply": "Type or dictate your answer here.",
         "videoPlaceholder": "Video rehearsal placeholder for repeat-after-me speaking practice.",
@@ -132,7 +143,7 @@
       "admin": {
         "openLearnerApp": "Open learner app",
         "refreshAdmin": "Refresh admin",
-        "title": "Admin meta acbca8",
+        "title": "CLEARn",
         "hint": "",
         "saveContent": "Save content",
         "reloadFromDisk": "Reload from disk",
@@ -598,6 +609,16 @@
         "unclearDetail": "Use one real detail from the talk instead of filler text or repeated letters before you ask the follow-up question.",
         "offTrack": "Keep the question closer to the selected lead-in and follow-up phrase so it stays clear and natural."
       },
+      "questionFormationRevealDelayMs": 3000,
+      "questionFormationFeedback": {
+        "accepted": "Correct. The question is grammatically clear and targets the hidden information.",
+        "empty": "Type or dictate a question first.",
+        "missingQuestionMark": "Finish it as a question with a question mark.",
+        "wrongWhWord": "Use {whWord} to ask about this blank.",
+        "grammar": "Check the grammar. After \"did\", use the base verb form.",
+        "answerLeak": "Do not include the hidden answer in your question.",
+        "mismatch": "The grammar or meaning does not match the original sentence yet. Try keeping the question close to the visible words."
+      },
       "answeringModes": {
         "good": {
           "promptOne": "What outcome is your work on {summary} supposed to improve for the team?",
@@ -624,6 +645,64 @@
           "coachingTip": "Acknowledge the question politely, then bridge back to the business topic."
         }
       },
+      "questionFormationDeck": [
+        {
+          "sentence": "Stakeholders will review return on investment at the end of the year.",
+          "blanks": [
+            {
+              "id": "stakeholders",
+              "index": 1,
+              "answer": "Stakeholders",
+              "whWord": "Who",
+              "expectedQuestion": "Who will review return on investment at the end of the year?"
+            },
+            {
+              "id": "return-on-investment",
+              "index": 2,
+              "answer": "return on investment",
+              "whWord": "What",
+              "expectedQuestion": "What will stakeholders review at the end of the year?"
+            },
+            {
+              "id": "end-of-year",
+              "index": 3,
+              "answer": "end of the year",
+              "whWord": "When",
+              "expectedQuestion": "When will stakeholders review return on investment?"
+            }
+          ],
+          "coachingTip": "Ask about the hidden detail with the right WH word, but keep the rest of the sentence grammar intact.",
+          "generatorMode": "content-fallback"
+        },
+        {
+          "sentence": "The backend team fixed six API defects in staging yesterday.",
+          "blanks": [
+            {
+              "id": "backend-team",
+              "index": 1,
+              "answer": "backend team",
+              "whWord": "Who",
+              "expectedQuestion": "Who fixed six API defects in staging yesterday?"
+            },
+            {
+              "id": "api-defects",
+              "index": 2,
+              "answer": "six API defects",
+              "whWord": "What",
+              "expectedQuestion": "What did the backend team fix in staging yesterday?"
+            },
+            {
+              "id": "staging",
+              "index": 3,
+              "answer": "staging",
+              "whWord": "Where",
+              "expectedQuestion": "Where did the backend team fix six API defects yesterday?"
+            }
+          ],
+          "coachingTip": "Use the auxiliary verb that fits the sentence tense: will, did, does, is, or are.",
+          "generatorMode": "content-fallback"
+        }
+      ],
       "noContextDeck": [
         {
           "fragment": "The rollout starts on ...",
@@ -1160,7 +1239,7 @@
               },
               {
                 "id": "irrelevant-7yjgdqve",
-                "text": "In the interest of time, letР В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р вЂ Р Р†Р вЂљРЎвЂєР РЋРЎвЂєР В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р’В Р Р†Р вЂљР’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р РЋРІвЂћСћР В Р’В Р В РІР‚В Р В Р вЂ Р В РІР‚С™Р РЋРІР‚С”Р В Р Р‹Р РЋРІР‚С”Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р вЂ Р Р†Р вЂљРЎвЂєР РЋРЎвЂєР В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р вЂ Р Р†Р вЂљРЎвЂєР РЋРЎвЂєР В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р’В Р Р†Р вЂљР’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р РЋРІвЂћСћР В Р’В Р В Р вЂ№Р В Р вЂ Р Р†Р вЂљРЎвЂєР РЋРЎвЂєР В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р вЂ Р Р†Р вЂљРЎвЂєР РЋРЎвЂєР В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р вЂ Р Р†Р вЂљРЎвЂєР РЋРЎвЂєР В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р’В Р Р†Р вЂљР’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р РЋРІвЂћСћР В Р’В Р В РІР‚В Р В Р вЂ Р В РІР‚С™Р РЋРІР‚С”Р В Р Р‹Р РЋРІР‚С”Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р вЂ Р Р†Р вЂљРЎвЂєР РЋРЎвЂєР В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р’В Р Р†Р вЂљР’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р РЋРІвЂћСћР В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р Р‹Р Р†РІР‚С›РЎС›Р В Р’В Р вЂ™Р’В Р В Р’В Р В РІР‚в„–Р В Р’В Р В РІР‚В Р В Р вЂ Р В РІР‚С™Р РЋРІР‚С”Р В Р Р‹Р РЋРІР‚С”Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РІР‚вЂњР В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р’В Р Р†Р вЂљР’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р РЋРІвЂћСћР В Р’В Р В Р вЂ№Р В Р вЂ Р В РІР‚С™Р РЋРІР‚СњР В Р’В Р вЂ™Р’В Р В Р’В Р В РІР‚в„–Р В Р’В Р В Р вЂ№Р В Р вЂ Р В РІР‚С™Р РЋРІР‚СњР В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р вЂ Р Р†Р вЂљРЎвЂєР РЋРЎвЂєР В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р Р‹Р Р†РІР‚С›РЎС›Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р’В Р Р†Р вЂљР’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р РЋРІвЂћСћР В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р Р‹Р Р†РІР‚С›РЎС›Р В Р’В Р вЂ™Р’В Р В Р’В Р В РІР‚в„–Р В Р’В Р В РІР‚В Р В Р вЂ Р В РІР‚С™Р РЋРІР‚С”Р В Р Р‹Р РЋРІР‚С”Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РІР‚вЂњР В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р Р‹Р Р†РІР‚С›РЎС›Р В Р’В Р вЂ™Р’В Р В Р’В Р В РІР‚в„–Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р Р‹Р РЋРЎв„ўР В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р вЂ Р Р†Р вЂљРЎвЂєР Р†Р вЂљРІР‚СљР В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РІР‚вЂњР В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р Р‹Р Р†РІР‚С›РЎС›Р В Р’В Р вЂ™Р’В Р В Р’В Р В РІР‚в„–Р В Р’В Р В РІР‚В Р В Р’В Р Р†Р вЂљРЎв„ўР В Р Р‹Р РЋРЎв„ўs stay focused on [Main Topic] for now.",
+                "text": "In the interest of time, let us stay with the main topic.",
                 "preferred": true
               }
             ],
@@ -1434,7 +1513,7 @@
           "materials": []
         }
       ],
-      "title": " CLEARn"
+      "title": "CLEARn"
     },
     {
       "id": "asking-hub",
@@ -1465,7 +1544,7 @@
           "materials": [],
           "route": "/asking/without-context",
           "kind": "nav-card",
-          "title": "1.3 Ask without context"
+          "title": "1.3 Practice forming grammatically correct questions."
         }
       ],
       "title": "Choose the question skill you want to rehearse."
@@ -1835,38 +1914,21 @@
     },
     {
       "id": "asking-without-context",
-      "eyebrow": "1.3 Ask without context",
+      "eyebrow": "1.3 Question formation",
       "type": "practice-without-context",
       "route": "/asking/without-context",
-      "summary": "These drills are deliberately generic so the learner reacts quickly with the correct WH word.",
+      "summary": "Practice forming grammatically correct WH questions from short IT workplace statements.",
       "blocks": [
         {
-          "id": "without-context-intro",
-          "description": "Use this drill when you only catch part of a sentence during a fast meeting.",
-          "materials": [
-            {
-              "id": "without-context-text",
-              "url": "",
-              "alt": "",
-              "type": "text",
-              "title": "Tip",
-              "body": "Catch the key noun, add a short apology, and target the missing detail with the right WH word."
-            }
-          ],
-          "route": "",
-          "kind": "panel",
-          "title": "Why this matters"
-        },
-        {
           "id": "without-context-practice",
-          "description": "Generate short context-free prompts and react quickly.",
+          "description": "Read a short IT statement, wait for three hidden details, then ask correct WH questions by text or speech.",
           "materials": [],
           "route": "",
           "kind": "practice-without-context",
-          "title": "Standalone drill"
+          "title": "Questions drill"
         }
       ],
-      "title": "Practise fast clarification when the context is missing."
+      "title": "Practice forming grammatically correct questions."
     },
     {
       "id": "answering-hub",
@@ -2096,6 +2158,90 @@
           "description": "Use text or speech, choose the best reaction phrase, and get an improved professional answer every turn.",
           "route": "",
           "materials": []
+        }
+      ]
+    },
+    {
+      "id": "admin-test-section-9900af68",
+      "route": "/admin-test-section",
+      "type": "exercise",
+      "eyebrow": "Admin test section",
+      "title": "Admin test section",
+      "summary": "Created by the admin functional tests.",
+      "blocks": [
+        {
+          "id": "admin-test-block-main-9900af68",
+          "kind": "practice-clarify",
+          "title": "Main admin block",
+          "description": "Created by the admin tests.",
+          "route": "",
+          "materials": [
+            {
+              "id": "admin-text-9900af68",
+              "type": "text",
+              "title": "Text material",
+              "body": "Text body: hello",
+              "url": "",
+              "alt": ""
+            },
+            {
+              "id": "admin-image-9900af68",
+              "type": "image",
+              "title": "Image material",
+              "body": "Image description",
+              "url": "/uploads/diagram-f177830964.png",
+              "alt": "Diagram preview"
+            },
+            {
+              "id": "admin-video-9900af68",
+              "type": "video",
+              "title": "Video material",
+              "body": "Video description",
+              "url": "/uploads/walkthrough-e0761771a3.mp4",
+              "alt": "Walkthrough"
+            },
+            {
+              "id": "admin-audio-9900af68",
+              "type": "audio",
+              "title": "Audio material",
+              "body": "Audio description",
+              "url": "/uploads/voiceover-ad7c9d0148.mp3",
+              "alt": "Voiceover",
+              "meta": {
+                "statement": "The deployment failed on ___.",
+                "placeholder": "Sorry, the deployment failed on ___?",
+                "clarification": "Sorry, the deployment failed on what?",
+                "acceptedAnswers": [
+                  "Sorry, the deployment failed on what?"
+                ]
+              }
+            },
+            {
+              "id": "admin-new-material-9900af68",
+              "type": "text",
+              "title": "New material",
+              "body": "",
+              "url": "",
+              "alt": ""
+            }
+          ]
+        },
+        {
+          "id": "admin-test-block-secondary-9900af68",
+          "kind": "custom",
+          "title": "Secondary block",
+          "description": "This block will be deleted later.",
+          "route": "/secondary",
+          "materials": [
+            {
+              "id": "secondary-text-9900af68",
+              "type": "text",
+              "title": "Secondary text",
+              "body": "Secondary body",
+              "url": "",
+              "alt": ""
+            }
+          ]
         }
       ]
     }
