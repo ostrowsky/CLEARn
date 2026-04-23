@@ -19,8 +19,11 @@ foreach ($fileName in @('content.template.json', 'content.json')) {
     Assert-Equal -Expected 'Questions drill' -Actual ([string]$section.blocks[0].title)
 
     Assert-True -Condition ($null -ne $content.meta.practice.questionFormationFeedback) -Message "$fileName is missing question formation feedback copy."
-    Assert-Equal -Expected 3000 -Actual ([int]$content.meta.practice.questionFormationRevealDelayMs) -Message "$fileName should expose question formation reveal timing through editable practice meta."
-    Assert-Match -Actual ([string]$content.meta.ui.feedback.questionFormationFullSentenceHint) -Pattern '\{seconds\}'
+    Assert-Equal -Expected 60000 -Actual ([int]$content.meta.practice.questionFormationRoundDurationMs) -Message "$fileName should expose question formation round timing through editable practice meta."
+    Assert-Equal -Expected 15000 -Actual ([int]$content.meta.practice.questionFormationVisibleDurationMs) -Message "$fileName should expose question formation visible timing through editable practice meta."
+    Assert-Equal -Expected 30000 -Actual ([int]$content.meta.practice.questionFormationHiddenDurationMs) -Message "$fileName should expose question formation hidden timing through editable practice meta."
+    Assert-Match -Actual ([string]$content.meta.ui.labels.questionFormationCountdown) -Pattern '\{seconds\}'
+    Assert-Match -Actual ([string]$content.meta.ui.feedback.questionFormationSentenceHidden) -Pattern 'hidden'
     Assert-True -Condition (@($content.meta.practice.questionFormationDeck).Count -ge 2) -Message "$fileName should seed fallback question formation sentences."
     foreach ($exercise in @($content.meta.practice.questionFormationDeck)) {
         Assert-True -Condition ((([string]$exercise.sentence).Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)).Count -le 15) -Message "$fileName question formation sentence should stay within 15 words."
@@ -87,7 +90,7 @@ foreach ($pattern in @(
     Assert-Match -Actual $routesSource -Pattern $pattern
 }
 
-Write-TestStep 'Learner screen renders the configurable sentence mask and STT question rows inline'
+Write-TestStep 'Learner screen renders the timed sentence visibility cycle and STT question rows inline'
 $apiClientSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\src\lib\api.ts') -Raw
 foreach ($pattern in @(
     'generateQuestionFormation',
@@ -101,16 +104,21 @@ $componentSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\clien
 foreach ($pattern in @(
     'QuestionFormationPractice',
     'useSpeechDraft',
-    'setShowFullSentence\(false\)',
+    'setSentenceVisible',
+    'setSecondsRemaining',
     'getPracticeConfig',
-    'questionFormationRevealDelayMs',
-    'revealDelayMs',
-    'renderMaskedSentence',
-    'correctAnswer',
-    'revealedAnswer',
+    'questionFormationRoundDurationMs',
+    'questionFormationVisibleDurationMs',
+    'questionFormationHiddenDurationMs',
+    'roundDurationMs',
+    'visibleDurationMs',
+    'hiddenDurationMs',
+    'renderHighlightedSentence',
+    'targetAnswer',
+    'countdownPill',
+    "status === 'correct'",
     'hintsByBlank',
     'setHintsByBlank',
-    'questionFormationIncorrectReveal',
     'checkCorrectness',
     'apiClient\.generateQuestionFormation',
     'apiClient\.checkQuestionFormation',
@@ -119,7 +127,9 @@ foreach ($pattern in @(
 )) {
     Assert-Match -Actual $componentSource -Pattern $pattern
 }
-Assert-True -Condition ($componentSource -notmatch 'setTimeout\(\(\) => \{\s*setShowFullSentence\(false\);\s*\},\s*3000\s*\)') -Message 'Question formation reveal timing must not be hardcoded in the learner screen.'
+Assert-True -Condition ($componentSource -notmatch '__\(\$\{piece\.blank\.index\}\)__') -Message 'Question formation should no longer replace target words with blanks.'
+Assert-True -Condition ($componentSource -notmatch 'questionFormationRevealDelayMs') -Message 'Question formation should use the new round/visible/hidden timing settings, not the old reveal delay.'
+Assert-True -Condition ($componentSource -notmatch 'setTimeout\(\(\) => \{\s*setSentenceVisible\(false\);\s*\},\s*15000\s*\)') -Message 'Question formation visible timing must not be hardcoded in the learner screen.'
 
 $sectionSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\section\[id].tsx') -Raw
 foreach ($pattern in @(

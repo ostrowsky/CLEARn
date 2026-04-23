@@ -7,7 +7,7 @@ import { getNestedNumber, getNestedString, getPracticeConfig, getUiConfig } from
 import { tokens } from '../../theme/tokens';
 
 type BlankResult = {
-  status: 'correct' | 'revealed';
+  status: 'correct' | 'incorrect';
   feedback: string;
 };
 
@@ -23,7 +23,7 @@ function getBlankKey(blank: QuestionFormationBlank) {
   return blank.id || `blank-${blank.index}`;
 }
 
-function renderMaskedSentence(exercise: QuestionFormationExercise, results: Record<string, BlankResult>) {
+function renderHighlightedSentence(exercise: QuestionFormationExercise) {
   const pieces: Array<{ text: string; blank?: QuestionFormationBlank }> = [];
   const sentence = exercise.sentence;
   let cursor = 0;
@@ -59,16 +59,7 @@ function renderMaskedSentence(exercise: QuestionFormationExercise, results: Reco
           return <Text key={`text-${index}`}>{piece.text}</Text>;
         }
 
-        const result = results[getBlankKey(piece.blank)];
-        if (result) {
-          return (
-            <Text key={piece.blank.id} style={result.status === 'correct' ? styles.correctAnswer : styles.revealedAnswer}>
-              {piece.text}
-            </Text>
-          );
-        }
-
-        return <Text key={piece.blank.id} style={styles.blankText}>{`__(${piece.blank.index})__`}</Text>;
+        return <Text key={piece.blank.id} style={styles.targetAnswer}>{piece.text}</Text>;
       })}
     </Text>
   );
@@ -86,7 +77,8 @@ export function QuestionFormationPractice({
   const ui = getUiConfig(content);
   const practiceConfig = getPracticeConfig(content);
   const [exercise, setExercise] = useState<QuestionFormationExercise | null>(null);
-  const [showFullSentence, setShowFullSentence] = useState(true);
+  const [sentenceVisible, setSentenceVisible] = useState(true);
+  const [secondsRemaining, setSecondsRemaining] = useState(60);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [results, setResults] = useState<Record<string, BlankResult>>({});
   const [feedbackByBlank, setFeedbackByBlank] = useState<Record<string, string>>({});
@@ -95,20 +87,19 @@ export function QuestionFormationPractice({
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState('');
   const activeBlankRef = useRef('');
-  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const roundTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sentenceLabel = getNestedString(ui, ['labels', 'questionFormationSentence']);
   const questionLabelTemplate = getNestedString(ui, ['labels', 'questionFormationQuestionLabel']);
-  const revealDelayMs = Math.max(0, getNestedNumber(practiceConfig, ['questionFormationRevealDelayMs'], 3000));
-  const revealDelaySeconds = String(Math.round(revealDelayMs / 1000));
-  const fullSentenceHint = formatTemplate(getNestedString(ui, ['feedback', 'questionFormationFullSentenceHint']), {
-    seconds: revealDelaySeconds,
-  });
+  const roundDurationMs = Math.max(1000, getNestedNumber(practiceConfig, ['questionFormationRoundDurationMs'], 60000));
+  const visibleDurationMs = Math.max(1000, getNestedNumber(practiceConfig, ['questionFormationVisibleDurationMs'], 15000));
+  const hiddenDurationMs = Math.max(1000, getNestedNumber(practiceConfig, ['questionFormationHiddenDurationMs'], 30000));
+  const sentenceHiddenText = getNestedString(ui, ['feedback', 'questionFormationSentenceHidden']);
+  const countdownLabelTemplate = getNestedString(ui, ['labels', 'questionFormationCountdown']);
   const loadingText = getNestedString(ui, ['feedback', 'questionFormationLoading']);
   const allDoneText = getNestedString(ui, ['feedback', 'questionFormationAllDone']);
   const hintFeedbackTemplate = getNestedString(ui, ['feedback', 'questionFormationHintUsed']);
-  const incorrectFeedbackTemplate = getNestedString(ui, ['feedback', 'questionFormationIncorrectReveal']);
   const recordingUnavailableText = getNestedString(ui, ['feedback', 'speechRecordingUnavailable']);
   const emptyTranscriptText = getNestedString(ui, ['feedback', 'speechTranscriptEmpty']);
   const transcribingText = getNestedString(ui, ['feedback', 'speechTranscribing']);
@@ -126,17 +117,30 @@ export function QuestionFormationPractice({
     setResults({});
     setFeedbackByBlank({});
     setHintsByBlank({});
-    setShowFullSentence(true);
-    clearTimeout(revealTimerRef.current || undefined);
+    setSentenceVisible(true);
+    setSecondsRemaining(Math.ceil(roundDurationMs / 1000));
+    clearInterval(roundTimerRef.current || undefined);
     clearTimeout(advanceTimerRef.current || undefined);
 
     try {
       const nextExercise = await apiClient.generateQuestionFormation(section?.summary || section?.title || '', nextOffset);
       setExercise(nextExercise);
       setOffset(nextOffset);
-      revealTimerRef.current = setTimeout(() => {
-        setShowFullSentence(false);
-      }, revealDelayMs);
+      const startedAt = Date.now();
+      roundTimerRef.current = setInterval(() => {
+        const elapsedMs = Date.now() - startedAt;
+        const remainingMs = Math.max(0, roundDurationMs - elapsedMs);
+        const cycleMs = visibleDurationMs + hiddenDurationMs;
+        const cyclePosition = cycleMs > 0 ? elapsedMs % cycleMs : 0;
+
+        setSecondsRemaining(Math.ceil(remainingMs / 1000));
+        setSentenceVisible(cyclePosition < visibleDurationMs);
+
+        if (remainingMs <= 0) {
+          clearInterval(roundTimerRef.current || undefined);
+          void loadExercise(nextOffset + 1);
+        }
+      }, 1000);
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : String(error));
     } finally {
@@ -174,7 +178,7 @@ export function QuestionFormationPractice({
   useEffect(() => {
     void loadExercise(0);
     return () => {
-      clearTimeout(revealTimerRef.current || undefined);
+      clearInterval(roundTimerRef.current || undefined);
       clearTimeout(advanceTimerRef.current || undefined);
     };
   }, [section?.id, block.id]);
@@ -184,12 +188,13 @@ export function QuestionFormationPractice({
       return;
     }
 
-    const completed = exercise.blanks.every((blank) => Boolean(results[getBlankKey(blank)]));
+    const completed = exercise.blanks.every((blank) => results[getBlankKey(blank)]?.status === 'correct');
     if (!completed) {
       return;
     }
 
     clearTimeout(advanceTimerRef.current || undefined);
+    clearInterval(roundTimerRef.current || undefined);
     advanceTimerRef.current = setTimeout(() => {
       void loadExercise(offset + 1);
     }, 1400);
@@ -234,7 +239,7 @@ export function QuestionFormationPractice({
         return {
           ...current,
           [blankId]: {
-            status: 'revealed',
+            status: 'incorrect',
             feedback: result.feedback,
           },
         };
@@ -242,11 +247,7 @@ export function QuestionFormationPractice({
 
       setFeedbackByBlank((current) => ({
         ...current,
-        [blankId]: result.accepted
-          ? result.feedback
-          : String(drafts[blankId] || '').trim()
-            ? `${result.feedback} ${formatTemplate(incorrectFeedbackTemplate, { answer: blank.answer })}`.trim()
-            : result.feedback,
+        [blankId]: result.feedback,
       }));
     } catch (error) {
       setFeedbackByBlank((current) => ({
@@ -269,7 +270,7 @@ export function QuestionFormationPractice({
     await startRecording();
   }
 
-  const completedCount = exercise?.blanks.filter((blank) => Boolean(results[getBlankKey(blank)])).length || 0;
+  const completedCount = exercise?.blanks.filter((blank) => results[getBlankKey(blank)]?.status === 'correct').length || 0;
   const allDone = Boolean(exercise?.blanks.length && completedCount === exercise.blanks.length);
 
   return (
@@ -292,91 +293,99 @@ export function QuestionFormationPractice({
       {exercise ? (
         <>
           <View style={styles.sentenceCard}>
-            <Text style={styles.label}>{sentenceLabel}</Text>
-            {showFullSentence ? <Text style={styles.sentenceText}>{exercise.sentence}</Text> : renderMaskedSentence(exercise, results)}
-            {showFullSentence ? <Text style={styles.mutedText}>{fullSentenceHint}</Text> : null}
+            <View style={styles.sentenceHeader}>
+              <Text style={styles.label}>{sentenceLabel}</Text>
+              <View style={styles.countdownPill}>
+                <Text style={styles.countdownText}>
+                  {formatTemplate(countdownLabelTemplate, { seconds: String(secondsRemaining) })}
+                </Text>
+              </View>
+            </View>
+            {sentenceVisible ? renderHighlightedSentence(exercise) : (
+              <View style={styles.hiddenSentenceCard}>
+                <Text style={styles.hiddenSentenceText}>{sentenceHiddenText}</Text>
+              </View>
+            )}
           </View>
 
-          {!showFullSentence ? (
-            <View style={styles.questionList}>
-              {exercise.blanks.map((blank) => {
-                const blankId = getBlankKey(blank);
-                const result = results[blankId];
-                const hint = hintsByBlank[blankId];
-                const disabled = Boolean(result) || recording || transcribing;
+          <View style={styles.questionList}>
+            {exercise.blanks.map((blank) => {
+              const blankId = getBlankKey(blank);
+              const result = results[blankId];
+              const hint = hintsByBlank[blankId];
+              const disabled = result?.status === 'correct' || recording || transcribing;
 
-                return (
-                  <View key={blankId} style={styles.questionCard}>
-                    <Text style={styles.label}>
-                      {formatTemplate(questionLabelTemplate, {
-                        index: String(blank.index),
-                      })}
-                    </Text>
-                    {hint ? (
-                      <View style={styles.hintCard}>
-                        <Text style={styles.hintText}>{hint}</Text>
-                      </View>
-                    ) : null}
-                    <TextInput
-                      value={drafts[blankId] || ''}
-                      onChangeText={(value) => updateDraft(blankId, value)}
-                      placeholder={hint || questionPlaceholder}
-                      style={[styles.input, result ? styles.inputDisabled : null]}
-                      multiline
-                      editable={!result}
-                    />
-                    <View style={styles.actionsRow}>
-                      <Pressable
-                        style={[styles.button, disabled ? styles.buttonDisabled : null]}
-                        onPress={() => void handleStartRecording(blankId)}
-                        disabled={disabled}
-                      >
-                        <Text style={styles.buttonText}>{startRecordingLabel}</Text>
-                      </Pressable>
-                      <Pressable
-                        style={[styles.button, !(recording && activeBlankRef.current === blankId) ? styles.buttonDisabled : null]}
-                        onPress={stopRecording}
-                        disabled={!(recording && activeBlankRef.current === blankId)}
-                      >
-                        <Text style={styles.buttonText}>{stopRecordingLabel}</Text>
-                      </Pressable>
-                      <Pressable
-                        style={[styles.button, disabled ? styles.buttonDisabled : null]}
-                        onPress={() => void handleCheck(blank)}
-                        disabled={disabled}
-                      >
-                        <Text style={styles.buttonText}>{checkAnswerLabel}</Text>
-                      </Pressable>
-                      <Pressable
-                        style={[styles.button, result ? styles.buttonDisabled : null]}
-                        onPress={() => handleShowHint(blank)}
-                        disabled={Boolean(result)}
-                      >
-                        <Text style={styles.buttonText}>{showHintLabel}</Text>
-                      </Pressable>
+              return (
+                <View key={blankId} style={styles.questionCard}>
+                  <Text style={styles.label}>
+                    {formatTemplate(questionLabelTemplate, {
+                      index: String(blank.index),
+                    })}
+                  </Text>
+                  {hint ? (
+                    <View style={styles.hintCard}>
+                      <Text style={styles.hintText}>{hint}</Text>
                     </View>
-                    {transcribing && activeBlankRef.current === blankId ? (
-                      <View style={styles.noticeCard}>
-                        <Text style={styles.noticeText}>{transcribingText}</Text>
-                      </View>
-                    ) : null}
-                    {speechStatus && activeBlankRef.current === blankId ? (
-                      <View style={styles.noticeCard}>
-                        <Text style={styles.noticeText}>{speechStatus}</Text>
-                      </View>
-                    ) : null}
-                    {feedbackByBlank[blankId] ? (
-                      <View style={[styles.feedbackCard, result?.status === 'correct' ? styles.feedbackCardSuccess : result?.status === 'revealed' ? styles.feedbackCardWarning : null]}>
-                        <Text style={[styles.feedbackText, result?.status === 'correct' ? styles.feedbackTextSuccess : result?.status === 'revealed' ? styles.feedbackTextWarning : null]}>
-                          {feedbackByBlank[blankId]}
-                        </Text>
-                      </View>
-                    ) : null}
+                  ) : null}
+                  <TextInput
+                    value={drafts[blankId] || ''}
+                    onChangeText={(value) => updateDraft(blankId, value)}
+                    placeholder={hint || questionPlaceholder}
+                    style={[styles.input, result?.status === 'correct' ? styles.inputDisabled : null]}
+                    multiline
+                    editable={result?.status !== 'correct'}
+                  />
+                  <View style={styles.actionsRow}>
+                    <Pressable
+                      style={[styles.button, disabled ? styles.buttonDisabled : null]}
+                      onPress={() => void handleStartRecording(blankId)}
+                      disabled={disabled}
+                    >
+                      <Text style={styles.buttonText}>{startRecordingLabel}</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.button, !(recording && activeBlankRef.current === blankId) ? styles.buttonDisabled : null]}
+                      onPress={stopRecording}
+                      disabled={!(recording && activeBlankRef.current === blankId)}
+                    >
+                      <Text style={styles.buttonText}>{stopRecordingLabel}</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.button, disabled ? styles.buttonDisabled : null]}
+                      onPress={() => void handleCheck(blank)}
+                      disabled={disabled}
+                    >
+                      <Text style={styles.buttonText}>{checkAnswerLabel}</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.button, result?.status === 'correct' ? styles.buttonDisabled : null]}
+                      onPress={() => handleShowHint(blank)}
+                      disabled={result?.status === 'correct'}
+                    >
+                      <Text style={styles.buttonText}>{showHintLabel}</Text>
+                    </Pressable>
                   </View>
-                );
-              })}
-            </View>
-          ) : null}
+                  {transcribing && activeBlankRef.current === blankId ? (
+                    <View style={styles.noticeCard}>
+                      <Text style={styles.noticeText}>{transcribingText}</Text>
+                    </View>
+                  ) : null}
+                  {speechStatus && activeBlankRef.current === blankId ? (
+                    <View style={styles.noticeCard}>
+                      <Text style={styles.noticeText}>{speechStatus}</Text>
+                    </View>
+                  ) : null}
+                  {feedbackByBlank[blankId] ? (
+                    <View style={[styles.feedbackCard, result?.status === 'correct' ? styles.feedbackCardSuccess : result?.status === 'incorrect' ? styles.feedbackCardWarning : null]}>
+                      <Text style={[styles.feedbackText, result?.status === 'correct' ? styles.feedbackTextSuccess : result?.status === 'incorrect' ? styles.feedbackTextWarning : null]}>
+                        {feedbackByBlank[blankId]}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              );
+            })}
+          </View>
 
           {allDone ? (
             <View style={styles.noticeCard}>
@@ -420,23 +429,46 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.cardLine,
     gap: tokens.spacing.sm,
   },
+  sentenceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: tokens.spacing.sm,
+    flexWrap: 'wrap',
+  },
+  countdownPill: {
+    backgroundColor: tokens.colors.accent,
+    borderRadius: tokens.radius.md,
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
+  },
+  countdownText: {
+    color: '#fff',
+    fontWeight: '900',
+  },
   sentenceText: {
     color: tokens.colors.ink,
     fontSize: 28,
     lineHeight: 38,
     fontWeight: '800',
   },
-  blankText: {
+  targetAnswer: {
     color: tokens.colors.accentDeep,
     fontWeight: '900',
   },
-  correctAnswer: {
-    color: '#23824a',
-    fontWeight: '900',
+  hiddenSentenceCard: {
+    minHeight: 76,
+    borderRadius: tokens.radius.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.cardLine,
+    backgroundColor: tokens.colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: tokens.spacing.lg,
   },
-  revealedAnswer: {
-    color: tokens.colors.danger,
-    fontWeight: '900',
+  hiddenSentenceText: {
+    color: tokens.colors.inkSoft,
+    fontWeight: '800',
   },
   mutedText: {
     color: tokens.colors.inkSoft,

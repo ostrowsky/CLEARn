@@ -45,11 +45,11 @@
         "askAfterSampleQuestion": "You mentioned the next step. Could you be a little more specific about that?",
         "missingContext": "Begin with a context phrase such as \"You mentioned ...\" so the speaker knows which point you mean.",
         "missingFollow": "Add a direct follow-up request such as \"Could you talk us through ... ?\" or \"Could you be a little more specific about ...?\"",
-        "questionFormationFullSentenceHint": "Read the full sentence. The key details will be hidden in {seconds} seconds.",
         "questionFormationLoading": "Loading the next IT workplace sentence...",
         "questionFormationAllDone": "Good work. Loading the next sentence...",
         "questionFormationHintUsed": "Hint: start this question with {whWord}.",
-        "questionFormationIncorrectReveal": "The hidden answer is shown in red: {answer}."
+        "questionFormationIncorrectReveal": "The hidden answer is shown in red: {answer}.",
+        "questionFormationSentenceHidden": "Sentence is hidden. Keep asking from memory."
       },
       "labels": {
         "generator": "Generator",
@@ -97,7 +97,8 @@
         "questionProgress": "Question",
         "reactionDropdownHint": "Select opening phrase",
         "questionFormationSentence": "Sentence",
-        "questionFormationQuestionLabel": "Blank {index}"
+        "questionFormationQuestionLabel": "Blank {index}",
+        "questionFormationCountdown": "Time left: {seconds}s"
       },
       "buttons": {
         "checkQuestion": "Check my question",
@@ -609,7 +610,6 @@
         "unclearDetail": "Use one real detail from the talk instead of filler text or repeated letters before you ask the follow-up question.",
         "offTrack": "Keep the question closer to the selected lead-in and follow-up phrase so it stays clear and natural."
       },
-      "questionFormationRevealDelayMs": 3000,
       "questionFormationFeedback": {
         "accepted": "Correct. The question is grammatically clear and targets the hidden information.",
         "empty": "Type or dictate a question first.",
@@ -1252,7 +1252,10 @@
             "generatorGuidance": "Ask something off-topic or only loosely connected to the current meeting goal, while still sounding like a real person in that conversation."
           }
         }
-      }
+      },
+      "questionFormationRoundDurationMs": 60000,
+      "questionFormationVisibleDurationMs": 15000,
+      "questionFormationHiddenDurationMs": 30000
     },
     "runtime": {
       "defaults": {
