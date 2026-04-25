@@ -3,6 +3,7 @@ import type { ChatMessage, CoachChatSession, CoachChatTurn } from '@softskills/d
 import { env } from '../../config/env';
 import { withChatProvider } from '../../providers/providerRegistry';
 import { inferConversationContext } from '../shared/contextSummary';
+import { looksMeaningfulUserInput } from '../shared/inputValidation';
 import type { ContentService } from '../content/content.service';
 import type { SessionStore } from './session.store';
 
@@ -448,6 +449,9 @@ export class CoachChatSessionService {
 
     const trimmedReply = userReply.trim();
     if (!trimmedReply) {
+      throw new Error('User reply is required.');
+    }
+    if (!looksMeaningfulUserInput(trimmedReply)) {
       throw new Error('User reply is required.');
     }
 

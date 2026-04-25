@@ -23,7 +23,11 @@ function getBlankKey(blank: QuestionFormationBlank) {
   return blank.id || `blank-${blank.index}`;
 }
 
-function renderHighlightedSentence(exercise: QuestionFormationExercise) {
+function renderHighlightedSentence(
+  exercise: QuestionFormationExercise,
+  targetsVisible: boolean,
+  results: Record<string, BlankResult>,
+) {
   const pieces: Array<{ text: string; blank?: QuestionFormationBlank }> = [];
   const sentence = exercise.sentence;
   let cursor = 0;
@@ -59,7 +63,20 @@ function renderHighlightedSentence(exercise: QuestionFormationExercise) {
           return <Text key={`text-${index}`}>{piece.text}</Text>;
         }
 
-        return <Text key={piece.blank.id} style={styles.targetAnswer}>{piece.text}</Text>;
+        const result = results[getBlankKey(piece.blank)];
+        if (result?.status === 'correct') {
+          return <Text key={piece.blank.id} style={styles.correctAnswer}>{piece.text}</Text>;
+        }
+
+        if (targetsVisible) {
+          return <Text key={piece.blank.id} style={styles.targetAnswer}>{piece.text}</Text>;
+        }
+
+        return (
+          <Text key={piece.blank.id} style={styles.hiddenTargetPlaceholder}>
+            {`__(${piece.blank.index})__`}
+          </Text>
+        );
       })}
     </Text>
   );
@@ -77,7 +94,7 @@ export function QuestionFormationPractice({
   const ui = getUiConfig(content);
   const practiceConfig = getPracticeConfig(content);
   const [exercise, setExercise] = useState<QuestionFormationExercise | null>(null);
-  const [sentenceVisible, setSentenceVisible] = useState(true);
+  const [targetsVisible, setTargetsVisible] = useState(true);
   const [secondsRemaining, setSecondsRemaining] = useState(60);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [results, setResults] = useState<Record<string, BlankResult>>({});
@@ -95,7 +112,6 @@ export function QuestionFormationPractice({
   const roundDurationMs = Math.max(1000, getNestedNumber(practiceConfig, ['questionFormationRoundDurationMs'], 60000));
   const visibleDurationMs = Math.max(1000, getNestedNumber(practiceConfig, ['questionFormationVisibleDurationMs'], 15000));
   const hiddenDurationMs = Math.max(1000, getNestedNumber(practiceConfig, ['questionFormationHiddenDurationMs'], 30000));
-  const sentenceHiddenText = getNestedString(ui, ['feedback', 'questionFormationSentenceHidden']);
   const countdownLabelTemplate = getNestedString(ui, ['labels', 'questionFormationCountdown']);
   const loadingText = getNestedString(ui, ['feedback', 'questionFormationLoading']);
   const allDoneText = getNestedString(ui, ['feedback', 'questionFormationAllDone']);
@@ -117,7 +133,7 @@ export function QuestionFormationPractice({
     setResults({});
     setFeedbackByBlank({});
     setHintsByBlank({});
-    setSentenceVisible(true);
+    setTargetsVisible(true);
     setSecondsRemaining(Math.ceil(roundDurationMs / 1000));
     clearInterval(roundTimerRef.current || undefined);
     clearTimeout(advanceTimerRef.current || undefined);
@@ -134,7 +150,7 @@ export function QuestionFormationPractice({
         const cyclePosition = cycleMs > 0 ? elapsedMs % cycleMs : 0;
 
         setSecondsRemaining(Math.ceil(remainingMs / 1000));
-        setSentenceVisible(cyclePosition < visibleDurationMs);
+        setTargetsVisible(cyclePosition < visibleDurationMs);
 
         if (remainingMs <= 0) {
           clearInterval(roundTimerRef.current || undefined);
@@ -301,11 +317,7 @@ export function QuestionFormationPractice({
                 </Text>
               </View>
             </View>
-            {sentenceVisible ? renderHighlightedSentence(exercise) : (
-              <View style={styles.hiddenSentenceCard}>
-                <Text style={styles.hiddenSentenceText}>{sentenceHiddenText}</Text>
-              </View>
-            )}
+            {renderHighlightedSentence(exercise, targetsVisible, results)}
           </View>
 
           <View style={styles.questionList}>
@@ -456,19 +468,17 @@ const styles = StyleSheet.create({
     color: tokens.colors.accentDeep,
     fontWeight: '900',
   },
-  hiddenSentenceCard: {
-    minHeight: 76,
-    borderRadius: tokens.radius.md,
-    borderWidth: 1,
-    borderColor: tokens.colors.cardLine,
-    backgroundColor: tokens.colors.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: tokens.spacing.lg,
+  correctAnswer: {
+    color: '#23824a',
+    fontWeight: '900',
   },
-  hiddenSentenceText: {
-    color: tokens.colors.inkSoft,
-    fontWeight: '800',
+  hiddenTargetAnswer: {
+    color: 'transparent',
+    fontWeight: '900',
+  },
+  hiddenTargetPlaceholder: {
+    color: tokens.colors.accentDeep,
+    fontWeight: '900',
   },
   mutedText: {
     color: tokens.colors.inkSoft,

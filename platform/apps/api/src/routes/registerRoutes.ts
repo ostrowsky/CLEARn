@@ -208,9 +208,22 @@ export async function registerRoutes(app: FastifyInstance) {
     const body = request.body as { context: string; goal: string; scenario?: string };
     return coachChatService.start(body.context, body.goal, body.scenario || '');
   });
-  app.post('/api/coach/session/respond', async (request) => {
+  app.post('/api/coach/session/respond', async (request, reply) => {
     const body = request.body as { sessionId: string; userReply: string };
-    return coachChatService.respond(body.sessionId, body.userReply);
+    try {
+      return await coachChatService.respond(body.sessionId, body.userReply);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (isBadRequestMessage(message)) {
+        return reply.code(400).send({
+          statusCode: 400,
+          error: 'Bad Request',
+          message,
+        });
+      }
+
+      throw error;
+    }
   });
 
   app.post('/api/speech/stt', async (request) => {

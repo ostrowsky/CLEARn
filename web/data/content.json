@@ -1,7 +1,7 @@
 {
   "meta": {
     "appTitle": "CLEARn",
-    "updatedAt": "2026-04-23T09:36:33.949Z",
+    "updatedAt": "2026-04-25T15:29:35.322Z",
     "ui": {
       "brandTagline": "Shared web + mobile prototype",
       "footerNote": "",
@@ -1253,7 +1253,7 @@
           }
         }
       },
-      "questionFormationRoundDurationMs": 60000,
+      "questionFormationRoundDurationMs": 120000,
       "questionFormationVisibleDurationMs": 15000,
       "questionFormationHiddenDurationMs": 30000
     },
