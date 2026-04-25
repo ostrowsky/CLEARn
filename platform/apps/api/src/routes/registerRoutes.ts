@@ -168,6 +168,11 @@ export async function registerRoutes(app: FastifyInstance) {
     return practiceService.generateAskAfter(body.context, body.offset);
   });
   app.post('/api/practice/after-talk/check', async (request) => practiceService.checkAskAfter(request.body as never));
+  app.post('/api/practice/question-formation', async (request) => {
+    const body = request.body as { context?: string; offset?: number };
+    return practiceService.generateQuestionFormation(body.context || '', body.offset);
+  });
+  app.post('/api/practice/question-formation/check', async (request) => practiceService.checkQuestionFormation(request.body as never));
 
   app.post('/api/answering/session/start', async (request) => {
     const body = request.body as { context: string; mode: 'good' | 'difficult' | 'unnecessary' | 'irrelevant' | 'mixed' };
@@ -203,9 +208,22 @@ export async function registerRoutes(app: FastifyInstance) {
     const body = request.body as { context: string; goal: string; scenario?: string };
     return coachChatService.start(body.context, body.goal, body.scenario || '');
   });
-  app.post('/api/coach/session/respond', async (request) => {
+  app.post('/api/coach/session/respond', async (request, reply) => {
     const body = request.body as { sessionId: string; userReply: string };
-    return coachChatService.respond(body.sessionId, body.userReply);
+    try {
+      return await coachChatService.respond(body.sessionId, body.userReply);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (isBadRequestMessage(message)) {
+        return reply.code(400).send({
+          statusCode: 400,
+          error: 'Bad Request',
+          message,
+        });
+      }
+
+      throw error;
+    }
   });
 
   app.post('/api/speech/stt', async (request) => {

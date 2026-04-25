@@ -10,6 +10,7 @@ import type {
 import { env } from '../../config/env';
 import { withChatProvider } from '../../providers/providerRegistry';
 import { inferConversationContext } from '../shared/contextSummary';
+import { looksMeaningfulUserInput } from '../shared/inputValidation';
 import type { AnsweringEvaluationDraft, AnsweringQuestionDraft } from '../../providers/types';
 import type { ContentService } from '../content/content.service';
 import type { SessionStore } from '../session/session.store';
@@ -678,6 +679,9 @@ export class AnsweringSessionService {
 
     const normalizedReply = normalizeWhitespace(userReply);
     if (!normalizedReply) {
+      throw new Error(asString(config.answerRequiredFeedback, 'Type or record your answer before you submit it.'));
+    }
+    if (!looksMeaningfulUserInput(normalizedReply)) {
       throw new Error(asString(config.answerRequiredFeedback, 'Type or record your answer before you submit it.'));
     }
 

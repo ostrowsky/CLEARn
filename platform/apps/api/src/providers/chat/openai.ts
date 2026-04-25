@@ -1,4 +1,4 @@
-import type { AskAfterBrief, ClarifyExercise, CoachChatTurn } from '@softskills/domain';
+import type { AskAfterBrief, ClarifyExercise, CoachChatTurn, QuestionFormationExercise } from '@softskills/domain';
 import { env } from '../../config/env';
 import type { AnsweringEvaluationDraft, AnsweringQuestionDraft, ChatGenerationInput, ChatProvider } from '../types';
 
@@ -39,6 +39,9 @@ export const openAiChatProvider: ChatProvider = {
   },
   generateAskAfter(input): Promise<AskAfterBrief> {
     return callOpenAi<AskAfterBrief>(input);
+  },
+  generateQuestionFormation(input): Promise<QuestionFormationExercise> {
+    return callOpenAi<QuestionFormationExercise>(input);
   },
   generateAnsweringQuestion(input): Promise<AnsweringQuestionDraft> {
     return callOpenAi<AnsweringQuestionDraft>(input);

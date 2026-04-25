@@ -5,6 +5,7 @@ import type { AppContent, ContentBlock, ContentMaterial, ContentSection } from '
 import { Screen } from '../../src/components/Screen';
 import { AskAfterComposer } from '../../src/components/practice/AskAfterComposer';
 import { ClarifyPracticeInlineList } from '../../src/components/practice/ClarifyPracticeInlineList';
+import { QuestionFormationPractice } from '../../src/components/practice/QuestionFormationPractice';
 import { useContent } from '../../src/hooks/useContent';
 import { findSectionById, findSectionByRoute, getParentSection } from '../../src/lib/contentNavigation';
 import {
@@ -404,7 +405,7 @@ export default function SectionScreen() {
           {contentBlocks.map((block, index) => {
             const practiceHref = getPracticeHref(content, section, block);
             const renderer = getBlockRenderer(content, block.kind);
-            const isHalfWidthCard = renderer !== 'practice-clarify' && featuredBlockCount > 0 && index < featuredBlockCount;
+            const isHalfWidthCard = renderer !== 'practice-clarify' && renderer !== 'practice-without-context' && featuredBlockCount > 0 && index < featuredBlockCount;
 
             return (
               <View
@@ -416,6 +417,8 @@ export default function SectionScreen() {
               >
                 {renderer === 'practice-clarify' ? (
                   <ClarifyPracticeInlineList content={content} section={section} block={block} />
+                ) : renderer === 'practice-without-context' ? (
+                  <QuestionFormationPractice content={content} section={section} block={block} />
                 ) : collapsibleSection ? (
                   <BlockAccordion
                     block={block}

@@ -13,6 +13,11 @@ foreach ($pattern in @(
     'buildAskAfterFallback',
     'inferConversationContext',
     'buildAskAfterSpeechLines',
+    'buildLikelyProfessionalSpeech',
+    'normalizeSpeechTopic',
+    'limitWords',
+    'no more than 100 words',
+    'professional yet friendly speech',
     'buildAskAfterSampleQuestion',
     'pickAskAfterFocus',
     'suggestedFocus',
@@ -53,6 +58,8 @@ foreach ($fileName in @('content.template.json', 'content.json')) {
     Assert-True -Condition (-not (@($content.meta.practice.answeringSession.questionTypes.good.fallbackQuestions) -contains 'What result are you most proud of in {topic}, and why does it matter?')) -Message "$fileName still contains the raw-context good-question fallback wording."
     Assert-True -Condition (@($content.meta.practice.learningChat.scenarios.oneToOne.starterSuggestions) -contains 'Which result from the last period are you most proud of?') -Message "$fileName should include the more natural one-to-one opening question."
     Assert-True -Condition (@($content.meta.practice.learningChat.scenarios.meeting.fallbackSuggestions) -contains 'The main result I want to highlight is...') -Message "$fileName should include meeting fallback suggestions that fit a review or update."
+    Assert-Equal -Expected 'Likely short speech' -Actual ([string]$content.meta.ui.feedback.generatedTalkTitle) -Message "$fileName should label ask-after output as a likely speech, not a fact list."
+    Assert-Match -Actual ([string]$content.meta.ui.placeholders.askAfterContext) -Pattern 'speech is about the new throughput metric' -Message "$fileName should guide users to enter a likely speech topic."
     $afterTalk = $content.sections | Where-Object { $_.id -eq 'asking-after-talk' }
     $contextBodies = @($afterTalk.blocks | Where-Object { $_.id -eq 'context-leads' } | Select-Object -ExpandProperty materials | Select-Object -ExpandProperty body)
     Assert-True -Condition ($contextBodies -contains 'You mentioned ...') -Message "$fileName should keep the more natural ask-after context phrase bank."

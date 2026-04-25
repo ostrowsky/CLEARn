@@ -9,12 +9,13 @@ $webRoot = Join-Path $workspaceRoot 'web'
 Write-TestStep 'AI defaults target self-hosted chat with Whisper STT and Kokoro TTS'
 $envSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\config\env.ts') -Raw
 Assert-Match -Actual $envSource -Pattern "LLM_TEXT_PROVIDER: z\.enum\(\['huggingface', 'openai', 'selfhosted'\]\)\.default\('selfhosted'\)"
-Assert-Match -Actual $envSource -Pattern "LLM_STT_PROVIDER: z\.enum\(\['huggingface', 'openai', 'selfhosted'\]\)\.default\('huggingface'\)"
+Assert-Match -Actual $envSource -Pattern "LLM_STT_PROVIDER: z\.enum\(\['huggingface', 'openai', 'selfhosted'\]\)\.default\('selfhosted'\)"
 Assert-Match -Actual $envSource -Pattern "LLM_TTS_PROVIDER: z\.enum\(\['huggingface', 'openai', 'selfhosted'\]\)\.default\('huggingface'\)"
 Assert-Match -Actual $envSource -Pattern "LLM_CHAT_MODEL: z\.string\(\)\.default\('gemma3:12b'\)"
-Assert-Match -Actual $envSource -Pattern "LLM_STT_MODEL: z\.string\(\)\.default\('openai/whisper-large-v3'\)"
+Assert-Match -Actual $envSource -Pattern "LLM_STT_MODEL: z\.string\(\)\.default\('base\.en'\)"
 Assert-Match -Actual $envSource -Pattern "LLM_TTS_MODEL: z\.string\(\)\.default\('hexgrad/Kokoro-82M'\)"
 Assert-Match -Actual $envSource -Pattern "SELF_HOSTED_BASE_URL: z\.string\(\)\.default\('http://localhost:11434/v1'\)"
+Assert-Match -Actual $envSource -Pattern "SELF_HOSTED_SPEECH_BASE_URL: z\.string\(\)\.default\('http://localhost:8010/v1'\)"
 
 Write-TestStep 'Providers use model-configured self-hosted chat and Hugging Face speech models'
 $selfHostedSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\providers\chat\selfHosted.ts') -Raw
@@ -37,6 +38,10 @@ foreach ($pattern in @(
 $hfSpeechSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\providers\speech\huggingfaceSpeech.ts') -Raw
 Assert-Match -Actual $hfSpeechSource -Pattern 'env\.LLM_STT_MODEL'
 Assert-Match -Actual $hfSpeechSource -Pattern 'env\.LLM_TTS_MODEL'
+$selfHostedSpeechSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\providers\speech\selfHostedSpeech.ts') -Raw
+Assert-Match -Actual $selfHostedSpeechSource -Pattern 'env\.SELF_HOSTED_SPEECH_BASE_URL'
+Assert-Match -Actual $selfHostedSpeechSource -Pattern '/audio/transcriptions'
+Assert-Match -Actual $selfHostedSpeechSource -Pattern 'new FormData\(\)'
 
 Write-TestStep 'Critical route and provider files keep valid runtime wiring'
 $routesSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\routes\registerRoutes.ts') -Raw

@@ -35,6 +35,25 @@ foreach ($pattern in @(
     Assert-Match -Actual $openAiSpeechSource -Pattern $pattern
 }
 
+Write-TestStep 'Self-hosted speech provider uses free local multipart STT instead of Hugging Face credits'
+$selfHostedSpeechSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\providers\speech\selfHostedSpeech.ts') -Raw
+foreach ($pattern in @(
+    'SELF_HOSTED_SPEECH_BASE_URL',
+    'new FormData\(\)',
+    "formData\.append\('file'",
+    "formData\.append\('model', env\.LLM_STT_MODEL\)",
+    'decodeAudioBytes',
+    'cleanBase64Audio',
+    'getAudioUploadFileName',
+    'Self-hosted STT error:',
+    'readSelfHostedSpeechError',
+    'body: formData'
+)) {
+    Assert-Match -Actual $selfHostedSpeechSource -Pattern $pattern
+}
+$selfHostedSttSource = ($selfHostedSpeechSource -split 'async textToSpeech')[0]
+Assert-True -Condition ($selfHostedSttSource -cnotmatch 'JSON\.stringify') -Message 'Self-hosted STT should send multipart audio bytes, not JSON.'
+
 Write-TestStep 'Speech routes expose debug logs and serve extended audio content types'
 $routesSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\routes\registerRoutes.ts') -Raw
 foreach ($pattern in @(
@@ -123,6 +142,39 @@ foreach ($pattern in @(
 )) {
     Assert-Match -Actual $useSpeechDraftSource -Pattern $pattern
 }
+
+Write-TestStep 'Local STT helper exposes an OpenAI-compatible free Whisper server'
+$localSttServerPath = Join-Path $platformRoot 'local-stt\server.py'
+$localSttStartPath = Join-Path $platformRoot 'start-local-stt.ps1'
+Assert-True -Condition (Test-Path -LiteralPath $localSttServerPath) -Message 'Expected local STT server script to exist.'
+Assert-True -Condition (Test-Path -LiteralPath $localSttStartPath) -Message 'Expected local STT startup script to exist.'
+$localSttServerSource = Get-Content -LiteralPath $localSttServerPath -Raw
+$localSttStartSource = Get-Content -LiteralPath $localSttStartPath -Raw
+$localSttRequirementsSource = Get-Content -LiteralPath (Join-Path $platformRoot 'local-stt\requirements.txt') -Raw
+foreach ($pattern in @(
+    'faster_whisper',
+    'warm_model_on_startup',
+    '@app\.post\("/v1/warmup"\)',
+    'modelLoaded',
+    '@app\.post\("/v1/audio/transcriptions"\)',
+    'UploadFile',
+    'base\.en',
+    '"model": DEFAULT_MODEL',
+    '"requestedModel": model or DEFAULT_MODEL',
+    'vad_filter=True'
+)) {
+    Assert-Match -Actual $localSttServerSource -Pattern $pattern
+}
+foreach ($pattern in @(
+    'local-stt',
+    'requirements.txt',
+    'base\.en',
+    'uvicorn server:app',
+    '--port 8010'
+)) {
+    Assert-Match -Actual $localSttStartSource -Pattern $pattern
+}
+Assert-Match -Actual $localSttRequirementsSource -Pattern 'requests==2\.32\.5'
 
 Write-TestStep 'Learner section screen recognizes extended direct audio formats for playback'
 $sectionScreenSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\section\[id].tsx') -Raw

@@ -14,11 +14,64 @@ Assert-True -Condition ($null -ne $content.meta.ui.admin.messages)
 Assert-True -Condition ($null -ne $content.meta.ui.admin.taxonomies)
 Assert-True -Condition ($null -ne $content.meta.practice.answeringModes.good)
 Assert-True -Condition ($null -ne $content.meta.practice.clarifyProfiles.backend)
+Assert-True -Condition ($null -ne $content.meta.practice.questionFormationRoundDurationMs)
+Assert-True -Condition ($null -ne $content.meta.practice.questionFormationVisibleDurationMs)
+Assert-True -Condition ($null -ne $content.meta.practice.questionFormationHiddenDurationMs)
 Assert-True -Condition ($null -ne $content.meta.runtime.defaults)
 Assert-True -Condition ($null -ne $content.meta.runtime.sectionViews)
 Assert-True -Condition ($null -ne $content.meta.runtime.blockRenderers)
 Assert-True -Condition ($null -ne $content.meta.runtime.practiceScreens)
 Assert-True -Condition ($null -ne $content.meta.runtime.blockGroups)
+
+Write-TestStep 'Live and template content stay small enough for public preview'
+function Measure-LargestString {
+    param(
+        [object]$Value,
+        [string]$Path = '$'
+    )
+
+    if ($null -eq $Value) {
+        return [pscustomobject]@{ Path = $Path; Length = 0 }
+    }
+
+    if ($Value -is [string]) {
+        return [pscustomobject]@{ Path = $Path; Length = $Value.Length }
+    }
+
+    $largest = [pscustomobject]@{ Path = $Path; Length = 0 }
+    if ($Value -is [System.Collections.IEnumerable] -and -not ($Value -is [string]) -and -not ($Value -is [pscustomobject])) {
+        $index = 0
+        foreach ($item in $Value) {
+            $candidate = Measure-LargestString -Value $item -Path "$Path[$index]"
+            if ($candidate.Length -gt $largest.Length) {
+                $largest = $candidate
+            }
+            $index++
+        }
+        return $largest
+    }
+
+    if ($Value -is [pscustomobject]) {
+        foreach ($property in $Value.PSObject.Properties) {
+            $candidate = Measure-LargestString -Value $property.Value -Path "$Path.$($property.Name)"
+            if ($candidate.Length -gt $largest.Length) {
+                $largest = $candidate
+            }
+        }
+    }
+
+    return $largest
+}
+
+foreach ($fileName in @('content.template.json', 'content.json')) {
+    $filePath = Join-Path $projectRoot ('data\' + $fileName)
+    $rawContent = Get-Content -LiteralPath $filePath -Raw
+    $parsedContent = $rawContent | ConvertFrom-Json
+    $largestString = Measure-LargestString -Value $parsedContent
+
+    Assert-True -Condition ($rawContent.Length -lt 1000000) -Message "$fileName is too large for the public preview content payload."
+    Assert-True -Condition ($largestString.Length -lt 10000) -Message "$fileName contains an oversized string at $($largestString.Path)."
+}
 
 Write-TestStep 'Legacy admin UI no longer hardcodes user-facing copy or schema constants'
 $adminScript = Get-Content -LiteralPath (Join-Path $projectRoot 'static\admin.js') -Raw

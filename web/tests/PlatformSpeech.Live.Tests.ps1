@@ -77,6 +77,11 @@ function Get-JsonPropertyValue {
 }
 
 Write-TestStep 'Hugging Face STT accepts raw audio bytes payloads produced by the app'
+if ($env:RUN_HF_LIVE_STT_TESTS -ne '1') {
+    Write-Host 'Platform speech live tests skipped: set RUN_HF_LIVE_STT_TESTS=1 to spend Hugging Face Inference Provider credits.'
+    exit 0
+}
+
 $hfToken = Get-HfToken
 if (-not $hfToken) {
     Write-Host 'Platform speech live tests skipped: HF_TOKEN is not configured in this shell.'

@@ -52,6 +52,18 @@ export function getNestedString(source: Record<string, unknown>, path: string[],
   return typeof current === 'string' ? current : fallback;
 }
 
+export function getNestedNumber(source: Record<string, unknown>, path: string[], fallback = 0): number {
+  let current: unknown = source;
+  for (const segment of path) {
+    if (!current || typeof current !== 'object') {
+      return fallback;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+
+  return typeof current === 'number' && Number.isFinite(current) ? current : fallback;
+}
+
 export function getSectionByRoute(content: AppContent | null | undefined, route: string) {
   return content?.sections.find((section) => section.route === route);
 }
