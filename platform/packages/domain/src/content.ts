@@ -18,6 +18,7 @@ export type ContentBlock = {
   title: string;
   description: string;
   route?: string;
+  meta?: Record<string, unknown>;
   materials: ContentMaterial[];
 };
 

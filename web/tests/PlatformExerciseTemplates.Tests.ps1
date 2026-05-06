@@ -48,6 +48,10 @@ foreach ($fileName in @('content.template.json', 'content.json')) {
     Assert-Equal -Expected 2 -Actual ([int]$content.meta.runtime.sectionViews.'practice-ask-after'.featuredBlockCount) -Message "$fileName should place the first two practice ask-after blocks on one row."
     Assert-Equal -Expected $false -Actual ([bool]$content.meta.runtime.sectionViews.'exercise-ask-after'.collapsible) -Message "$fileName should render exercise-ask-after without accordion toggles."
     Assert-Equal -Expected 2 -Actual ([int]$content.meta.runtime.sectionViews.'exercise-ask-after'.featuredBlockCount) -Message "$fileName should place the first two exercise ask-after blocks on one row."
+    $interruptSection = $content.sections | Where-Object { $_.id -eq 'asking-interrupt' }
+    Assert-Equal -Expected 'half' -Actual ([string]$interruptSection.blocks[0].meta.layoutWidth) -Message "$fileName should allow block 1.1.1 to render beside 1.1.2."
+    Assert-Equal -Expected 'half' -Actual ([string]$interruptSection.blocks[1].meta.layoutWidth) -Message "$fileName should allow block 1.1.2 to render beside 1.1.1."
+    Assert-Equal -Expected 'Block layout' -Actual ([string]$content.meta.ui.admin.fieldLabels.blockLayout) -Message "$fileName should expose block layout controls in admin."
 
     Assert-Equal -Expected 'exercise-ask-after' -Actual ([string]$content.meta.runtime.practiceScreens.askAfter.sectionType)
     Assert-Match -Actual ([string]$content.meta.runtime.practiceScreens.askAfter.targetHrefTemplate) -Pattern 'sectionId='
@@ -97,6 +101,21 @@ foreach ($pattern in @(
     'questionDraft',
     'previewHeroCard',
     'previewHeroInput',
+    'SourceMode',
+    'videoMaterials',
+    'Video practice library',
+    'videoLibraryColumn',
+    'videoFrameBox',
+    'aspectRatio: 16 / 9',
+    'apiClient\.getVideoTranscript\(selectedVideoUrl\)',
+    'getEmbeddedVideoUrl',
+    "params\.set\('end', String\(youTubeInfo\.end\)\)",
+    "params\.set\('enablejsapi', '1'\)",
+    'useFocusedMediaActive',
+    'mediaActive',
+    'ScrollView',
+    'getVideoThumbnailUrl',
+    'setSourceMode\(''video''\)',
     'builderMetaTitle',
     'startRecording',
     'stopRecording',
@@ -126,7 +145,10 @@ foreach ($pattern in @(
     'AskAfterComposer',
     'showInlineAskAfterComposer',
     "section.type === 'practice-ask-after'",
-    "section.type === 'exercise-ask-after'"
+    "section.type === 'exercise-ask-after'",
+    'getBlockLayoutWidth',
+    "layoutWidth",
+    "blockLayoutWidth === 'half'"
 )) {
     Assert-Match -Actual $sectionSource -Pattern $pattern
 }

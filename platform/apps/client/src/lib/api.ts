@@ -17,6 +17,15 @@ type DebugPayload = {
   details?: Record<string, unknown>;
 };
 
+type VideoTranscriptResponse = {
+  available: boolean;
+  source: 'youtube' | 'unsupported';
+  text: string;
+  start: number;
+  end: number;
+  message?: string;
+};
+
 async function sendDebugLog(payload: DebugPayload) {
   try {
     if (typeof console !== 'undefined' && typeof console.debug === 'function') {
@@ -103,6 +112,9 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify({ url }),
     });
+  },
+  getVideoTranscript(url: string): Promise<VideoTranscriptResponse> {
+    return request(`/api/media/video-transcript?url=${encodeURIComponent(url)}`);
   },
   getAdminBackupExportUrl() {
     return resolveApiUrl('/api/admin/backup/export');

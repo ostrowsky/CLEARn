@@ -20,6 +20,7 @@ $tests = @(
     (Join-Path $PSScriptRoot 'PlatformAnswering.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformSyntax.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformSpeech.Tests.ps1'),
+    (Join-Path $PSScriptRoot 'PlatformMedia.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformAiStack.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformFallbacks.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformSpeech.Live.Tests.ps1'),

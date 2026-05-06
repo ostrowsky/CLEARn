@@ -50,7 +50,9 @@
         "questionFormationAllDone": "Good work. Loading the next sentence...",
         "questionFormationHintUsed": "Hint: start this question with {whWord}.",
         "questionFormationIncorrectReveal": "The hidden answer is shown in red: {answer}.",
-        "questionFormationSentenceHidden": "Sentence is hidden. Keep asking from memory."
+        "questionFormationSentenceHidden": "Sentence is hidden. Keep asking from memory.",
+        "videoPracticeLibraryDescription": "Use uploaded videos or streaming links as the talk source. The question builder below stays the same.",
+        "videoLibraryHint": "Choose a video, then build a follow-up question from its transcript."
       },
       "labels": {
         "generator": "Generator",
@@ -99,7 +101,10 @@
         "reactionDropdownHint": "Select opening phrase",
         "questionFormationSentence": "Sentence",
         "questionFormationQuestionLabel": "Blank {index}",
-        "questionFormationCountdown": "Time left: {seconds}s"
+        "questionFormationCountdown": "Time left: {seconds}s",
+        "videoPracticeLibrary": "Video practice library",
+        "videoSource": "Video source",
+        "videoLibrary": "Video library"
       },
       "buttons": {
         "checkQuestion": "Check my question",
@@ -126,7 +131,10 @@
         "stopRecording": "Stop and transcribe",
         "openMedia": "Open media",
         "showHint": "Show hint",
-        "nextSentence": "Next sentence"
+        "nextSentence": "Next sentence",
+        "generatedTalkSource": "Generated talk",
+        "videoTranscriptSource": "Video transcript",
+        "openVideo": "Open video"
       },
       "placeholders": {
         "clarifyContext": "Example: I am a backend engineer working on billing APIs for enterprise clients.",
@@ -169,6 +177,7 @@
           "body": "Body",
           "url": "URL",
           "altText": "Alt text",
+          "transcript": "Transcript",
           "key": "Key",
           "label": "Label",
           "renderer": "Renderer",
@@ -190,7 +199,8 @@
           "acceptedAnswers": "Accepted answers",
           "placeholder": "Placeholder",
           "selectorLabel": "Selector label",
-          "reactionOptions": "Reaction phrases"
+          "reactionOptions": "Reaction phrases",
+          "blockLayout": "Block layout"
         },
         "actions": {
           "addSection": "Add section",
@@ -1524,7 +1534,10 @@
           ],
           "route": "",
           "kind": "panel",
-          "title": "1.1.1 You didn't hear"
+          "title": "1.1.1 You didn't hear",
+          "meta": {
+            "layoutWidth": "half"
+          }
         },
         {
           "id": "did-not-understand",
@@ -1557,7 +1570,10 @@
           ],
           "route": "",
           "kind": "panel",
-          "title": "1.1.2 You didn't understand"
+          "title": "1.1.2 You didn't understand",
+          "meta": {
+            "layoutWidth": "half"
+          }
         },
         {
           "id": "clarify-details",

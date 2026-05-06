@@ -24,6 +24,9 @@ function Write-Utf8NoBomFile {
 Write-TestStep 'Backup scripts exist'
 Assert-True -Condition (Test-Path -LiteralPath $backupScript -PathType Leaf) -Message 'backup-app.ps1 is missing.'
 Assert-True -Condition (Test-Path -LiteralPath $restoreScript -PathType Leaf) -Message 'restore-app.ps1 is missing.'
+$backupScriptSource = Get-Content -LiteralPath $backupScript -Raw
+Assert-Match -Actual $backupScriptSource -Pattern 'function Get-IncludedFiles' -Message 'Backup script should prune excluded folders before traversal.'
+Assert-True -Condition ($backupScriptSource -cnotmatch 'Get-ChildItem[^\r\n]*-Recurse') -Message 'Backup script must not recursively traverse excluded dependency and cache folders.'
 
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('softskills-backup-test-' + [Guid]::NewGuid().ToString('N'))
 $extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('softskills-backup-extract-' + [Guid]::NewGuid().ToString('N'))
@@ -40,6 +43,10 @@ try {
     Write-Utf8NoBomFile -Path (Join-Path $tempRoot 'web\data\content.template.json') -Content '{"meta":{"updatedAt":"2026-04-02T12:00:00Z"},"sections":[]}'
     Write-Utf8NoBomFile -Path (Join-Path $tempRoot 'web\static\uploads\audio.mp3') -Content 'binary-audio-placeholder'
     Write-Utf8NoBomFile -Path (Join-Path $tempRoot 'platform\node_modules\ignored.txt') -Content 'ignore me'
+    Write-Utf8NoBomFile -Path (Join-Path $tempRoot 'platform\local-stt\.venv\ignored.txt') -Content 'ignore me too'
+    Write-Utf8NoBomFile -Path (Join-Path $tempRoot 'platform\local-stt\models\ignored.bin') -Content 'ignore model cache'
+    Write-Utf8NoBomFile -Path (Join-Path $tempRoot 'platform\apps\client\dist\ignored.txt') -Content 'ignore export output'
+    Write-Utf8NoBomFile -Path (Join-Path $tempRoot 'web\.next\ignored.txt') -Content 'ignore web build output'
     Write-Utf8NoBomFile -Path (Join-Path $tempRoot 'tmp-platform-api-deadbeef\ignored.txt') -Content 'ignore me too'
 
     Write-TestStep 'Backup script creates a full archive with manifest and excludes runtime junk'
@@ -57,6 +64,10 @@ try {
     Assert-True -Condition (Test-Path -LiteralPath (Join-Path $extractRoot 'web\data\content.json') -PathType Leaf) -Message 'Live content was not backed up.'
     Assert-True -Condition (Test-Path -LiteralPath (Join-Path $extractRoot 'web\static\uploads\audio.mp3') -PathType Leaf) -Message 'Uploaded media was not backed up.'
     Assert-True -Condition (-not (Test-Path -LiteralPath (Join-Path $extractRoot 'platform\node_modules\ignored.txt'))) -Message 'node_modules content should not be backed up.'
+    Assert-True -Condition (-not (Test-Path -LiteralPath (Join-Path $extractRoot 'platform\local-stt\.venv\ignored.txt'))) -Message 'Python virtual environments should not be backed up.'
+    Assert-True -Condition (-not (Test-Path -LiteralPath (Join-Path $extractRoot 'platform\local-stt\models\ignored.bin'))) -Message 'Local STT model caches should not be backed up.'
+    Assert-True -Condition (-not (Test-Path -LiteralPath (Join-Path $extractRoot 'platform\apps\client\dist\ignored.txt'))) -Message 'Build output should not be backed up.'
+    Assert-True -Condition (-not (Test-Path -LiteralPath (Join-Path $extractRoot 'web\.next\ignored.txt'))) -Message 'Web build output should not be backed up.'
     Assert-True -Condition (-not (Test-Path -LiteralPath (Join-Path $extractRoot 'platform\share-preview-links.txt'))) -Message 'Runtime preview link files should not be backed up.'
     Assert-True -Condition (-not (Test-Path -LiteralPath (Join-Path $extractRoot 'tmp-platform-api-deadbeef\ignored.txt'))) -Message 'Temporary platform folders should not be backed up.'
 
