@@ -6,6 +6,8 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+Add-Type -AssemblyName System.IO.Compression
 
 function Resolve-FullPath {
     param([string]$Path)
@@ -42,13 +44,23 @@ function Test-IncludedRelativePath {
         return $false
     }
 
-    foreach ($segment in @('.git', 'node_modules', '.expo')) {
+    foreach ($segment in @('.git', 'node_modules', '.expo', '.venv', '__pycache__', '.pytest_cache')) {
+        if ($normalized -match ('(^|\\)' + [Regex]::Escape($segment) + '(\\|$)')) {
+            return $false
+        }
+    }
+
+    foreach ($segment in @('dist', 'build', '.next', '.turbo', 'coverage')) {
         if ($normalized -match ('(^|\\)' + [Regex]::Escape($segment) + '(\\|$)')) {
             return $false
         }
     }
 
     if ($normalized -match '(^|\\)platform\\backups(\\|$)') {
+        return $false
+    }
+
+    if ($normalized -match '(^|\\)platform\\local-stt\\models(\\|$)') {
         return $false
     }
 
@@ -62,6 +74,34 @@ function Test-IncludedRelativePath {
     }
 
     return $true
+}
+
+function Get-IncludedFiles {
+    param(
+        [string]$RootPath,
+        [string]$ProjectRootPath
+    )
+
+    $pending = New-Object System.Collections.Generic.Stack[System.IO.DirectoryInfo]
+    $pending.Push((Get-Item -LiteralPath $RootPath))
+
+    while ($pending.Count -gt 0) {
+        $directory = $pending.Pop()
+
+        foreach ($file in $directory.GetFiles()) {
+            $relativePath = Get-RelativePath -BasePath $ProjectRootPath -TargetPath $file.FullName
+            if (Test-IncludedRelativePath -RelativePath $relativePath) {
+                $file
+            }
+        }
+
+        foreach ($childDirectory in $directory.GetDirectories()) {
+            $relativePath = Get-RelativePath -BasePath $ProjectRootPath -TargetPath $childDirectory.FullName
+            if (Test-IncludedRelativePath -RelativePath $relativePath) {
+                $pending.Push($childDirectory)
+            }
+        }
+    }
 }
 
 $projectRootFull = Resolve-FullPath -Path $ProjectRoot
@@ -88,32 +128,31 @@ if (Test-Path -LiteralPath $outputPathFull) {
     Remove-Item -LiteralPath $outputPathFull -Force
 }
 
-$stagingRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('softskills-backup-' + [Guid]::NewGuid().ToString('N'))
-$payloadRoot = Join-Path $stagingRoot 'payload'
-Ensure-Directory -Path $payloadRoot
-
 $includedRoots = @('platform', 'web')
 $includedFiles = @('start-cloudflare-preview.bat')
 $copiedFiles = New-Object System.Collections.Generic.List[string]
 
+$zip = [System.IO.Compression.ZipFile]::Open($outputPathFull, [System.IO.Compression.ZipArchiveMode]::Create)
+$compressionLevel = [System.IO.Compression.CompressionLevel]::Fastest
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+
 try {
+    $filesToArchive = New-Object System.Collections.Generic.List[object]
     foreach ($root in $includedRoots) {
         $sourceRoot = Join-Path $projectRootFull $root
         if (-not (Test-Path -LiteralPath $sourceRoot -PathType Container)) {
             continue
         }
 
-        $files = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File
+        $files = Get-IncludedFiles -RootPath $sourceRoot -ProjectRootPath $projectRootFull
         foreach ($file in $files) {
             $relativePath = Get-RelativePath -BasePath $projectRootFull -TargetPath $file.FullName
-            if (-not (Test-IncludedRelativePath -RelativePath $relativePath)) {
-                continue
-            }
-
-            $destinationPath = Join-Path $payloadRoot $relativePath
-            Ensure-Directory -Path (Split-Path -Parent $destinationPath)
-            Copy-Item -LiteralPath $file.FullName -Destination $destinationPath -Force
-            [void]$copiedFiles.Add($relativePath.Replace('\', '/'))
+            $entryName = $relativePath.Replace('\', '/')
+            [void]$filesToArchive.Add([pscustomobject]@{
+                Source = $file.FullName
+                Entry = $entryName
+            })
+            [void]$copiedFiles.Add($entryName)
         }
     }
 
@@ -123,10 +162,20 @@ try {
             continue
         }
 
-        $destinationFile = Join-Path $payloadRoot $fileName
-        Ensure-Directory -Path (Split-Path -Parent $destinationFile)
-        Copy-Item -LiteralPath $sourceFile -Destination $destinationFile -Force
-        [void]$copiedFiles.Add($fileName.Replace('\', '/'))
+        $entryName = $fileName.Replace('\', '/')
+        [void]$filesToArchive.Add([pscustomobject]@{
+            Source = $sourceFile
+            Entry = $entryName
+        })
+        [void]$copiedFiles.Add($entryName)
+    }
+
+    if ($filesToArchive.Count -eq 0) {
+        throw 'Backup payload is empty.'
+    }
+
+    foreach ($item in $filesToArchive) {
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, [string]$item.Source, [string]$item.Entry, $compressionLevel) | Out-Null
     }
 
     $contentUpdatedAt = ''
@@ -151,18 +200,17 @@ try {
         files = @($copiedFiles)
     }
 
-    $manifestPath = Join-Path $payloadRoot 'backup-manifest.json'
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($manifestPath, ($manifest | ConvertTo-Json -Depth 20), $utf8NoBom)
-
-    $itemsToArchive = Get-ChildItem -LiteralPath $payloadRoot -Force
-    if (-not $itemsToArchive) {
-        throw 'Backup payload is empty.'
+    $manifestEntry = $zip.CreateEntry('backup-manifest.json', $compressionLevel)
+    $manifestStream = $manifestEntry.Open()
+    $writer = New-Object System.IO.StreamWriter($manifestStream, $utf8NoBom)
+    try {
+        $writer.Write(($manifest | ConvertTo-Json -Depth 20))
+    } finally {
+        $writer.Dispose()
+        $manifestStream.Dispose()
     }
+} finally {
+    $zip.Dispose()
+}
 
-    Compress-Archive -LiteralPath $itemsToArchive.FullName -DestinationPath $outputPathFull -Force
-    Write-Output $outputPathFull
-}
-finally {
-    Remove-Item -LiteralPath $stagingRoot -Recurse -Force -ErrorAction SilentlyContinue
-}
+Write-Output $outputPathFull

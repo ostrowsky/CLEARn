@@ -1,7 +1,7 @@
 {
   "meta": {
     "appTitle": "CLEARn",
-    "updatedAt": "2026-04-25T15:29:35.322Z",
+    "updatedAt": "2026-05-05T22:00:17.852Z",
     "ui": {
       "brandTagline": "Shared web + mobile prototype",
       "footerNote": "",
@@ -49,7 +49,9 @@
         "questionFormationAllDone": "Good work. Loading the next sentence...",
         "questionFormationHintUsed": "Hint: start this question with {whWord}.",
         "questionFormationIncorrectReveal": "The hidden answer is shown in red: {answer}.",
-        "questionFormationSentenceHidden": "Sentence is hidden. Keep asking from memory."
+        "questionFormationSentenceHidden": "Sentence is hidden. Keep asking from memory.",
+        "videoPracticeLibraryDescription": "Use uploaded videos or streaming links as the talk source. The question builder below stays the same.",
+        "videoLibraryHint": "Choose a video, then build a follow-up question from its transcript."
       },
       "labels": {
         "generator": "Generator",
@@ -98,7 +100,10 @@
         "reactionDropdownHint": "Select opening phrase",
         "questionFormationSentence": "Sentence",
         "questionFormationQuestionLabel": "Blank {index}",
-        "questionFormationCountdown": "Time left: {seconds}s"
+        "questionFormationCountdown": "Time left: {seconds}s",
+        "videoPracticeLibrary": "Video practice library",
+        "videoSource": "Video source",
+        "videoLibrary": "Video library"
       },
       "buttons": {
         "checkQuestion": "Check my question",
@@ -125,7 +130,10 @@
         "stopRecording": "Stop and transcribe",
         "openMedia": "Open media",
         "showHint": "Show hint",
-        "nextSentence": "Next sentence"
+        "nextSentence": "Next sentence",
+        "generatedTalkSource": "Generated talk",
+        "videoTranscriptSource": "Video transcript",
+        "openVideo": "Open video"
       },
       "placeholders": {
         "clarifyContext": "Example: I am a backend engineer working on billing APIs for enterprise clients.",
@@ -168,6 +176,7 @@
           "body": "Body",
           "url": "URL",
           "altText": "Alt text",
+          "transcript": "Transcript",
           "key": "Key",
           "label": "Label",
           "renderer": "Renderer",
@@ -189,7 +198,8 @@
           "acceptedAnswers": "Accepted answers",
           "placeholder": "Placeholder",
           "selectorLabel": "Selector label",
-          "reactionOptions": "Reaction phrases"
+          "reactionOptions": "Reaction phrases",
+          "blockLayout": "Block layout"
         },
         "actions": {
           "addSection": "Add section",
@@ -1555,13 +1565,13 @@
     {
       "id": "asking-interrupt",
       "eyebrow": "1.1 Interrupt and ask",
-      "type": "practice-interrupt",
+      "type": "exercise-answering-unnecessary",
       "route": "/asking/interrupt",
-      "summary": "This screen combines scripted phrase banks, media placeholders, and a dynamic clarification drill.",
+      "summary": "The \"Wait, What?\" Recovery Guide",
       "blocks": [
         {
           "id": "did-not-hear",
-          "description": "Short repair phrases for when you missed the sound.",
+          "description": "The \"Say Again\" Toolkit: Sound",
           "materials": [
             {
               "id": "hear-text-1",
@@ -1582,11 +1592,14 @@
           ],
           "route": "",
           "kind": "panel",
-          "title": "1.1.1 You didn't hear"
+          "title": "1.1.1 You didn't hear",
+          "meta": {
+            "layoutWidth": "half"
+          }
         },
         {
           "id": "did-not-understand",
-          "description": "Repair phrases for meaning, not just sound.",
+          "description": "The \"Say Again\" Toolkit: Meaning",
           "materials": [
             {
               "id": "understand-text-1",
@@ -1615,11 +1628,14 @@
           ],
           "route": "",
           "kind": "panel",
-          "title": "1.1.2 You didn't understand"
+          "title": "1.1.2 You didn't understand",
+          "meta": {
+            "layoutWidth": "half"
+          }
         },
         {
           "id": "clarify-details",
-          "description": "Listen to the audio statement, speak your clarification question, edit the transcript, and check it against the target clarification.",
+          "description": "Hear it. Ask it. Perfect it.",
           "materials": [
             {
               "id": "material-s1cbfpa3",
@@ -1730,7 +1746,7 @@
           ],
           "route": "",
           "kind": "practice-clarify",
-          "title": "1.1.3 You want to clarify details"
+          "title": "1.1.3 You Want to Clarify the Missed Detail"
         },
         {
           "id": "block-tsed9be7",
@@ -1741,14 +1757,14 @@
           "materials": []
         }
       ],
-      "title": "Repair the conversation politely when you miss something important."
+      "title": "How to Ask for the Details You Missed"
     },
     {
       "id": "asking-after-talk",
       "eyebrow": "1.2 Ask after the talk",
       "type": "practice-ask-after",
       "route": "/asking/after-talk",
-      "summary": "This practice screen generates a short workplace talk and keeps your cheat sheet visible while you build a question.",
+      "summary": "Smart Strategies for Post-Talk Q&A",
       "blocks": [
         {
           "id": "context-leads",
@@ -1911,16 +1927,67 @@
           "route": "",
           "kind": "practice-ask-after",
           "title": "Practice after the talk"
+        },
+        {
+          "id": "block-ayctl2c6",
+          "kind": "practice-ask-after",
+          "title": "",
+          "description": "",
+          "route": "",
+          "materials": [
+            {
+              "id": "material-ufvhck4j",
+              "type": "video",
+              "title": "Why Outcomes Matter More Than Code Output",
+              "body": "",
+              "url": "https://www.youtube.com/watch?v=s7aNuultC_E&start=211&end=253",
+              "alt": "Why Outcomes Matter More Than Code Output",
+              "meta": {
+                "transcript": "I think those are still what makes me tick, at least as engineers specifically. But there are different flavors of engineers.\nSome people really like the the hands on part, and they really like and they hold a lot of passion in the craft of creating code\nwhere they say, this is elegant code and we've refactored it and it's not really nice. That's the female part. I think that's impacted the most so far.\nYeah. It's look, if you if you look at software development, at least in my opinion,\nwhat we used to do is we would have a problem with challenge. And we would start figuring out what is the algorithm\nto get to a solution, aka the coding, the, you know,"
+              }
+            },
+            {
+              "id": "material-v9uxqtzh",
+              "type": "video",
+              "title": "The Product-Engineering Boundary Is Disappearing",
+              "body": "",
+              "url": "https://www.youtube.com/watch?v=s7aNuultC_E&start=368&end=457",
+              "alt": "",
+              "meta": {
+                "transcript": "You know, is better at doing one task than another. And, and, you know, keeps the control and,\nand has some, some responsibilities there, but it should be seamless. And with that additional process involved\nin the operations of the, in the outcomes because that is what we're actually doing, that algorithm algorithm that will be solved by AI.\nI will take care of that work for us. And when it doesn't work, we can still dive into the code, into the nitty gritty.\nSome things are maybe way too bleeding edge for an agent to understand what could be.\nBut that is then the more some work, right? Is you asking us to set up the, internal, internal of thing.\nAnd one of the things that came out have to it is that that's actually the work that developers enjoy doing.\nAnd figuring out to the solution, figuring out the outcomes. So, yeah, it is shifting. It is changing.\nI think that for the for the coders that like to code, That's great. We still have people also writing, the Linux kernel, right?"
+              }
+            },
+            {
+              "id": "material-4co9xovi",
+              "type": "video",
+              "title": "Is Open Source at Risk Because of AI?",
+              "body": "",
+              "url": "https://www.youtube.com/watch?v=s7aNuultC_E&start=1934&end=1991",
+              "alt": "",
+              "meta": {
+                "transcript": "But but yes, support,support the support maker, support the contributors and the companies that, need to project allies that have the time and and resources in that sense.\nWell, but yes, you need to add something really special. Yeah.\nOtherwise it's not good enough anymore. I feel like open source is, the value of open source and kind of the monetization model.\nIt was always challenging. So open source projects really nailed it. And they are thriving. And the other ones that added it like an add on that one is the, I think\nimpacted the most in terms of now people being able to kind of copy and and merge things, which means if that incentive is gone,\nI hope we don't get into a cycle where we have less and less things that are open out for people to use.\nBecause I do love a lot of my open source software, and I do think it is."
+              }
+            },
+            {
+              "id": "material-gcy1s9sx",
+              "type": "video",
+              "title": "Dealing with Questions",
+              "body": "",
+              "url": "https://libertexgroup.udemy.com/course/professional-speech-english/learn/lecture/48724233",
+              "alt": "",
+              "meta": {}
+            }
+          ]
         }
       ],
-      "title": "Listen for facts, then build a clear follow-up question."
+      "title": "How to Ask Better Questions After a Presentation"
     },
     {
       "id": "asking-without-context",
       "eyebrow": "1.3 Question formation",
       "type": "practice-without-context",
       "route": "/asking/without-context",
-      "summary": "Practice forming grammatically correct WH questions from short IT workplace statements.",
+      "summary": "Constructing Questions: Hands-On Practice",
       "blocks": [
         {
           "id": "without-context-practice",
@@ -1931,7 +1998,7 @@
           "title": "Questions drill"
         }
       ],
-      "title": "Practice forming grammatically correct questions."
+      "title": "How to Structure Questions Correctly"
     },
     {
       "id": "answering-hub",

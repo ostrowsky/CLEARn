@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ActivityIndicator, Image, Linking, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type { AppContent, ContentBlock, ContentMaterial, ContentSection } from '@softskills/domain';
 import { Screen } from '../../src/components/Screen';
 import { AskAfterComposer } from '../../src/components/practice/AskAfterComposer';
@@ -16,14 +17,14 @@ import {
   getSectionViewConfig,
   getUiConfig,
 } from '../../src/lib/contentMeta';
-import { resolveApiUrl } from '../../src/lib/api';
+import { apiClient, resolveApiUrl } from '../../src/lib/api';
 import { tokens } from '../../src/theme/tokens';
 
 const directVideoPattern = /\.(mp4|webm|ogv|mov|m4v)(?:[?#].*)?$/i;
 const directAudioPattern = /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm)(?:[?#].*)?$/i;
 const directImagePattern = /\.(png|jpg|jpeg|gif|webp|svg)(?:[?#].*)?$/i;
-const youTubeWatchPattern = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{6,})/i;
-const youTubeEmbedPattern = /youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/i;
+const youTubeIdPattern = /^[A-Za-z0-9_-]{6,}$/;
+const youTubeLegacyPattern = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i;
 const vimeoPattern = /vimeo\.com\/(?:video\/)?(\d+)/i;
 
 function getPracticeHref(content: AppContent | null | undefined, section: ContentSection, block: ContentBlock) {
@@ -59,19 +60,92 @@ function isDirectAsset(url: string, pattern: RegExp) {
   return Boolean(url) && (url.startsWith('data:') || url.startsWith('blob:') || pattern.test(url));
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+}
+
+function asString(value: unknown, fallback = '') {
+  return typeof value === 'string' ? value : fallback;
+}
+
+function getBlockLayoutWidth(block: ContentBlock) {
+  const value = asString(asRecord(block.meta).layoutWidth).toLowerCase();
+  return ['full', 'half'].includes(value) ? value : 'auto';
+}
+
+function parseSeconds(value: string) {
+  const clean = String(value || '').trim().toLowerCase();
+  if (!clean) {
+    return 0;
+  }
+
+  const colonParts = clean.split(':').map((item) => Number.parseInt(item, 10));
+  if (colonParts.length > 1 && colonParts.every((item) => Number.isFinite(item))) {
+    return colonParts.reduce((total, part) => (total * 60) + part, 0);
+  }
+
+  const explicit = clean.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$/);
+  if (explicit && (explicit[1] || explicit[2] || explicit[3])) {
+    return (Number.parseInt(explicit[1] || '0', 10) * 3600)
+      + (Number.parseInt(explicit[2] || '0', 10) * 60)
+      + Number.parseInt(explicit[3] || '0', 10);
+  }
+
+  const numeric = Number.parseInt(clean, 10);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function getYouTubeVideoInfo(url: string) {
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+    let id = '';
+    if (host === 'youtu.be') {
+      id = parsed.pathname.split('/').filter(Boolean)[0] || '';
+    } else if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com') {
+      if (parsed.pathname === '/watch') {
+        id = parsed.searchParams.get('v') || '';
+      } else {
+        const parts = parsed.pathname.split('/').filter(Boolean);
+        if (['embed', 'shorts', 'live'].includes(parts[0] || '')) {
+          id = parts[1] || '';
+        }
+      }
+    }
+
+    if (!youTubeIdPattern.test(id)) {
+      return null;
+    }
+
+    const start = parseSeconds(parsed.searchParams.get('start') || parsed.searchParams.get('t') || '');
+    const end = parseSeconds(parsed.searchParams.get('end') || '');
+    return { id, start, end };
+  } catch {
+    const match = url.match(youTubeLegacyPattern);
+    return match?.[1] ? { id: match[1], start: 0, end: 0 } : null;
+  }
+}
+
 function getEmbeddedVideoUrl(url: string) {
   if (!url) {
     return '';
   }
 
-  const embedMatch = url.match(youTubeEmbedPattern);
-  if (embedMatch) {
-    return `https://www.youtube.com/embed/${embedMatch[1]}`;
-  }
-
-  const youTubeMatch = url.match(youTubeWatchPattern);
-  if (youTubeMatch) {
-    return `https://www.youtube.com/embed/${youTubeMatch[1]}`;
+  const youTubeInfo = getYouTubeVideoInfo(url);
+  if (youTubeInfo) {
+    const params = new URLSearchParams();
+    if (youTubeInfo.start > 0) {
+      params.set('start', String(youTubeInfo.start));
+    }
+    if (youTubeInfo.end > youTubeInfo.start) {
+      params.set('end', String(youTubeInfo.end));
+    }
+    params.set('enablejsapi', '1');
+    return `https://www.youtube.com/embed/${youTubeInfo.id}?${params.toString()}`;
   }
 
   const vimeoMatch = url.match(vimeoPattern);
@@ -80,6 +154,89 @@ function getEmbeddedVideoUrl(url: string) {
   }
 
   return '';
+}
+
+function useFocusedMediaActive() {
+  const [active, setActive] = useState(true);
+
+  useFocusEffect(useCallback(() => {
+    setActive(true);
+    return () => setActive(false);
+  }, []));
+
+  return active;
+}
+
+function getMaterialTranscript(material: ContentMaterial, mediaUrl: string) {
+  const meta = asRecord(material.meta);
+  const directTranscript = asString(meta.transcript) || asString(meta.videoTranscript) || asString(meta.caption);
+  if (directTranscript.trim()) {
+    return directTranscript.trim();
+  }
+
+  const segments = Array.isArray(meta.transcriptSegments) ? meta.transcriptSegments : [];
+  if (segments.length) {
+    const start = getYouTubeVideoInfo(mediaUrl)?.start || 0;
+    const matchingSegment = segments.find((item) => {
+      const segment = asRecord(item);
+      const from = typeof segment.start === 'number' ? segment.start : Number.parseInt(String(segment.start || '0'), 10);
+      const to = typeof segment.end === 'number' ? segment.end : Number.parseInt(String(segment.end || '0'), 10);
+      return Number.isFinite(from) && Number.isFinite(to) && start >= from && start <= to;
+    });
+    const text = asString(asRecord(matchingSegment).text);
+    if (text.trim()) {
+      return text.trim();
+    }
+  }
+
+  return '';
+}
+
+function VideoTranscript({ mediaUrl, initialText }: { mediaUrl: string; initialText: string }) {
+  const [text, setText] = useState(initialText);
+  const [status, setStatus] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    setText(initialText);
+    setStatus('');
+
+    if (initialText || !getYouTubeVideoInfo(mediaUrl)) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    apiClient.getVideoTranscript(mediaUrl)
+      .then((result) => {
+        if (cancelled) {
+          return;
+        }
+        setText(String(result.text || '').trim());
+        setStatus(result.text ? '' : String(result.message || ''));
+      })
+      .catch((error: Error) => {
+        if (!cancelled) {
+          setStatus(error.message);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialText, mediaUrl]);
+
+  if (!text && !status) {
+    return null;
+  }
+
+  return (
+    <View style={styles.transcriptBox}>
+      <ScrollView nestedScrollEnabled>
+        <Text style={styles.transcriptText}>{text || status}</Text>
+      </ScrollView>
+    </View>
+  );
 }
 
 function openExternalUrl(url: string) {
@@ -91,13 +248,18 @@ function openExternalUrl(url: string) {
 }
 
 function WebVideoPlayer({ url }: { url: string }) {
+  const active = useFocusedMediaActive();
   if (Platform.OS !== 'web' || !url) {
     return null;
   }
 
   return (
     <View style={styles.webMediaShell}>
-      <video controls playsInline preload="metadata" src={url} style={webVideoStyle} />
+      {active ? (
+        <video controls playsInline preload="metadata" src={url} style={webVideoStyle}>
+          <source src={url} />
+        </video>
+      ) : null}
     </View>
   );
 }
@@ -115,19 +277,22 @@ function WebAudioPlayer({ url }: { url: string }) {
 }
 
 function WebVideoEmbed({ url }: { url: string }) {
+  const active = useFocusedMediaActive();
   if (Platform.OS !== 'web' || !url) {
     return null;
   }
 
   return (
     <View style={styles.webMediaShell}>
-      <iframe
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowFullScreen
-        src={url}
-        style={webFrameStyle}
-        title="embedded-video"
-      />
+      {active ? (
+        <iframe
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          src={url}
+          style={webFrameStyle}
+          title="embedded-video"
+        />
+      ) : null}
     </View>
   );
 }
@@ -151,6 +316,7 @@ function renderMaterial(material: ContentMaterial, options: { emptyMediaText: st
   const isDirectVideo = material.type === 'video' && isDirectAsset(mediaUrl, directVideoPattern);
   const isDirectAudio = material.type === 'audio' && isDirectAsset(mediaUrl, directAudioPattern);
   const isDirectImage = material.type === 'image' && isDirectAsset(mediaUrl, directImagePattern);
+  const transcript = getMaterialTranscript(material, mediaUrl);
 
   if (material.type === 'text') {
     return (
@@ -178,6 +344,7 @@ function renderMaterial(material: ContentMaterial, options: { emptyMediaText: st
         <Text style={styles.materialLabel}>{material.title}</Text>
         <WebVideoPlayer url={mediaUrl} />
         {material.body ? <Text style={styles.materialBody}>{material.body}</Text> : null}
+        <VideoTranscript mediaUrl={mediaUrl} initialText={transcript} />
         {Platform.OS !== 'web' ? <MaterialOpenButton url={mediaUrl} label={options.openMediaLabel} /> : null}
       </View>
     );
@@ -189,7 +356,8 @@ function renderMaterial(material: ContentMaterial, options: { emptyMediaText: st
         <Text style={styles.materialLabel}>{material.title}</Text>
         <WebVideoEmbed url={embeddedVideoUrl} />
         {material.body ? <Text style={styles.materialBody}>{material.body}</Text> : null}
-        <MaterialOpenButton url={mediaUrl} label={options.openMediaLabel} />
+        <VideoTranscript mediaUrl={mediaUrl} initialText={transcript} />
+        {Platform.OS !== 'web' ? <MaterialOpenButton url={mediaUrl} label={options.openMediaLabel} /> : null}
       </View>
     );
   }
@@ -405,7 +573,9 @@ export default function SectionScreen() {
           {contentBlocks.map((block, index) => {
             const practiceHref = getPracticeHref(content, section, block);
             const renderer = getBlockRenderer(content, block.kind);
-            const isHalfWidthCard = renderer !== 'practice-clarify' && renderer !== 'practice-without-context' && featuredBlockCount > 0 && index < featuredBlockCount;
+            const blockLayoutWidth = getBlockLayoutWidth(block);
+            const isHalfWidthCard = (blockLayoutWidth === 'half' && isWide)
+              || (blockLayoutWidth === 'auto' && renderer !== 'practice-clarify' && renderer !== 'practice-without-context' && featuredBlockCount > 0 && index < featuredBlockCount);
 
             return (
               <View
@@ -454,16 +624,15 @@ export default function SectionScreen() {
 
 const webFrameStyle = {
   width: '100%',
-  height: 280,
+  height: '100%',
   border: 0,
-  borderRadius: 18,
   backgroundColor: '#000',
 };
 
 const webVideoStyle = {
   width: '100%',
-  height: 280,
-  borderRadius: 18,
+  height: '100%',
+  objectFit: 'contain',
   backgroundColor: '#000',
 };
 
@@ -597,10 +766,23 @@ const styles = StyleSheet.create({
   },
   webMediaShell: {
     width: '100%',
-    minHeight: 280,
+    aspectRatio: 16 / 9,
+    maxHeight: 520,
     borderRadius: tokens.radius.md,
     overflow: 'hidden',
     backgroundColor: '#000',
+  },
+  transcriptBox: {
+    maxHeight: 220,
+    borderRadius: tokens.radius.md,
+    padding: tokens.spacing.md,
+    backgroundColor: tokens.colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: tokens.colors.cardLine,
+  },
+  transcriptText: {
+    color: tokens.colors.inkSoft,
+    lineHeight: 22,
   },
   webAudioShell: {
     width: '100%',

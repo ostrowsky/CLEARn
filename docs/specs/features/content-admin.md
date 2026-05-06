@@ -19,22 +19,33 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 ## User-visible behavior
 
 - Admins can edit visible labels, instructional text, section/block/material order, material fields, and media.
+- Admins can set block layout width (`auto`, `full`, or `half`) so selected blocks can appear on the same horizontal row on wide screens.
 - Saved content appears in learner routes without code changes.
 - Uploaded media can be opened, replaced, and deleted.
+- Video materials render inside the learner page when the source is an uploaded playable file or a supported streaming URL such as YouTube or Vimeo.
+- YouTube links may include a timestamp, and the embedded player must start at the linked segment instead of redirecting to YouTube.
+- Video transcript text stored on the material must appear below the embedded player as readable learner content.
+- If a YouTube material has no manual transcript, the API should attempt to load the public transcript track from YouTube and show the text around the linked timestamp.
+- If YouTube shows a transcript in the browser but does not expose captions to server-side requests, the learner screen must show a clear recoverable message and the admin can paste the segment into the material Transcript field.
 - Backup export contains enough app data to restore the prototype to the same functional state.
+- Backup export must exclude rebuildable runtime folders such as dependency directories, virtual environments, build outputs, caches, and preview artifacts so it can complete through the public Cloudflare preview.
 - Admin actions should report clear success or failure messages.
 
 ## Invariants
 
 - Learner copy must not depend on hidden hardcoded fallback text unless content is missing or invalid.
 - Reordering content must preserve IDs and material data.
+- Block layout metadata must not change the underlying content order.
 - New default materials must persist after save and reload.
 - Backup/restore must not silently drop content or uploads.
+- Backup/restore may omit generated dependencies and local model caches that can be recreated from scripts.
 
 ## Edge cases and failure policy
 
 - Invalid content saves must fail with a clear error and must not corrupt the previous content.
 - Missing media should show a recoverable broken-asset state, not crash the screen.
+- Unsupported video codecs may still fail in the browser, but the API must serve uploaded media with correct content type and range support so compatible MP4/WebM files can play inline.
+- YouTube transcript auto-loading is best-effort because some transcripts are gated by YouTube session, geography, age, rate limits, or anti-bot checks.
 - Concurrent edits are not guaranteed in the MVP and must be addressed before production.
 
 ## Route / state / data implications
@@ -55,4 +66,3 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 
 - Whether admin is web-only for the commercial product.
 - Whether admin edits require draft/publish approval before learner visibility.
-

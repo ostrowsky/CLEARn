@@ -51,6 +51,18 @@ function ensureMaterialMeta(material: ContentMaterial) {
   return material.meta as Record<string, unknown>;
 }
 
+function ensureBlockMeta(block: ContentBlock) {
+  if (!block.meta || typeof block.meta !== 'object') {
+    block.meta = {};
+  }
+
+  return block.meta as Record<string, unknown>;
+}
+
+function readBlockMetaString(block: ContentBlock, key: string) {
+  return typeof asRecord(block.meta)[key] === 'string' ? String(asRecord(block.meta)[key]) : '';
+}
+
 function readMaterialMetaString(material: ContentMaterial, key: string) {
   return typeof asRecord(material.meta)[key] === 'string' ? String(asRecord(material.meta)[key]) : '';
 }
@@ -768,6 +780,26 @@ export default function AdminScreen() {
                     })} style={styles.input} />
                   </Field>
 
+                  <Field label={String(fieldLabels.blockLayout || 'Block layout')}>
+                    <TextInput value={readBlockMetaString(block, 'layoutWidth') || 'auto'} onChangeText={(value) => updateContent((draft) => {
+                      const targetBlock = draft.sections.find((item) => item.id === selectedSection.id)?.blocks.find((item) => item.id === block.id);
+                      if (!targetBlock) return;
+                      const meta = ensureBlockMeta(targetBlock);
+                      meta.layoutWidth = value;
+                    })} style={styles.input} />
+                    <ChoiceChips
+                      values={['auto', 'full', 'half']}
+                      currentValue={readBlockMetaString(block, 'layoutWidth') || 'auto'}
+                      labels={{ auto: 'Auto', full: 'Full width', half: 'Half width' }}
+                      onPick={(value) => updateContent((draft) => {
+                        const targetBlock = draft.sections.find((item) => item.id === selectedSection.id)?.blocks.find((item) => item.id === block.id);
+                        if (!targetBlock) return;
+                        const meta = ensureBlockMeta(targetBlock);
+                        meta.layoutWidth = value;
+                      })}
+                    />
+                  </Field>
+
                   <View style={styles.inlineActions}>
                     <Pressable
                       style={styles.secondaryButton}
@@ -895,6 +927,17 @@ export default function AdminScreen() {
                             if (targetMaterial) targetMaterial.alt = value;
                           })} style={styles.input} />
                         </Field>
+
+                        {material.type === 'video' ? (
+                          <Field label={String(fieldLabels.transcript || '')}>
+                            <TextInput value={readMaterialMetaString(material, 'transcript')} onChangeText={(value) => updateContent((draft) => {
+                              const targetMaterial = draft.sections.find((item) => item.id === selectedSection.id)?.blocks.find((item) => item.id === block.id)?.materials.find((item) => item.id === material.id);
+                              if (!targetMaterial) return;
+                              const meta = ensureMaterialMeta(targetMaterial);
+                              meta.transcript = value;
+                            })} style={[styles.input, styles.textArea]} multiline />
+                          </Field>
+                        ) : null}
 
                         {isClarifyAudioMaterial(block, material) ? (
                           <>

@@ -119,6 +119,22 @@ try {
     $absoluteUpload = Join-Path $webRoot ('static' + ($uploadedUrl -replace '/', '\'))
     Assert-True -Condition (Test-Path -LiteralPath $absoluteUpload -PathType Leaf) -Message 'Uploaded media file was not created on disk.'
 
+    $rangeRequest = [System.Net.HttpWebRequest][System.Net.WebRequest]::Create("$baseUrl$uploadedUrl")
+    $rangeRequest.Method = 'GET'
+    $rangeRequest.AddRange(0, 15)
+    $rangeResponse = $null
+    try {
+        $rangeResponse = [System.Net.HttpWebResponse]$rangeRequest.GetResponse()
+        Assert-Equal -Expected 206 -Actual ([int]$rangeResponse.StatusCode) -Message 'Uploaded video should support HTTP byte ranges for browser playback.'
+        Assert-Equal -Expected 'bytes' -Actual ([string]$rangeResponse.Headers['Accept-Ranges']) -Message 'Uploaded video range response should advertise byte ranges.'
+        Assert-Match -Actual ([string]$rangeResponse.Headers['Content-Range']) -Pattern '^bytes 0-15/'
+    }
+    finally {
+        if ($null -ne $rangeResponse) {
+            $rangeResponse.Dispose()
+        }
+    }
+
     $deleteResult = Invoke-JsonRequest -Uri "$baseUrl/api/admin/media/delete" -Method Post -Payload @{ url = $uploadedUrl }
     Assert-True -Condition ([bool]$deleteResult.deleted)
     Assert-True -Condition (-not (Test-Path -LiteralPath $absoluteUpload -PathType Leaf)) -Message 'Uploaded media file was not deleted.'

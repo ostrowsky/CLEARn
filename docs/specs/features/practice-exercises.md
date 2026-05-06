@@ -25,6 +25,10 @@ Learners practise workplace English through structured exercises with text input
 - STT output must be editable before submission.
 - Validation must reject meaningless text, answer leaks, malformed questions, and role-inappropriate output.
 - Answering practice must keep the user's selected reaction phrase and improve only the answer body.
+- Ask-after-talk practice can use either a generated short talk or a video material transcript as the source text.
+- Ask-after-talk video materials must be selectable from a right-side video library and must use the same question builder pattern: selected Context phrase, learner-entered or dictated detail, and selected Could you phrase.
+- Embedded practice videos must stop playing when the learner leaves the screen.
+- Timestamped YouTube links with `start` and `end` query parameters must open at the start time and stop at the end time where the provider allows it.
 - Question formation practice must check whether the learner's WH question is grammatical and targets the intended hidden detail.
 - Generated exercises must remain workplace/IT-oriented and must not echo the learner context unnaturally.
 
@@ -46,6 +50,7 @@ Learners practise workplace English through structured exercises with text input
 - Existing learner routes include `/practice/asking/after-talk`, `/practice/asking/clarify`, `/practice/answering/mixed`, and section-driven exercise rendering.
 - Existing API routes include `/api/practice/*`, `/api/answering/session/*`, `/api/coach/session/*`, and `/api/speech/stt`.
 - Exercise configuration belongs in `content.meta.practice` or section/block/material metadata.
+- Video-library sources for ask-after-talk are regular `video` materials on `practice-ask-after` blocks, with transcript text in material metadata where available.
 
 ## Verification mapping
 
@@ -62,4 +67,3 @@ Learners practise workplace English through structured exercises with text input
 
 - Whether learner attempts and scores must be persisted for paid users.
 - Whether teacher/admin review of learner transcripts is required.
-

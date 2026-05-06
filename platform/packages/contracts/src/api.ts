@@ -82,6 +82,15 @@ export type DeleteMediaRequest = {
   url: string;
 };
 
+export type VideoTranscriptResponse = {
+  available: boolean;
+  source: 'youtube' | 'unsupported';
+  text: string;
+  start: number;
+  end: number;
+  message?: string;
+};
+
 export type SpeechToTextRequest = {
   audioBase64: string;
   mimeType: string;
@@ -109,6 +118,7 @@ export type ApiContract = {
   continueCoachChat(input: ContinueCoachChatSessionRequest): Promise<CoachChatSession>;
   uploadMedia(input: UploadMediaRequest): Promise<{ url: string; fileName: string; size: number }>;
   deleteMedia(input: DeleteMediaRequest): Promise<{ deleted: boolean; url: string }>;
+  getVideoTranscript(url: string): Promise<VideoTranscriptResponse>;
   speechToText(input: SpeechToTextRequest): Promise<SpeechToTextResult>;
   textToSpeech(input: TextToSpeechRequest): Promise<TextToSpeechResult>;
 };
