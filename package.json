@@ -1,11 +1,10 @@
 {
   "name": "clearn",
   "private": true,
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "npm@10",
   "scripts": {
-    "build": "cd platform && pnpm build",
+    "build": "cd platform && npm run build",
     "test": "powershell -ExecutionPolicy Bypass -File ./web/tests/run-tests.ps1",
-    "vercel-build": "cd platform && pnpm --filter @softskills/client build"
+    "vercel-build": "cd platform && npm run --workspace @softskills/client build"
   }
 }
-
