@@ -31,6 +31,8 @@ const schema = z.object({
   SELF_HOSTED_BASE_URL: z.string().default('http://localhost:11434/v1'),
   SELF_HOSTED_SPEECH_BASE_URL: z.string().default('http://localhost:8010/v1'),
   DEV_CONTENT_PATH: z.string().default(defaultDevContentPath),
+  ADMIN_AUTH_PATH: z.string().default(path.resolve(configDir, '..', '..', '..', '..', '..', 'web', 'data', 'admin-auth.json')),
+  ADMIN_SESSION_SECRET: z.string().optional(),
   HTTP_BODY_LIMIT_BYTES: z.coerce.number().default(26214400),
 });
 

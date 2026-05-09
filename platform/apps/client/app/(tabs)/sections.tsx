@@ -17,6 +17,7 @@ export default function SectionsScreen() {
       appTitle={content?.meta.appTitle}
       brandTagline={getNestedString(ui, ['brandTagline'])}
       footerNote={getNestedString(ui, ['footerNote'])}
+      watermarkText={getNestedString(ui, ['watermarkText'])}
       eyebrow={home?.eyebrow ?? ''}
       title={home?.title ?? ''}
       subtitle={home?.summary ?? ''}

@@ -46,6 +46,10 @@ foreach ($pattern in @(
     'handleRestoreBackup',
     'handleUploadMaterial',
     'apiClient.getAdminContent',
+    'apiClient.getAdminAuthStatus',
+    'apiClient.setupAdminAuth',
+    'apiClient.loginAdmin',
+    'apiClient.logoutAdmin',
     'apiClient.saveAdminContent',
     'apiClient.getAdminBackupExportUrl',
     'apiClient.restoreAdminBackup',
@@ -59,7 +63,9 @@ foreach ($pattern in @(
     'createSectionTemplate',
     'applySectionTypeTemplate',
     'createBlockTemplate',
-    'createMaterialTemplate'
+    'createMaterialTemplate',
+    'updateWatermarkText',
+    'watermarkText'
 )) {
     Assert-Match -Actual $adminScreen -Pattern $pattern
 }
@@ -69,6 +75,10 @@ Write-TestStep 'Checking shared platform admin API surface'
 $apiClientSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\src\lib\api.ts') -Raw
 foreach ($pattern in @(
     'getAdminContent',
+    'getAdminAuthStatus',
+    'setupAdminAuth',
+    'loginAdmin',
+    'logoutAdmin',
     'saveAdminContent',
     'getAdminBackupExportUrl',
     'restoreAdminBackup',
@@ -84,6 +94,10 @@ Assert-Match -Actual $indexSource -Pattern 'bodyLimit: env.HTTP_BODY_LIMIT_BYTES
 $routesSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\routes\registerRoutes.ts') -Raw
 foreach ($pattern in @(
     '/api/admin/content',
+    '/api/admin/auth/status',
+    '/api/admin/auth/setup',
+    '/api/admin/auth/login',
+    '/api/admin/auth/logout',
     '/api/admin/backup/export',
     '/api/admin/backup/import',
     '/api/admin/media/upload',

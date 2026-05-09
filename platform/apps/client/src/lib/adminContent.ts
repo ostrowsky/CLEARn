@@ -52,8 +52,9 @@ export function ensureAdminContentStructures(content: AppContent): AppContent {
   admin.fieldLabels = asRecord(admin.fieldLabels);
   admin.actions = asRecord(admin.actions);
   admin.messages = asRecord(admin.messages);
-  admin.templates = asRecord(admin.templates);
-  admin.templates.sectionTypes = asRecord(asRecord(admin.templates).sectionTypes);
+  const adminTemplates = asRecord(admin.templates);
+  adminTemplates.sectionTypes = asRecord(adminTemplates.sectionTypes);
+  admin.templates = adminTemplates;
 
   next.meta.runtime = asRecord(next.meta.runtime);
   const runtime = asRecord(next.meta.runtime);
@@ -263,4 +264,3 @@ export function createSectionTemplate(content: AppContent | null | undefined): C
 
   return applySectionTypeTemplate(content, section, section.type);
 }
-

@@ -180,6 +180,7 @@ export default function CoachChatPracticeScreen() {
       appTitle={content?.meta.appTitle}
       brandTagline={getNestedString(ui, ['brandTagline'])}
       footerNote={getNestedString(ui, ['footerNote'])}
+      watermarkText={getNestedString(ui, ['watermarkText'])}
       eyebrow={section?.eyebrow}
       title={practiceBlock?.title ?? section?.title ?? ''}
       subtitle={practiceBlock?.description ?? section?.summary ?? ''}

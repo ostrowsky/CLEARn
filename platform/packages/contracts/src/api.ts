@@ -82,6 +82,24 @@ export type DeleteMediaRequest = {
   url: string;
 };
 
+export type AdminAuthStatus = {
+  configured: boolean;
+  authenticated: boolean;
+  login: string;
+};
+
+export type SetupAdminAuthRequest = {
+  login: string;
+  password: string;
+  confirmPassword: string;
+  recoveryEmail: string;
+};
+
+export type LoginAdminRequest = {
+  login: string;
+  password: string;
+};
+
 export type VideoTranscriptResponse = {
   available: boolean;
   source: 'youtube' | 'unsupported';
@@ -105,6 +123,10 @@ export type TextToSpeechRequest = {
 
 export type ApiContract = {
   getContent(): Promise<AppContent>;
+  getAdminAuthStatus(): Promise<AdminAuthStatus>;
+  setupAdminAuth(input: SetupAdminAuthRequest): Promise<AdminAuthStatus>;
+  loginAdmin(input: LoginAdminRequest): Promise<AdminAuthStatus>;
+  logoutAdmin(): Promise<{ loggedOut: boolean }>;
   saveContent(input: SaveContentRequest): Promise<AppContent>;
   generateClarify(input: GenerateClarifyRequest): Promise<ClarifyExercise>;
   checkClarify(input: CheckClarifyRequest): Promise<{ accepted: boolean; feedback: string }>;

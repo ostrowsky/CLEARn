@@ -19,6 +19,10 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 ## User-visible behavior
 
 - Admins can edit visible labels, instructional text, section/block/material order, material fields, and media.
+- Admin access is protected by an initial setup flow. Before the first admin can use `/admin`, the app asks for login, password, password confirmation, and recovery email.
+- After setup, admins must log in before reading or changing `/api/admin/*` content, media, backup, and restore endpoints.
+- Admin sessions use server-issued cookies and can be cleared with logout.
+- Admin setup must reject mismatched passwords and incomplete credentials.
 - Admins can set block layout width (`auto`, `full`, or `half`) so selected blocks can appear on the same horizontal row on wide screens.
 - Saved content appears in learner routes without code changes.
 - Uploaded media can be opened, replaced, and deleted.
@@ -29,6 +33,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - If YouTube shows a transcript in the browser but does not expose captions to server-side requests, the learner screen must show a clear recoverable message and the admin can paste the segment into the material Transcript field.
 - Backup export contains enough app data to restore the prototype to the same functional state.
 - Backup export must exclude rebuildable runtime folders such as dependency directories, virtual environments, build outputs, caches, and preview artifacts so it can complete through the public Cloudflare preview.
+- Every learner/admin screen displays a small low-contrast watermark from editable content metadata.
 - Admin actions should report clear success or failure messages.
 
 ## Invariants
@@ -39,6 +44,8 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - New default materials must persist after save and reload.
 - Backup/restore must not silently drop content or uploads.
 - Backup/restore may omit generated dependencies and local model caches that can be recreated from scripts.
+- Watermark text must come from content metadata, not component constants.
+- Admin credentials must never be stored as plain text.
 
 ## Edge cases and failure policy
 
@@ -51,8 +58,10 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 ## Route / state / data implications
 
 - Current routes include `/admin`, `/api/admin/content`, `/api/admin/media/upload`, `/api/admin/media/delete`, `/api/admin/backup/export`, and `/api/admin/backup/import`.
+- Admin auth routes include `/api/admin/auth/status`, `/api/admin/auth/setup`, `/api/admin/auth/login`, and `/api/admin/auth/logout`.
 - Production content should move from local JSON to a versioned database table.
 - Media should move from local uploads to object storage.
+- Production admin credentials should move from local JSON to a managed database or identity provider.
 
 ## Verification mapping
 

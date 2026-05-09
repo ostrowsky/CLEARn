@@ -79,6 +79,12 @@ function isClarifyAudioMaterial(block: ContentBlock, material: ContentMaterial) 
 }
 
 type StatusTone = 'success' | 'error';
+type AdminAuthMode = 'setup' | 'login' | 'authenticated';
+type AdminAuthStatus = {
+  configured: boolean;
+  authenticated: boolean;
+  login: string;
+};
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
@@ -124,7 +130,7 @@ function readAnsweringReactionOptions(content: AppContent | null, type: Answerin
 
 function ensureAnsweringQuestionTypeConfig(draft: AppContent, type: AnsweringMode) {
   if (!draft.meta || typeof draft.meta !== 'object') {
-    draft.meta = {};
+    draft.meta = { appTitle: '', updatedAt: '' };
   }
 
   const meta = draft.meta as Record<string, unknown>;
@@ -285,6 +291,12 @@ export default function AdminScreen() {
   const isWide = width >= 1080;
   const [content, setContent] = useState<AppContent | null>(null);
   const contentRef = useRef<AppContent | null>(null);
+  const [authStatus, setAuthStatus] = useState<AdminAuthStatus | null>(null);
+  const [authMode, setAuthMode] = useState<AdminAuthMode>('login');
+  const [authLogin, setAuthLogin] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authConfirmPassword, setAuthConfirmPassword] = useState('');
+  const [authRecoveryEmail, setAuthRecoveryEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -293,6 +305,16 @@ export default function AdminScreen() {
   const [selectedSectionId, setSelectedSectionId] = useState('');
   const [metaDraft, setMetaDraft] = useState('');
   const [schemaDrafts, setSchemaDrafts] = useState<AdminSchemaDrafts>(EMPTY_SCHEMA_DRAFTS);
+
+  async function loadPublicContentForAuth() {
+    const publicContent = ensureAdminContentStructures(await apiClient.getContent());
+    const drafts = createSchemaDrafts(publicContent);
+    contentRef.current = publicContent;
+    setContent(publicContent);
+    setMetaDraft(drafts.metaDraft);
+    setSchemaDrafts(drafts.schemaDrafts);
+    setSelectedSectionId((currentId) => ensureSelectedSectionId(publicContent, currentId));
+  }
 
   async function loadAdminContent() {
     setLoading(true);
@@ -315,7 +337,27 @@ export default function AdminScreen() {
   }
 
   useEffect(() => {
-    void loadAdminContent();
+    async function initializeAdmin() {
+      setLoading(true);
+      setError('');
+      try {
+        const [status] = await Promise.all([
+          apiClient.getAdminAuthStatus(),
+          loadPublicContentForAuth(),
+        ]);
+        setAuthStatus(status);
+        setAuthMode(status.authenticated ? 'authenticated' : status.configured ? 'login' : 'setup');
+        if (status.authenticated) {
+          await loadAdminContent();
+        }
+      } catch (nextError) {
+        setError(nextError instanceof Error ? nextError.message : String(nextError));
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void initializeAdmin();
   }, []);
 
   const adminConfig = getAdminConfig(content);
@@ -358,6 +400,77 @@ export default function AdminScreen() {
       setMetaDraft(JSON.stringify(next.meta || {}, null, 2));
       return next;
     });
+  }
+
+  function updateWatermarkText(value: string) {
+    updateMetaContent((draft) => {
+      if (!draft.meta.ui || typeof draft.meta.ui !== 'object') {
+        draft.meta.ui = {};
+      }
+
+      (draft.meta.ui as Record<string, unknown>).watermarkText = value;
+    });
+  }
+
+  async function refreshAuthenticatedContent(nextStatus: AdminAuthStatus) {
+    setAuthStatus(nextStatus);
+    setAuthMode(nextStatus.authenticated ? 'authenticated' : nextStatus.configured ? 'login' : 'setup');
+    if (nextStatus.authenticated) {
+      await loadAdminContent();
+    }
+  }
+
+  async function handleSetupAdmin() {
+    setBusy(true);
+    setStatus('', 'success');
+    try {
+      const nextStatus = await apiClient.setupAdminAuth({
+        login: authLogin,
+        password: authPassword,
+        confirmPassword: authConfirmPassword,
+        recoveryEmail: authRecoveryEmail,
+      });
+      setAuthPassword('');
+      setAuthConfirmPassword('');
+      await refreshAuthenticatedContent(nextStatus);
+      setStatus(getAdminText(content, ['auth', 'setupComplete']), 'success');
+    } catch (nextError) {
+      setStatus(nextError instanceof Error ? nextError.message : String(nextError), 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleLoginAdmin() {
+    setBusy(true);
+    setStatus('', 'success');
+    try {
+      const nextStatus = await apiClient.loginAdmin({ login: authLogin, password: authPassword });
+      setAuthPassword('');
+      await refreshAuthenticatedContent(nextStatus);
+      setStatus(getAdminText(content, ['auth', 'loginComplete']), 'success');
+    } catch (nextError) {
+      setStatus(nextError instanceof Error ? nextError.message : String(nextError), 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleLogoutAdmin() {
+    setBusy(true);
+    try {
+      await apiClient.logoutAdmin();
+      const nextStatus = await apiClient.getAdminAuthStatus();
+      setAuthStatus(nextStatus);
+      setAuthMode(nextStatus.configured ? 'login' : 'setup');
+      setAuthPassword('');
+      setAuthConfirmPassword('');
+      setStatus(getAdminText(content, ['auth', 'logoutComplete']), 'success');
+    } catch (nextError) {
+      setStatus(nextError instanceof Error ? nextError.message : String(nextError), 'error');
+    } finally {
+      setBusy(false);
+    }
   }
   function updateSectionType(sectionId: string, value: string) {
     updateContent((draft) => {
@@ -628,9 +741,55 @@ export default function AdminScreen() {
         appTitle={content?.meta.appTitle}
         brandTagline={getNestedString(asRecord(content?.meta?.ui), ['brandTagline'])}
         footerNote={getNestedString(asRecord(content?.meta?.ui), ['footerNote'])}
+        watermarkText={getNestedString(asRecord(content?.meta?.ui), ['watermarkText'])}
         title={getAdminText(content, ['loading'])}
       >
         <ActivityIndicator color={tokens.colors.accentContrast} />
+      </Screen>
+    );
+  }
+
+  if (authMode !== 'authenticated') {
+    const isSetup = authMode === 'setup' || authStatus?.configured === false;
+
+    return (
+      <Screen
+        appTitle={content?.meta.appTitle}
+        brandTagline={getNestedString(asRecord(content?.meta?.ui), ['brandTagline'])}
+        footerNote={getNestedString(asRecord(content?.meta?.ui), ['footerNote'])}
+        watermarkText={getNestedString(asRecord(content?.meta?.ui), ['watermarkText'])}
+        title={getAdminText(content, ['auth', isSetup ? 'setupTitle' : 'loginTitle'])}
+        subtitle={getAdminText(content, ['auth', isSetup ? 'setupHint' : 'loginHint'])}
+        backHref="/sections"
+        backLabel={getAdminText(content, ['openLearnerApp'])}
+      >
+        <View style={styles.editorCard}>
+          <Field label={getAdminText(content, ['auth', 'loginLabel'])}>
+            <TextInput value={authLogin} onChangeText={setAuthLogin} style={styles.input} autoCapitalize="none" />
+          </Field>
+          <Field label={getAdminText(content, ['auth', 'passwordLabel'])}>
+            <TextInput value={authPassword} onChangeText={setAuthPassword} style={styles.input} secureTextEntry />
+          </Field>
+          {isSetup ? (
+            <>
+              <Field label={getAdminText(content, ['auth', 'confirmPasswordLabel'])}>
+                <TextInput value={authConfirmPassword} onChangeText={setAuthConfirmPassword} style={styles.input} secureTextEntry />
+              </Field>
+              <Field label={getAdminText(content, ['auth', 'recoveryEmailLabel'])}>
+                <TextInput value={authRecoveryEmail} onChangeText={setAuthRecoveryEmail} style={styles.input} autoCapitalize="none" inputMode="email" />
+              </Field>
+            </>
+          ) : null}
+
+          <View style={styles.inlineActions}>
+            <Pressable style={[styles.primaryButton, busy ? styles.buttonDisabled : null]} onPress={() => void (isSetup ? handleSetupAdmin() : handleLoginAdmin())} disabled={busy}>
+              <Text style={styles.primaryButtonText}>{getAdminText(content, ['auth', isSetup ? 'setupButton' : 'loginButton'])}</Text>
+            </Pressable>
+          </View>
+
+          <StatusBanner text={error} tone="error" />
+          <StatusBanner text={message} tone={messageTone} />
+        </View>
       </Screen>
     );
   }
@@ -640,6 +799,7 @@ export default function AdminScreen() {
       appTitle={content?.meta.appTitle}
       brandTagline={getNestedString(asRecord(content?.meta?.ui), ['brandTagline'])}
       footerNote={getNestedString(asRecord(content?.meta?.ui), ['footerNote'])}
+      watermarkText={getNestedString(asRecord(content?.meta?.ui), ['watermarkText'])}
       title={getAdminText(content, ['title'])}
       subtitle={getAdminText(content, ['hint'])}
       backHref="/sections"
@@ -663,6 +823,9 @@ export default function AdminScreen() {
         <Pressable style={styles.secondaryButton} onPress={() => router.replace('/admin')}>
           <Text style={styles.secondaryButtonText}>{getAdminText(content, ['refreshAdmin'])}</Text>
         </Pressable>
+        <Pressable style={styles.secondaryButton} onPress={() => void handleLogoutAdmin()} disabled={busy}>
+          <Text style={styles.secondaryButtonText}>{getAdminText(content, ['auth', 'logoutButton'])}</Text>
+        </Pressable>
       </View>
 
       <Text style={styles.cardHint}>{getAdminText(content, ['backupHint'])}</Text>
@@ -680,6 +843,12 @@ export default function AdminScreen() {
       </View>
 
       <SchemaCard title={getAdminText(content, ['metaTitle'])} hint={getAdminText(content, ['metaHint'])} value={metaDraft} onChange={setMetaDraft} />
+
+      <View style={styles.editorCard}>
+        <Field label={String(fieldLabels.watermarkText || '')}>
+          <TextInput value={getNestedString(asRecord(content?.meta?.ui), ['watermarkText'])} onChangeText={updateWatermarkText} style={styles.input} />
+        </Field>
+      </View>
 
       <View style={[styles.layout, isWide ? styles.layoutWide : styles.layoutStack]}>
         <View style={[styles.sidebar, isWide ? styles.sidebarWide : null]}>
@@ -829,7 +998,7 @@ export default function AdminScreen() {
                   {isAnsweringPracticeBlock(block) ? (
                     <View style={styles.reactionEditorGroup}>
                       {ANSWERING_REACTION_TYPES.map((reactionType) => {
-                        const reactionConfig = readAnsweringQuestionTypeConfig(content, reactionType);
+                        const reactionConfig = readAnsweringQuestionTypeConfig(content, reactionType) as Record<string, unknown>;
                         const reactionOptions = readAnsweringReactionOptions(content, reactionType);
                         return (
                           <View key={`reaction-${block.id}-${reactionType}`} style={styles.materialCard}>
@@ -1203,6 +1372,9 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: tokens.colors.accentContrast,
     fontWeight: '800',
+  },
+  buttonDisabled: {
+    opacity: 0.55,
   },
   secondaryButton: {
     minHeight: 44,

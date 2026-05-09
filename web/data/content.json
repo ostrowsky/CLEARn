@@ -5,6 +5,7 @@
     "ui": {
       "brandTagline": "Shared web + mobile prototype",
       "footerNote": "",
+      "watermarkText": "Developed by ostrowskyi@gmail.com",
       "navigation": {
         "back": "Back",
         "home": "home",
@@ -161,6 +162,22 @@
         "loading": "Loading admin content...",
         "retry": "Try again",
         "emptySection": "Create the first section to start managing content.",
+        "auth": {
+          "setupTitle": "Create admin access",
+          "setupHint": "Set the first admin login, password, confirmation, and recovery email before editing content.",
+          "loginTitle": "Admin login",
+          "loginHint": "Enter the admin credentials to manage content and backups.",
+          "loginLabel": "Login",
+          "passwordLabel": "Password",
+          "confirmPasswordLabel": "Confirm password",
+          "recoveryEmailLabel": "Recovery email",
+          "setupButton": "Create admin account",
+          "loginButton": "Log in",
+          "logoutButton": "Log out",
+          "setupComplete": "Admin account created.",
+          "loginComplete": "Admin login successful.",
+          "logoutComplete": "Admin session closed."
+        },
         "fieldLabels": {
           "sectionRoute": "Section route",
           "sectionType": "Section type",
@@ -199,7 +216,8 @@
           "placeholder": "Placeholder",
           "selectorLabel": "Selector label",
           "reactionOptions": "Reaction phrases",
-          "blockLayout": "Block layout"
+          "blockLayout": "Block layout",
+          "watermarkText": "Watermark text"
         },
         "actions": {
           "addSection": "Add section",
