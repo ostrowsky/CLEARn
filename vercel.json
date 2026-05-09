@@ -1,14 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
   "installCommand": "cd platform && pnpm install --frozen-lockfile",
   "buildCommand": "cd platform && pnpm --filter @softskills/client build",
   "outputDirectory": "platform/apps/client/dist",
   "rewrites": [
     {
-      "source": "/((?!_expo/|assets/|favicon.ico|metadata.json).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
 }
-

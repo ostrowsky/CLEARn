@@ -94,13 +94,14 @@ foreach ($pattern in @(
     Assert-Match -Actual $rootPackage -Pattern $pattern
 }
 foreach ($pattern in @(
-    '"framework": null',
     '"outputDirectory": "platform/apps/client/dist"',
     '"buildCommand": "cd platform && pnpm --filter @softskills/client build"',
     '"destination": "/index.html"'
 )) {
     Assert-Match -Actual $vercelConfig -Pattern $pattern
 }
+Assert-True -Condition ($vercelConfig -cnotmatch '"framework"') -Message 'Vercel config should not use a nullable framework override.'
+Assert-True -Condition ($vercelConfig -cnotmatch '\?!') -Message 'Vercel SPA fallback should avoid complex negative-lookahead rewrites.'
 foreach ($pattern in @('## What', '## Why', '## Changes')) {
     Assert-Match -Actual $prTemplate -Pattern $pattern
     Assert-Match -Actual $prDescriptionWorkflow -Pattern $pattern

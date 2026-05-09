@@ -118,7 +118,7 @@ Vercel can host the Expo web client as a static frontend. The repository include
 
 Recommended Vercel settings:
 
-- Framework preset: `Other`.
+- Framework preset: `Other`. Do not set a framework override in `vercel.json`; keep the repository config as a static output deployment.
 - Install command: `cd platform && pnpm install --frozen-lockfile`.
 - Build command: `cd platform && pnpm --filter @softskills/client build`.
 - Output directory: `platform/apps/client/dist`.

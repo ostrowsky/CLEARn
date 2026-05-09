@@ -25,6 +25,8 @@ Root files used by Vercel:
 - `package.json`
 - `vercel.json`
 
+Keep `vercel.json` intentionally simple: no `framework` override and a single SPA fallback rewrite to `index.html`. Complex regex rewrites or a nullable framework override can fail early in Vercel config validation before the build starts.
+
 ## Render API
 
 Service type:
