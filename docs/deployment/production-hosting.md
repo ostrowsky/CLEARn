@@ -15,10 +15,16 @@ This split is intentional:
 Project settings:
 
 - Framework preset: `Other`.
-- Install command: `corepack enable && corepack prepare pnpm@10.8.0 --activate && cd platform && pnpm install --frozen-lockfile`.
-- Build command: `cd platform && pnpm --filter @softskills/client build`.
+- Install command: `cd platform && npm install --legacy-peer-deps`.
+- Build command: `cd platform && npm run --workspace @softskills/client build`.
 - Output directory: `platform/apps/client/dist`.
-- Environment variable: `EXPO_PUBLIC_API_BASE_URL=https://api.clearn.example`.
+- Required environment variable: `EXPO_PUBLIC_API_BASE_URL=https://api.clearn.example`.
+
+The Vercel build intentionally fails if `EXPO_PUBLIC_API_BASE_URL` is missing or points back to the static frontend host. Without the API host, admin setup returns `405`, AI generation/STT/TTS cannot run, and upload/backup endpoints are unavailable.
+
+For a deliberately read-only static preview, set `ALLOW_STATIC_ONLY_PREVIEW=1`. Do not use that setting for production because it disables the deployment guard rather than providing the API.
+
+The frontend build copies `web/data/content.json` and `web/static/uploads` into the Expo web export so public learner content and referenced media can load before the production API is connected.
 
 Root files used by Vercel:
 
@@ -34,7 +40,7 @@ Service type:
 - Web Service.
 - Runtime: Node 22.
 - Root directory: repository root.
-- Build command: `cd platform && pnpm install --frozen-lockfile && pnpm --filter @softskills/api build`.
+- Build command: `cd platform && npm install --legacy-peer-deps && npm run --workspace @softskills/api build`.
 - Start command: `cd platform/apps/api && node ../../node_modules/tsx/dist/cli.mjs src/index.ts`.
 
 Persistent disk:

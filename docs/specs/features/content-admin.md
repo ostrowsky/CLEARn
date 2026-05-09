@@ -26,6 +26,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Admins can set block layout width (`auto`, `full`, or `half`) so selected blocks can appear on the same horizontal row on wide screens.
 - Saved content appears in learner routes without code changes.
 - Uploaded media can be opened, replaced, and deleted.
+- Uploaded media referenced by bundled read-only content must be copied into the static web build for Vercel previews so learner videos and audio do not resolve to the SPA fallback.
 - Video materials render inside the learner page when the source is an uploaded playable file or a supported streaming URL such as YouTube or Vimeo.
 - YouTube links may include a timestamp, and the embedded player must start at the linked segment instead of redirecting to YouTube.
 - Video transcript text stored on the material must appear below the embedded player as readable learner content.

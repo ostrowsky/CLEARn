@@ -40,10 +40,18 @@ $clientPackage = Get-Content (Join-Path $platformRoot 'apps\client\package.json'
 Assert-Match -Actual $clientPackage -Pattern 'expo-router'
 Assert-Match -Actual $clientPackage -Pattern 'react-native'
 Assert-Match -Actual $clientPackage -Pattern 'sync-static-content\.mjs'
+Assert-Match -Actual $clientPackage -Pattern 'verify-production-api-env\.mjs'
 $staticContentSync = Get-Content (Join-Path $platformRoot 'apps\client\scripts\sync-static-content.mjs') -Raw
 Assert-Match -Actual $staticContentSync -Pattern 'web'
 Assert-Match -Actual $staticContentSync -Pattern 'content\.json'
 Assert-Match -Actual $staticContentSync -Pattern 'content\.snapshot\.json'
+Assert-Match -Actual $staticContentSync -Pattern 'web.*static.*uploads'
+Assert-Match -Actual $staticContentSync -Pattern 'public.*uploads'
+$productionApiEnvCheck = Get-Content (Join-Path $platformRoot 'apps\client\scripts\verify-production-api-env.mjs') -Raw
+Assert-Match -Actual $productionApiEnvCheck -Pattern 'EXPO_PUBLIC_API_BASE_URL is required'
+Assert-Match -Actual $productionApiEnvCheck -Pattern 'Admin, AI generation, STT, TTS, uploads, and backups'
+Assert-Match -Actual $productionApiEnvCheck -Pattern 'ALLOW_STATIC_ONLY_PREVIEW'
+Assert-Match -Actual $productionApiEnvCheck -Pattern 'must point to the production API host'
 $clarifyScreen = Get-Content (Join-Path $platformRoot 'apps\client\app\practice\asking\clarify.tsx') -Raw
 Assert-Match -Actual $clarifyScreen -Pattern 'apiClient.speechToText'
 Assert-Match -Actual $clarifyScreen -Pattern 'apiClient.checkClarify'
@@ -150,7 +158,8 @@ foreach ($pattern in @(
     'ADMIN_SESSION_SECRET',
     'CORS_ALLOWED_ORIGINS',
     'REDIS_URL',
-    'EXPO_PUBLIC_API_BASE_URL'
+    'EXPO_PUBLIC_API_BASE_URL',
+    'ALLOW_STATIC_ONLY_PREVIEW=0'
 )) {
     Assert-Match -Actual $productionEnvExample -Pattern $pattern
 }

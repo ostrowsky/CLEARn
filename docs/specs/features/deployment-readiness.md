@@ -19,6 +19,8 @@ The app can be hosted, tested, upgraded, backed up, and rolled back without disc
 - Vercel may host the static Expo web client when `EXPO_PUBLIC_API_BASE_URL` points to the production API host.
 - If a static Vercel preview has no reachable API, the public learner home must still render from the bundled read-only content snapshot instead of showing a raw fetch failure.
 - The canonical public learner entry point is `/`; legacy `/sections` links may redirect to `/`.
+- Static Vercel builds must include the uploaded learner media referenced by bundled content so read-only videos and audio can play without the API upload server.
+- Production Vercel builds for interactive practice must fail before deployment when `EXPO_PUBLIC_API_BASE_URL` is missing or points back to the static learner domain.
 - Admin routes must not be publicly editable without authentication.
 - Learner routes remain public unless commercial gating is explicitly enabled.
 - Failed pre-deploy checks stop the release and do not replace the currently running version.
@@ -38,6 +40,7 @@ The app can be hosted, tested, upgraded, backed up, and rolled back without disc
 - The repository root must keep Vercel-discoverable build metadata for the frontend: root `package.json`, root `vercel.json`, build command, and output directory.
 - Pull requests must include the `pr-description` skill sections: `What`, `Why`, and `Changes`.
 - Static hosting must not assume an API is available on `:4000` for non-local web domains.
+- Interactive AI, STT, TTS, admin save, backup, and upload flows require a separately hosted API; they must not silently fall through to the static SPA route.
 
 ## Edge cases and failure policy
 
