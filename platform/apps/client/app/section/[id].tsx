@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type { AppContent, ContentBlock, ContentMaterial, ContentSection } from '@softskills/domain';
 import { Screen } from '../../src/components/Screen';
@@ -500,6 +500,7 @@ export default function SectionScreen() {
         appTitle={content?.meta.appTitle}
         brandTagline={getNestedString(ui, ['brandTagline'])}
         footerNote={getNestedString(ui, ['footerNote'])}
+        watermarkText={getNestedString(ui, ['watermarkText'])}
         title={loading ? loadingTitle : missingTitle}
         subtitle={loading ? loadingSubtitle : missingSubtitle}
         backHref="/sections"
@@ -530,6 +531,7 @@ export default function SectionScreen() {
       appTitle={content?.meta.appTitle}
       brandTagline={getNestedString(ui, ['brandTagline'])}
       footerNote={getNestedString(ui, ['footerNote'])}
+      watermarkText={getNestedString(ui, ['watermarkText'])}
       eyebrow={section.eyebrow}
       title={section.title}
       subtitle={section.summary}
@@ -597,7 +599,7 @@ export default function SectionScreen() {
                       ...current,
                       [block.id]: !current[block.id],
                     }))}
-                    onOpenPractice={practiceHref ? () => router.push(practiceHref) : undefined}
+                    onOpenPractice={practiceHref ? () => router.push(practiceHref as Href) : undefined}
                     practiceButtonLabel={openLivePractice}
                     emptyMediaText={noFileUploaded}
                     inlineMediaUnavailable={inlineMediaUnavailable}
@@ -606,7 +608,7 @@ export default function SectionScreen() {
                 ) : (
                   <BlockPanel
                     block={block}
-                    onOpenPractice={practiceHref ? () => router.push(practiceHref) : undefined}
+                    onOpenPractice={practiceHref ? () => router.push(practiceHref as Href) : undefined}
                     practiceButtonLabel={openLivePractice}
                     emptyMediaText={noFileUploaded}
                     inlineMediaUnavailable={inlineMediaUnavailable}
@@ -632,7 +634,7 @@ const webFrameStyle = {
 const webVideoStyle = {
   width: '100%',
   height: '100%',
-  objectFit: 'contain',
+  objectFit: 'contain' as const,
   backgroundColor: '#000',
 };
 

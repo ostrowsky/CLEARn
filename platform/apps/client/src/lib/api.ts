@@ -44,10 +44,15 @@ async function sendDebugLog(payload: DebugPayload) {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const method = init?.method || 'GET';
   void sendDebugLog({ scope: 'api', event: 'request:start', details: { path, method } });
+  const headers = {
+    ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+    ...(init?.headers ?? {}),
+  };
 
   try {
     const response = await fetch(`${apiBaseUrl}${path}`, {
-      headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+      headers,
+      credentials: 'include',
       ...init,
     });
 
@@ -97,6 +102,24 @@ export const apiClient = {
   },
   getAdminContent(): Promise<AppContent> {
     return request('/api/admin/content');
+  },
+  getAdminAuthStatus() {
+    return request<{ configured: boolean; authenticated: boolean; login: string }>('/api/admin/auth/status');
+  },
+  setupAdminAuth(payload: { login: string; password: string; confirmPassword: string; recoveryEmail: string }) {
+    return request<{ configured: boolean; authenticated: boolean; login: string }>('/api/admin/auth/setup', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  loginAdmin(payload: { login: string; password: string }) {
+    return request<{ configured: boolean; authenticated: boolean; login: string }>('/api/admin/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  logoutAdmin() {
+    return request<{ loggedOut: boolean }>('/api/admin/auth/logout', { method: 'POST', body: JSON.stringify({}) });
   },
   saveAdminContent(content: AppContent): Promise<AppContent> {
     return request('/api/admin/content', { method: 'POST', body: JSON.stringify(content) });

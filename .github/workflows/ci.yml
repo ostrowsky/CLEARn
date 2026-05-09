@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-and-build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.8.0
+
+      - name: Install platform dependencies
+        working-directory: platform
+        run: pnpm install --frozen-lockfile
+
+      - name: Run full repository tests
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File .\web\tests\run-tests.ps1
+
+      - name: Build API and web client
+        working-directory: platform
+        run: pnpm build
+
+      - name: Smoke API runtime
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:APP_PORT = '4099'
+          $env:APP_BASE_URL = 'http://127.0.0.1:4099'
+          $env:DEV_CONTENT_PATH = Join-Path $env:GITHUB_WORKSPACE 'web\data\content.json'
+          $env:ADMIN_AUTH_PATH = Join-Path $env:RUNNER_TEMP 'softskills-admin-auth-smoke.json'
+          $env:ADMIN_SESSION_SECRET = 'ci-runtime-smoke-secret-ci-runtime-smoke-secret'
+          $out = Join-Path $env:RUNNER_TEMP 'softskills-api-smoke.out.log'
+          $err = Join-Path $env:RUNNER_TEMP 'softskills-api-smoke.err.log'
+          $apiRoot = Join-Path $env:GITHUB_WORKSPACE 'platform\apps\api'
+          $process = Start-Process -FilePath 'node' -ArgumentList @('../../node_modules/tsx/dist/cli.mjs', 'src/index.ts') -WorkingDirectory $apiRoot -RedirectStandardOutput $out -RedirectStandardError $err -PassThru
+          try {
+            $health = $null
+            foreach ($attempt in 1..12) {
+              if ($process.HasExited) {
+                $stdout = if (Test-Path $out) { Get-Content -LiteralPath $out -Raw } else { '' }
+                $stderr = if (Test-Path $err) { Get-Content -LiteralPath $err -Raw } else { '' }
+                throw "API runtime exited early. stdout: $stdout stderr: $stderr"
+              }
+              try {
+                $health = Invoke-RestMethod -Uri 'http://127.0.0.1:4099/api/health' -TimeoutSec 5
+                break
+              }
+              catch {
+                Start-Sleep -Seconds 2
+              }
+            }
+            if ($null -eq $health) {
+              $stdout = if (Test-Path $out) { Get-Content -LiteralPath $out -Raw } else { '' }
+              $stderr = if (Test-Path $err) { Get-Content -LiteralPath $err -Raw } else { '' }
+              throw "API runtime did not answer /api/health. stdout: $stdout stderr: $stderr"
+            }
+            if ($health.status -ne 'ok') {
+              throw "Unexpected health response: $($health | ConvertTo-Json -Compress)"
+            }
+          }
+          finally {
+            Get-NetTCPConnection -LocalPort 4099 -State Listen -ErrorAction SilentlyContinue |
+              Select-Object -ExpandProperty OwningProcess -Unique |
+              ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
+            if (-not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+          }

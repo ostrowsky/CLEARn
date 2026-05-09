@@ -35,18 +35,22 @@ function Invoke-JsonRequest {
     param(
         [string]$Uri,
         [string]$Method,
-        $Payload = $null
+        $Payload = $null,
+        $Session = $null
     )
 
     $params = @{
         UseBasicParsing = $true
         Uri = $Uri
         Method = $Method
-        ContentType = 'application/json; charset=utf-8'
     }
 
     if ($null -ne $Payload) {
+        $params.ContentType = 'application/json; charset=utf-8'
         $params.Body = ($Payload | ConvertTo-Json -Depth 20 -Compress)
+    }
+    if ($null -ne $Session) {
+        $params.WebSession = $Session
     }
 
     $response = Invoke-WebRequest @params
@@ -78,6 +82,7 @@ if (-not (Test-Path -LiteralPath $tsxCli)) {
 $tempRoot = Join-Path $workspaceRoot ('tmp-platform-api-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 New-Item -ItemType Directory -Path $tempRoot | Out-Null
 $tempContentPath = Join-Path $tempRoot 'content.json'
+$tempAuthPath = Join-Path $tempRoot 'admin-auth.json'
 Copy-Item -LiteralPath (Join-Path $webRoot 'data\content.json') -Destination $tempContentPath -Force
 $logPath = Join-Path $tempRoot 'platform-api.log'
 
@@ -87,8 +92,8 @@ $serverProcess = $null
 $uploadedUrl = ''
 
 try {
-    Write-TestStep 'Platform API accepts large admin media uploads'
-    $command = "Set-Location '$platformRoot'; `$env:APP_ENV='development'; `$env:APP_PORT='$port'; `$env:APP_BASE_URL='$baseUrl'; `$env:DEV_CONTENT_PATH='$tempContentPath'; & '$($nodeCommand.Source)' '.\node_modules\tsx\dist\cli.mjs' '.\apps\api\src\index.ts' *> '$logPath'"
+    Write-TestStep 'Platform API protects admin routes with setup and login'
+    $command = "Set-Location '$platformRoot'; `$env:APP_ENV='development'; `$env:APP_PORT='$port'; `$env:APP_BASE_URL='$baseUrl'; `$env:DEV_CONTENT_PATH='$tempContentPath'; `$env:ADMIN_AUTH_PATH='$tempAuthPath'; `$env:ADMIN_SESSION_SECRET='test-admin-session-secret'; & '$($nodeCommand.Source)' '.\node_modules\tsx\dist\cli.mjs' '.\apps\api\src\index.ts' *> '$logPath'"
     $serverProcess = Start-Process powershell.exe -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', $command) -PassThru -WindowStyle Hidden
 
     if (-not (Wait-ForUrl -Url "$baseUrl/api/health")) {
@@ -101,6 +106,65 @@ try {
         throw "Platform API did not become ready. Logs:`n$combinedLogs"
     }
 
+    $status = Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/status" -Method Get
+    Assert-True -Condition (-not [bool]$status.configured) -Message 'Admin auth should start unconfigured for a new deployment.'
+    Assert-True -Condition (-not [bool]$status.authenticated) -Message 'Admin auth should start unauthenticated.'
+
+    try {
+        Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/api/admin/content" -Method Get | Out-Null
+        throw 'Expected admin content to require setup before access.'
+    }
+    catch {
+        Assert-Match -Actual $_.Exception.Message -Pattern '401|Unauthorized'
+    }
+
+    try {
+        Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/setup" -Method Post -Payload @{
+            login = 'admin'
+            password = 'secret-123'
+            confirmPassword = 'different-123'
+            recoveryEmail = 'admin@example.com'
+        } | Out-Null
+        throw 'Expected setup to reject mismatched passwords.'
+    }
+    catch {
+        Assert-Match -Actual $_.Exception.Message -Pattern '400|Bad Request'
+    }
+
+    $adminSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+    $setup = Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/setup" -Method Post -Payload @{
+        login = 'admin'
+        password = 'secret-123'
+        confirmPassword = 'secret-123'
+        recoveryEmail = 'admin@example.com'
+    } -Session $adminSession
+    Assert-True -Condition ([bool]$setup.configured)
+    Assert-True -Condition ([bool]$setup.authenticated)
+
+    $protectedContent = Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/api/admin/content" -Method Get -WebSession $adminSession
+    Assert-Equal -Expected 200 -Actual ([int]$protectedContent.StatusCode)
+
+    Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/logout" -Method Post -Payload @{} -Session $adminSession | Out-Null
+    try {
+        Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/api/admin/content" -Method Get -WebSession $adminSession | Out-Null
+        throw 'Expected admin content to require login after logout.'
+    }
+    catch {
+        Assert-Match -Actual $_.Exception.Message -Pattern '401|Unauthorized'
+    }
+
+    $adminSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+    try {
+        Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/login" -Method Post -Payload @{ login = 'admin'; password = 'wrong-password' } -Session $adminSession | Out-Null
+        throw 'Expected login to reject invalid credentials.'
+    }
+    catch {
+        Assert-Match -Actual $_.Exception.Message -Pattern '401|Unauthorized'
+    }
+
+    Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/login" -Method Post -Payload @{ login = 'admin'; password = 'secret-123' } -Session $adminSession | Out-Null
+
+    Write-TestStep 'Platform API accepts large admin media uploads'
     $bytes = New-Object byte[] (2MB)
     for ($i = 0; $i -lt $bytes.Length; $i++) {
         $bytes[$i] = 97
@@ -111,7 +175,7 @@ try {
         base64 = [Convert]::ToBase64String($bytes)
     }
 
-    $upload = Invoke-JsonRequest -Uri "$baseUrl/api/admin/media/upload" -Method Post -Payload $payload
+    $upload = Invoke-JsonRequest -Uri "$baseUrl/api/admin/media/upload" -Method Post -Payload $payload -Session $adminSession
     $uploadedUrl = [string]$upload.url
     Assert-Match -Actual $uploadedUrl -Pattern '^/uploads/'
     Assert-Equal -Expected $bytes.Length -Actual ([int]$upload.size)
@@ -135,7 +199,7 @@ try {
         }
     }
 
-    $deleteResult = Invoke-JsonRequest -Uri "$baseUrl/api/admin/media/delete" -Method Post -Payload @{ url = $uploadedUrl }
+    $deleteResult = Invoke-JsonRequest -Uri "$baseUrl/api/admin/media/delete" -Method Post -Payload @{ url = $uploadedUrl } -Session $adminSession
     Assert-True -Condition ([bool]$deleteResult.deleted)
     Assert-True -Condition (-not (Test-Path -LiteralPath $absoluteUpload -PathType Leaf)) -Message 'Uploaded media file was not deleted.'
     $uploadedUrl = ''

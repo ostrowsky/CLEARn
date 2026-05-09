@@ -7,6 +7,8 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 Write-TestStep 'Content template contains editable UI, practice, and runtime meta'
 $content = Get-Content -LiteralPath (Join-Path $projectRoot 'data\content.template.json') -Raw | ConvertFrom-Json
 Assert-True -Condition ($null -ne $content.meta.ui.admin.fieldLabels)
+Assert-True -Condition ($null -ne $content.meta.ui.watermarkText)
+Assert-True -Condition ($null -ne $content.meta.ui.admin.auth)
 Assert-True -Condition ($null -ne $content.meta.ui.admin.actions)
 Assert-True -Condition ($null -ne $content.meta.ui.admin.actions.uploadMedia)
 Assert-True -Condition ($null -ne $content.meta.ui.admin.actions.openAsset)
@@ -158,6 +160,7 @@ foreach ($pattern in @(
 Assert-Match -Actual $screenSource -Pattern 'appTitle\?'
 Assert-Match -Actual $screenSource -Pattern 'brandTagline\?'
 Assert-Match -Actual $screenSource -Pattern 'footerNote\?'
+Assert-Match -Actual $screenSource -Pattern 'watermarkText\?'
 Assert-Match -Actual $indexSource -Pattern 'Redirect'
 Assert-Match -Actual $contentMetaSource -Pattern 'getSectionViewConfig'
 Assert-Match -Actual $contentMetaSource -Pattern 'getBlockRenderer'

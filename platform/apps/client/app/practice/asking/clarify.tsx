@@ -742,6 +742,7 @@ export default function ClarifyPracticeScreen() {
       appTitle={content?.meta.appTitle}
       brandTagline={getNestedString(ui, ['brandTagline'])}
       footerNote={getNestedString(ui, ['footerNote'])}
+      watermarkText={getNestedString(ui, ['watermarkText'])}
       eyebrow={section?.eyebrow}
       title={practiceBlock?.title ?? ''}
       subtitle={practiceBlock?.description ?? ''}
@@ -1010,7 +1011,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-
 
 
 

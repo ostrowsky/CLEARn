@@ -10,6 +10,7 @@ export const tokens = {
     inkSoft: 'rgba(35, 20, 6, 0.72)',
     accent: '#c55200',
     accentDeep: '#8f3200',
+    accentSoft: '#fff1df',
     accentContrast: '#ffffff',
     line: 'rgba(73, 36, 8, 0.14)',
     cardLine: 'rgba(73, 36, 8, 0.14)',

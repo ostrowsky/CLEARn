@@ -810,7 +810,7 @@ const webAskAfterFrameStyle = {
 const webAskAfterVideoStyle = {
   width: '100%',
   height: '100%',
-  objectFit: 'contain',
+  objectFit: 'contain' as const,
   backgroundColor: '#000',
 };
 

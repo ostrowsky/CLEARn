@@ -67,13 +67,13 @@ function toConfiguredReactionOptions(value: unknown, categoryType: AnsweringMode
   }
 
   return value
-    .map((item) => {
+    .map((item): AnsweringReactionOption | null => {
       const record = asRecord(item);
       const id = asString(record.id);
       const text = asString(record.text);
       return id && text ? { id, text, categoryType } : null;
     })
-    .filter((item): item is AnsweringReactionOption => Boolean(item));
+    .filter((item): item is AnsweringReactionOption => item !== null);
 }
 
 function getResolvedReactionCategories(content: unknown, turn: AnsweringQuestionTurn | null | undefined): AnsweringReactionCategory[] {
@@ -470,6 +470,7 @@ export default function AnsweringPracticeScreen() {
       appTitle={content?.meta.appTitle}
       brandTagline={getNestedString(ui, ['brandTagline'])}
       footerNote={getNestedString(ui, ['footerNote'])}
+      watermarkText={getNestedString(ui, ['watermarkText'])}
       eyebrow={section?.eyebrow}
       title={practiceBlock?.title ?? section?.title ?? ''}
       subtitle={practiceBlock?.description ?? section?.summary ?? ''}

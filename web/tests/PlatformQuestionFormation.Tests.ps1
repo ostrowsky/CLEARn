@@ -12,8 +12,10 @@ foreach ($fileName in @('content.template.json', 'content.json')) {
     $section = $content.sections | Where-Object { $_.id -eq 'asking-without-context' } | Select-Object -First 1
     Assert-True -Condition ($null -ne $section) -Message "$fileName should keep the route-compatible 1.3 section."
     Assert-Equal -Expected '1.3 Question formation' -Actual ([string]$section.eyebrow)
-    Assert-Equal -Expected 'Practice forming grammatically correct questions.' -Actual ([string]$section.title)
-    Assert-Match -Actual ([string]$section.summary) -Pattern 'WH questions'
+    Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$section.title)) -Message "$fileName question formation title should remain editable content."
+    Assert-True -Condition ([string]$section.title -cnotmatch 'Practise fast clarification when the context is missing') -Message "$fileName should not restore the legacy without-context title."
+    Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$section.summary)) -Message "$fileName question formation summary should remain editable content."
+    Assert-True -Condition ([string]$section.summary -cnotmatch 'Use this drill when you only catch part of a sentence during a fast meeting') -Message "$fileName should not restore the legacy without-context summary."
     Assert-Equal -Expected 1 -Actual @($section.blocks).Count -Message "$fileName should remove the old explanatory legacy block."
     Assert-Equal -Expected 'practice-without-context' -Actual ([string]$section.blocks[0].kind)
     Assert-Equal -Expected 'Questions drill' -Actual ([string]$section.blocks[0].title)

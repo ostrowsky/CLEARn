@@ -12,5 +12,6 @@ share-admin-link.txt
 tmp-write-test.txt
 tmp.txt
 *.log
+web/data/admin-auth.json
 __pycache__/
 *.pyc

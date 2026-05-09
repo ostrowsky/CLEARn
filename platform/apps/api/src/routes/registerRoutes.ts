@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { AnsweringSession, CoachChatSession } from '@softskills/domain';
 import type { FastifyInstance } from 'fastify';
 import { env } from '../config/env';
+import { AdminAuthService } from '../modules/admin/adminAuth.service';
 import { BackupService } from '../modules/backup/backup.service';
 import { FileSystemContentRepository } from '../modules/content/content.repository';
 import { ContentService } from '../modules/content/content.service';
@@ -488,6 +489,7 @@ function isBadRequestMessage(message: string) {
 
 export async function registerRoutes(app: FastifyInstance) {
   const contentService = new ContentService(new FileSystemContentRepository(), new LocalMediaStore());
+  const adminAuthService = new AdminAuthService();
   const practiceService = new PracticeService(contentService);
   const speechService = new SpeechService();
   const backupService = new BackupService();
@@ -538,28 +540,97 @@ export async function registerRoutes(app: FastifyInstance) {
   });
 
   app.get('/api/content', async () => contentService.getContent());
-  app.get('/api/admin/content', async () => contentService.getContent());
-  app.post('/api/admin/content', async (request) => {
+
+  async function requireAdminSession(request: { headers: { cookie?: string } }, reply: { code: (statusCode: number) => { send: (payload: unknown) => unknown } }) {
+    const status = await adminAuthService.getStatus(request.headers.cookie);
+    if (status.configured && status.authenticated) {
+      return true;
+    }
+
+    const message = status.configured ? 'Admin login is required.' : 'Admin account setup is required.';
+    reply.code(401).send({
+      statusCode: 401,
+      error: 'Unauthorized',
+      message,
+      configured: status.configured,
+    });
+    return false;
+  }
+
+  app.get('/api/admin/auth/status', async (request) => adminAuthService.getStatus(request.headers.cookie));
+  app.post('/api/admin/auth/setup', async (request, reply) => {
+    try {
+      const session = await adminAuthService.setup(request.body as never);
+      return reply.header('Set-Cookie', session.cookie).send({
+        configured: true,
+        authenticated: true,
+        login: session.login,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return reply.code(400).send({ statusCode: 400, error: 'Bad Request', message });
+    }
+  });
+  app.post('/api/admin/auth/login', async (request, reply) => {
+    try {
+      const session = await adminAuthService.login(request.body as never);
+      return reply.header('Set-Cookie', session.cookie).send({
+        configured: true,
+        authenticated: true,
+        login: session.login,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return reply.code(401).send({ statusCode: 401, error: 'Unauthorized', message });
+    }
+  });
+  app.post('/api/admin/auth/logout', async (request, reply) => {
+    const result = adminAuthService.logout(request.headers.cookie);
+    return reply.header('Set-Cookie', result.clearedCookie).send({ loggedOut: true });
+  });
+
+  app.get('/api/admin/content', async (request, reply) => {
+    if (!await requireAdminSession(request, reply)) {
+      return reply;
+    }
+    return contentService.getContent();
+  });
+  app.post('/api/admin/content', async (request, reply) => {
+    if (!await requireAdminSession(request, reply)) {
+      return reply;
+    }
     const body = request.body as { content?: unknown };
     return contentService.saveContent((body.content ?? request.body) as never);
   });
-  app.post('/api/admin/media/upload', async (request) => {
+  app.post('/api/admin/media/upload', async (request, reply) => {
+    if (!await requireAdminSession(request, reply)) {
+      return reply;
+    }
     const body = request.body as { fileName: string; base64: string };
     return contentService.uploadMedia(body.fileName, body.base64);
   });
-  app.post('/api/admin/media/delete', async (request) => {
+  app.post('/api/admin/media/delete', async (request, reply) => {
+    if (!await requireAdminSession(request, reply)) {
+      return reply;
+    }
     const body = request.body as { url: string };
     return contentService.deleteMedia(body.url);
   });
 
-  app.get('/api/admin/backup/export', async (_request, reply) => {
+  app.get('/api/admin/backup/export', async (request, reply) => {
+    if (!await requireAdminSession(request, reply)) {
+      return reply;
+    }
     const backup = await backupService.createBackup();
     return reply
       .header('Content-Type', 'application/zip')
       .header('Content-Disposition', 'attachment; filename=' + JSON.stringify(backup.fileName))
       .send(backup.bytes);
   });
-  app.post('/api/admin/backup/import', async (request) => {
+  app.post('/api/admin/backup/import', async (request, reply) => {
+    if (!await requireAdminSession(request, reply)) {
+      return reply;
+    }
     const body = request.body as { fileName?: string; base64?: string };
     return backupService.restoreBackup(String(body.fileName || 'softskills-backup.zip'), String(body.base64 || ''));
   });

@@ -12,6 +12,7 @@ type ScreenProps = PropsWithChildren<{
   backHref?: Href;
   backLabel?: string;
   footerNote?: string;
+  watermarkText?: string;
 }>;
 
 export function Screen({
@@ -23,6 +24,7 @@ export function Screen({
   backHref,
   backLabel,
   footerNote,
+  watermarkText,
   children,
 }: ScreenProps) {
   const router = useRouter();
@@ -60,6 +62,11 @@ export function Screen({
           {footerNote ? <Text style={styles.footerNote}>{footerNote}</Text> : null}
         </View>
       </ScrollView>
+      {watermarkText ? (
+        <View pointerEvents="none" style={styles.watermark}>
+          <Text style={styles.watermarkText}>{watermarkText}</Text>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -164,5 +171,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: tokens.colors.inkSoft,
     paddingBottom: tokens.spacing.sm,
+  },
+  watermark: {
+    position: 'absolute',
+    right: 10,
+    bottom: 8,
+    opacity: 0.42,
+  },
+  watermarkText: {
+    color: tokens.colors.inkSoft,
+    fontSize: 10,
   },
 });
