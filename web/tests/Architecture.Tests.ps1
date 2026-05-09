@@ -96,7 +96,7 @@ foreach ($pattern in @(
 foreach ($pattern in @(
     '"outputDirectory": "platform/apps/client/dist"',
     '"buildCommand": "cd platform && pnpm --filter @softskills/client build"',
-    '"installCommand": "corepack enable && corepack prepare pnpm@10.8.0 --activate && cd platform && pnpm install --frozen-lockfile"',
+    '"installCommand": "corepack enable && corepack prepare pnpm@10.8.0 --activate && cd platform && pnpm install --no-frozen-lockfile"',
     '"destination": "/index.html"'
 )) {
     Assert-Match -Actual $vercelConfig -Pattern $pattern
