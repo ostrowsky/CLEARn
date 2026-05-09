@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "corepack enable && corepack prepare pnpm@10.8.0 --activate && cd platform && pnpm install --frozen-lockfile",
+  "buildCommand": "cd platform && pnpm --filter @softskills/client build",
+  "outputDirectory": "platform/apps/client/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

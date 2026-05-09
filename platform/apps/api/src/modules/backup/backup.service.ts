@@ -11,7 +11,7 @@ const projectRoot = path.resolve(moduleDir, '../../../../../..');
 const platformRoot = path.join(projectRoot, 'platform');
 const backupScriptPath = path.join(platformRoot, 'backup-app.ps1');
 const restoreScriptPath = path.join(platformRoot, 'restore-app.ps1');
-const powershellPath = 'powershell.exe';
+const powershellPath = process.env.POWERSHELL_PATH || (process.platform === 'win32' ? 'powershell.exe' : 'pwsh');
 
 function cleanBase64Payload(base64: string) {
   const normalized = String(base64 || '').trim();

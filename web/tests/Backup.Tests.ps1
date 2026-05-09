@@ -27,6 +27,9 @@ Assert-True -Condition (Test-Path -LiteralPath $restoreScript -PathType Leaf) -M
 $backupScriptSource = Get-Content -LiteralPath $backupScript -Raw
 Assert-Match -Actual $backupScriptSource -Pattern 'function Get-IncludedFiles' -Message 'Backup script should prune excluded folders before traversal.'
 Assert-True -Condition ($backupScriptSource -cnotmatch 'Get-ChildItem[^\r\n]*-Recurse') -Message 'Backup script must not recursively traverse excluded dependency and cache folders.'
+$backupServiceSource = Get-Content -LiteralPath (Join-Path $workspaceRoot 'platform\apps\api\src\modules\backup\backup.service.ts') -Raw
+Assert-Match -Actual $backupServiceSource -Pattern 'process\.env\.POWERSHELL_PATH'
+Assert-Match -Actual $backupServiceSource -Pattern "process\.platform === 'win32' \? 'powershell\.exe' : 'pwsh'"
 
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('softskills-backup-test-' + [Guid]::NewGuid().ToString('N'))
 $extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('softskills-backup-extract-' + [Guid]::NewGuid().ToString('N'))

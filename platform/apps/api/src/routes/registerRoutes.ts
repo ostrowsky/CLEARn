@@ -522,25 +522,6 @@ export async function registerRoutes(app: FastifyInstance) {
     return entry;
   }
 
-  app.get('/api/health', async () => ({
-    status: 'ok',
-    textProvider: env.LLM_TEXT_PROVIDER,
-    sttProvider: env.LLM_STT_PROVIDER,
-    ttsProvider: env.LLM_TTS_PROVIDER,
-    appEnv: env.APP_ENV,
-  }));
-
-  app.get('/api/debug/logs', async () => ({ entries: debugLogs }));
-  app.post('/api/debug/log', async (request) => {
-    const body = request.body as { scope?: string; event?: string; details?: Record<string, unknown> };
-    return {
-      logged: true,
-      entry: pushDebugLog(String(body.scope || 'client'), String(body.event || 'event'), asRecord(body.details)),
-    };
-  });
-
-  app.get('/api/content', async () => contentService.getContent());
-
   async function requireAdminSession(request: { headers: { cookie?: string } }, reply: { code: (statusCode: number) => { send: (payload: unknown) => unknown } }) {
     const status = await adminAuthService.getStatus(request.headers.cookie);
     if (status.configured && status.authenticated) {
@@ -556,6 +537,35 @@ export async function registerRoutes(app: FastifyInstance) {
     });
     return false;
   }
+
+  app.get('/api/health', async () => ({
+    status: 'ok',
+    textProvider: env.LLM_TEXT_PROVIDER,
+    sttProvider: env.LLM_STT_PROVIDER,
+    ttsProvider: env.LLM_TTS_PROVIDER,
+    appEnv: env.APP_ENV,
+  }));
+
+  app.get('/api/debug/logs', async (request, reply) => {
+    if (env.APP_ENV === 'production' && !await requireAdminSession(request, reply)) {
+      return reply;
+    }
+
+    return { entries: debugLogs };
+  });
+  app.post('/api/debug/log', async (request, reply) => {
+    if (env.APP_ENV === 'production' && !await requireAdminSession(request, reply)) {
+      return reply;
+    }
+
+    const body = request.body as { scope?: string; event?: string; details?: Record<string, unknown> };
+    return {
+      logged: true,
+      entry: pushDebugLog(String(body.scope || 'client'), String(body.event || 'event'), asRecord(body.details)),
+    };
+  });
+
+  app.get('/api/content', async () => contentService.getContent());
 
   app.get('/api/admin/auth/status', async (request) => adminAuthService.getStatus(request.headers.cookie));
   app.post('/api/admin/auth/setup', async (request, reply) => {

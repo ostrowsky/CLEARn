@@ -1,0 +1,38 @@
+name: PR Description
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  validate-pr-description:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate skill-format PR body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          body="$PR_BODY"
+          for heading in "## What" "## Why" "## Changes"; do
+            if ! printf '%s' "$body" | grep -Fq "$heading"; then
+              echo "Missing required PR description heading: $heading"
+              echo "Use the pr-description skill format before opening or updating the PR."
+              exit 1
+            fi
+          done
+
+          if printf '%s' "$body" | grep -Fq "One sentence explaining what this PR does."; then
+            echo "Replace the default PR template placeholder under ## What."
+            exit 1
+          fi
+
+          if printf '%s' "$body" | grep -Fq "Brief context on why this change is needed."; then
+            echo "Replace the default PR template placeholder under ## Why."
+            exit 1
+          fi
+
+          if printf '%s' "$body" | grep -Fq "Bullet points of specific changes made."; then
+            echo "Replace the default PR template placeholder under ## Changes."
+            exit 1
+          fi
+

@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - 'codex/**'
 
 jobs:
   test-and-build:
@@ -28,6 +29,10 @@ jobs:
       - name: Install platform dependencies
         working-directory: platform
         run: pnpm install --frozen-lockfile
+
+      - name: Audit production dependencies
+        working-directory: platform
+        run: pnpm audit --prod --audit-level high
 
       - name: Run full repository tests
         shell: pwsh
@@ -83,3 +88,62 @@ jobs:
               Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
             }
           }
+
+  linux-build-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.8.0
+
+      - name: Install platform dependencies
+        working-directory: platform
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit production dependencies
+        working-directory: platform
+        run: pnpm audit --prod --audit-level high
+
+      - name: Build API and web client on Linux
+        working-directory: platform
+        run: pnpm build
+
+      - name: Smoke API runtime on Linux
+        working-directory: platform/apps/api
+        env:
+          APP_PORT: 4099
+          APP_BASE_URL: http://127.0.0.1:4099
+          DEV_CONTENT_PATH: ${{ github.workspace }}/web/data/content.json
+          ADMIN_AUTH_PATH: ${{ runner.temp }}/softskills-admin-auth-smoke.json
+          ADMIN_SESSION_SECRET: ci-runtime-smoke-secret-ci-runtime-smoke-secret
+        run: |
+          node ../../node_modules/tsx/dist/cli.mjs src/index.ts > "$RUNNER_TEMP/softskills-api-smoke.out.log" 2> "$RUNNER_TEMP/softskills-api-smoke.err.log" &
+          API_PID=$!
+          trap 'kill "$API_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 12); do
+            if ! kill -0 "$API_PID" 2>/dev/null; then
+              echo "API runtime exited early"
+              cat "$RUNNER_TEMP/softskills-api-smoke.out.log" || true
+              cat "$RUNNER_TEMP/softskills-api-smoke.err.log" || true
+              exit 1
+            fi
+            if curl --fail --silent http://127.0.0.1:4099/api/health | grep '"status":"ok"'; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API runtime did not answer /api/health"
+          cat "$RUNNER_TEMP/softskills-api-smoke.out.log" || true
+          cat "$RUNNER_TEMP/softskills-api-smoke.err.log" || true
+          exit 1
