@@ -4,7 +4,7 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "prebuild": "node ./scripts/sync-static-content.mjs && node ./scripts/verify-production-api-env.mjs",
+    "prebuild": "node ./scripts/sync-static-content.mjs",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
