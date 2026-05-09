@@ -1,4 +1,4 @@
-# CLEARn / SOFTskills
+# CLEARn 
 
 Shared web and mobile-oriented prototype for workplace English practice. The app is content-driven: learner copy, admin labels, practice settings, watermark text, blocks, materials, media metadata, and exercise configuration are stored in editable content data and managed through the admin UI.
 
