@@ -33,9 +33,26 @@ const schema = z.object({
   DEV_CONTENT_PATH: z.string().default(defaultDevContentPath),
   ADMIN_AUTH_PATH: z.string().default(path.resolve(configDir, '..', '..', '..', '..', '..', 'web', 'data', 'admin-auth.json')),
   ADMIN_SESSION_SECRET: z.string().optional(),
+  CORS_ALLOWED_ORIGINS: z.string().optional(),
   HTTP_BODY_LIMIT_BYTES: z.coerce.number().default(26214400),
 });
 
-export const env = schema.parse(process.env);
+const parsedEnv = schema.parse(process.env);
+
+if (parsedEnv.APP_ENV === 'production') {
+  if (!parsedEnv.ADMIN_SESSION_SECRET || parsedEnv.ADMIN_SESSION_SECRET.length < 32 || parsedEnv.ADMIN_SESSION_SECRET === 'replace-with-a-long-random-production-secret') {
+    throw new Error('ADMIN_SESSION_SECRET must be set to a strong non-placeholder value in production.');
+  }
+
+  const allowedOrigins = String(parsedEnv.CORS_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  if (!allowedOrigins.length) {
+    throw new Error('CORS_ALLOWED_ORIGINS must list at least one production web origin.');
+  }
+}
+
+export const env = parsedEnv;
 export type AppEnv = typeof env;
 

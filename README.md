@@ -26,7 +26,11 @@ cd platform
 pnpm install --frozen-lockfile
 ```
 
-Copy `platform/.env.example` to your local environment configuration if needed. Production must set a strong `ADMIN_SESSION_SECRET` and persistent paths/storage for content, admin auth, uploads, and backups.
+Copy `platform/.env.example` to your local environment configuration if needed. Production must set:
+
+- `ADMIN_SESSION_SECRET` - strong non-placeholder secret, at least 32 characters.
+- `CORS_ALLOWED_ORIGINS` - comma-separated public web origins allowed to send credentialed API requests.
+- Persistent paths/storage for content, admin auth, uploads, and backups.
 
 ## Development
 
@@ -63,6 +67,13 @@ pnpm build
 
 GitHub Actions runs install, the full PowerShell test suite, build, and an API runtime smoke check before changes are considered deployable.
 
+Production dependency audit:
+
+```powershell
+cd platform
+pnpm audit --prod --audit-level high
+```
+
 ## Admin Access
 
 On first admin entry, the app asks for:
@@ -85,4 +96,3 @@ The current project is ready for staged hosting as a pre-production prototype af
 - staging environment with smoke checks for public learner/admin/API URLs
 
 See `docs/specs/features/deployment-readiness.md` for the deployment contract.
-

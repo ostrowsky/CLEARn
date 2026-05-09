@@ -61,5 +61,17 @@ $saveTokenScript = Get-Content (Join-Path $platformRoot 'save-hf-token.ps1') -Ra
 Assert-Match -Actual $saveTokenScript -Pattern 'SetEnvironmentVariable'
 Assert-Match -Actual $saveTokenScript -Pattern 'HF_TOKEN'
 
+Write-TestStep 'Checking production CI hardening markers'
+$ciWorkflow = Get-Content -LiteralPath (Join-Path $workspaceRoot '.github\workflows\ci.yml') -Raw
+foreach ($pattern in @(
+    'pnpm audit --prod --audit-level high',
+    'linux-build-smoke',
+    'ubuntu-latest',
+    'Smoke API runtime on Linux',
+    'Smoke API runtime'
+)) {
+    Assert-Match -Actual $ciWorkflow -Pattern $pattern
+}
+
 Write-Host 'Platform architecture tests passed.'
 

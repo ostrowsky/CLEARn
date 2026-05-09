@@ -89,8 +89,19 @@ foreach ($pattern in @(
 }
 $envSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\config\env.ts') -Raw
 Assert-Match -Actual $envSource -Pattern 'HTTP_BODY_LIMIT_BYTES'
+foreach ($pattern in @(
+    'CORS_ALLOWED_ORIGINS',
+    'ADMIN_SESSION_SECRET must be set',
+    'CORS_ALLOWED_ORIGINS must list at least one production web origin',
+    "APP_ENV === 'production'"
+)) {
+    Assert-Match -Actual $envSource -Pattern $pattern
+}
 $indexSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\index.ts') -Raw
 Assert-Match -Actual $indexSource -Pattern 'bodyLimit: env.HTTP_BODY_LIMIT_BYTES'
+Assert-Match -Actual $indexSource -Pattern 'function getCorsOrigin'
+Assert-Match -Actual $indexSource -Pattern 'origin: getCorsOrigin\(\)'
+Assert-True -Condition ($indexSource -cnotmatch 'origin: true') -Message 'Production API must not reflect arbitrary CORS origins.'
 $routesSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\routes\registerRoutes.ts') -Raw
 foreach ($pattern in @(
     '/api/admin/content',
@@ -106,6 +117,9 @@ foreach ($pattern in @(
 )) {
     Assert-Match -Actual $routesSource -Pattern $pattern
 }
+Assert-Match -Actual $routesSource -Pattern "env\.APP_ENV === 'production' && !await requireAdminSession\(request, reply\)"
+Assert-Match -Actual $routesSource -Pattern "/api/debug/logs"
+Assert-Match -Actual $routesSource -Pattern "/api/debug/log"
 
 Write-TestStep 'Checking share preview exposes learner and admin routes'
 $sharePreviewSource = Get-Content -LiteralPath (Join-Path $platformRoot 'open-share-preview.ps1') -Raw
