@@ -15,7 +15,7 @@ This split is intentional:
 Project settings:
 
 - Framework preset: `Other`.
-- Install command: `cd platform && pnpm install --frozen-lockfile`.
+- Install command: `corepack enable && corepack prepare pnpm@10.8.0 --activate && cd platform && pnpm install --frozen-lockfile`.
 - Build command: `cd platform && pnpm --filter @softskills/client build`.
 - Output directory: `platform/apps/client/dist`.
 - Environment variable: `EXPO_PUBLIC_API_BASE_URL=https://api.clearn.example`.
