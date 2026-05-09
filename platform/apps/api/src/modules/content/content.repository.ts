@@ -21,10 +21,30 @@ function resolvePath(value: string): string {
   return path.isAbsolute(value) ? value : path.resolve(process.cwd(), value);
 }
 
+function findRepoRoot(startDir: string): string {
+  let current = startDir;
+
+  for (let i = 0; i < 8; i += 1) {
+    if (existsSync(path.join(current, 'web', 'data', 'content.json'))) {
+      return current;
+    }
+
+    const parent = path.dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
+
+  return path.resolve(startDir, '..');
+}
+
+const repoRoot = findRepoRoot(process.cwd());
+
 export class FileSystemContentRepository implements ContentRepository {
   private readonly filePath = resolvePath(env.DEV_CONTENT_PATH);
-  private readonly defaultContentPath = path.resolve(process.cwd(), '..', '..', 'web', 'data', 'content.json');
-  private readonly defaultUploadsPath = path.resolve(process.cwd(), '..', '..', 'web', 'static', 'uploads');
+  private readonly defaultContentPath = path.resolve(repoRoot, 'web', 'data', 'content.json');
+  private readonly defaultUploadsPath = path.resolve(repoRoot, 'web', 'static', 'uploads');
   private readonly mediaUploadsPath = resolvePath(env.MEDIA_UPLOADS_PATH);
 
   private async ensureStorageSeeded(): Promise<void> {
