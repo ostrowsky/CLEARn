@@ -10,6 +10,7 @@ import type {
   TextToSpeechResult,
 } from '@softskills/domain';
 import { apiBaseUrl } from './config';
+import { isAppContent, staticContent } from './staticContent';
 
 type DebugPayload = {
   scope: string;
@@ -78,6 +79,27 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 }
 
+async function requestAppContent(): Promise<AppContent> {
+  try {
+    const content = await request<unknown>('/api/content');
+    if (isAppContent(content)) {
+      return content;
+    }
+
+    throw new Error('The content endpoint did not return app content.');
+  } catch (error) {
+    void sendDebugLog({
+      scope: 'content',
+      event: 'load:static-fallback',
+      details: {
+        message: error instanceof Error ? error.message : String(error),
+        sectionCount: staticContent.sections.length,
+      },
+    });
+    return staticContent;
+  }
+}
+
 export function resolveApiUrl(path = '') {
   if (!path) {
     return apiBaseUrl;
@@ -98,7 +120,7 @@ export const apiClient = {
     return request<{ entries: Array<Record<string, unknown>> }>('/api/debug/logs');
   },
   getContent(): Promise<AppContent> {
-    return request('/api/content');
+    return requestAppContent();
   },
   getAdminContent(): Promise<AppContent> {
     return request('/api/admin/content');

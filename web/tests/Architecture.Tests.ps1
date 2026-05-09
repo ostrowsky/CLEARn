@@ -39,6 +39,11 @@ Write-TestStep 'Checking Expo shared frontend markers'
 $clientPackage = Get-Content (Join-Path $platformRoot 'apps\client\package.json') -Raw
 Assert-Match -Actual $clientPackage -Pattern 'expo-router'
 Assert-Match -Actual $clientPackage -Pattern 'react-native'
+Assert-Match -Actual $clientPackage -Pattern 'sync-static-content\.mjs'
+$staticContentSync = Get-Content (Join-Path $platformRoot 'apps\client\scripts\sync-static-content.mjs') -Raw
+Assert-Match -Actual $staticContentSync -Pattern 'web'
+Assert-Match -Actual $staticContentSync -Pattern 'content\.json'
+Assert-Match -Actual $staticContentSync -Pattern 'content\.snapshot\.json'
 $clarifyScreen = Get-Content (Join-Path $platformRoot 'apps\client\app\practice\asking\clarify.tsx') -Raw
 Assert-Match -Actual $clarifyScreen -Pattern 'apiClient.speechToText'
 Assert-Match -Actual $clarifyScreen -Pattern 'apiClient.checkClarify'
@@ -46,6 +51,17 @@ Assert-Match -Actual $clarifyScreen -Pattern 'MediaRecorder'
 $adminScreen = Get-Content (Join-Path $platformRoot 'apps\client\app\admin.tsx') -Raw
 Assert-Match -Actual $adminScreen -Pattern 'apiClient.getAdminContent'
 Assert-Match -Actual $adminScreen -Pattern 'apiClient.saveAdminContent'
+$clientConfig = Get-Content (Join-Path $platformRoot 'apps\client\src\lib\config.ts') -Raw
+$clientApi = Get-Content (Join-Path $platformRoot 'apps\client\src\lib\api.ts') -Raw
+$clientRoot = Get-Content (Join-Path $platformRoot 'apps\client\app\index.tsx') -Raw
+$clientSections = Get-Content (Join-Path $platformRoot 'apps\client\app\(tabs)\sections.tsx') -Raw
+Assert-Match -Actual $clientConfig -Pattern 'return origin'
+Assert-Match -Actual $clientConfig -Pattern 'hostname.*localhost'
+Assert-Match -Actual $clientApi -Pattern 'staticContent'
+Assert-Match -Actual $clientApi -Pattern 'load:static-fallback'
+Assert-Match -Actual $clientRoot -Pattern 'SectionsScreen'
+Assert-Match -Actual $clientSections -Pattern 'window\.location\.pathname === ''/sections'''
+Assert-Match -Actual $clientSections -Pattern '<Redirect href="/"'
 
 Write-TestStep 'Checking unified platform preview markers'
 $sharePreview = Get-Content (Join-Path $platformRoot 'open-share-preview.ps1') -Raw
@@ -89,14 +105,14 @@ $hostingPlan = Get-Content -LiteralPath (Join-Path $workspaceRoot 'docs\deployme
 $productionEnvExample = Get-Content -LiteralPath (Join-Path $platformRoot '.env.production.example') -Raw
 foreach ($pattern in @(
     'vercel-build',
-    'cd platform && pnpm --filter @softskills/client build'
+    'cd platform && npm run --workspace @softskills/client build'
 )) {
     Assert-Match -Actual $rootPackage -Pattern $pattern
 }
 foreach ($pattern in @(
     '"outputDirectory": "platform/apps/client/dist"',
-    '"buildCommand": "cd platform && pnpm --filter @softskills/client build"',
-    '"installCommand": "npm install -g pnpm@9 && cd platform && pnpm install --no-frozen-lockfile"',
+    '"buildCommand": "cd platform && npm run --workspace @softskills/client build"',
+    '"installCommand": "cd platform && npm install --legacy-peer-deps"',
     '"destination": "/index.html"'
 )) {
     Assert-Match -Actual $vercelConfig -Pattern $pattern

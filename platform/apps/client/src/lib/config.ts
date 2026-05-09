@@ -13,7 +13,15 @@ function guessApiBaseUrl() {
   }
 
   if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.hostname) {
-    return `${window.location.protocol}//${window.location.hostname}:4000`;
+    const { hostname, origin, protocol } = window.location;
+    const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+    const isLanHost = /^(10|172\.(1[6-9]|2\d|3[0-1])|192\.168)\./.test(hostname);
+
+    if (isLocalHost || isLanHost) {
+      return `${protocol}//${hostname}:4000`;
+    }
+
+    return origin;
   }
 
   const legacyManifest = (Constants as unknown as { manifest?: { debuggerHost?: string } }).manifest;

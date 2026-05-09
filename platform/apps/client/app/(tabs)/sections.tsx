@@ -1,4 +1,4 @@
-﻿import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../../src/components/Screen';
 import { useContent } from '../../src/hooks/useContent';
@@ -11,6 +11,10 @@ export default function SectionsScreen() {
   const { content, loading, error } = useContent();
   const home = content?.sections.find((section) => section.id === 'home') ?? content?.sections.find((section) => section.route === '/');
   const ui = getUiConfig(content);
+
+  if (typeof window !== 'undefined' && window.location.pathname === '/sections') {
+    return <Redirect href="/" />;
+  }
 
   return (
     <Screen

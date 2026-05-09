@@ -17,6 +17,8 @@ The app can be hosted, tested, upgraded, backed up, and rolled back without disc
 - A release candidate must pass the full repository test suite before deployment starts.
 - A release candidate must build the API and web client before deployment starts.
 - Vercel may host the static Expo web client when `EXPO_PUBLIC_API_BASE_URL` points to the production API host.
+- If a static Vercel preview has no reachable API, the public learner home must still render from the bundled read-only content snapshot instead of showing a raw fetch failure.
+- The canonical public learner entry point is `/`; legacy `/sections` links may redirect to `/`.
 - Admin routes must not be publicly editable without authentication.
 - Learner routes remain public unless commercial gating is explicitly enabled.
 - Failed pre-deploy checks stop the release and do not replace the currently running version.
@@ -35,6 +37,7 @@ The app can be hosted, tested, upgraded, backed up, and rolled back without disc
 - `APP_STORAGE_ROOT` may point at a persistent volume and becomes the base for `content.json`, `admin-auth.json`, and uploaded media unless the three paths are explicitly overridden.
 - The repository root must keep Vercel-discoverable build metadata for the frontend: root `package.json`, root `vercel.json`, build command, and output directory.
 - Pull requests must include the `pr-description` skill sections: `What`, `Why`, and `Changes`.
+- Static hosting must not assume an API is available on `:4000` for non-local web domains.
 
 ## Edge cases and failure policy
 

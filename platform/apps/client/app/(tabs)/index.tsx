@@ -1,5 +1,5 @@
-﻿import { Redirect } from 'expo-router';
+import SectionsScreen from './sections';
 
 export default function HomeScreen() {
-  return <Redirect href="/sections" />;
+  return <SectionsScreen />;
 }
