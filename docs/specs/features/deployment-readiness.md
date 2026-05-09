@@ -37,6 +37,7 @@ The app can be hosted, tested, upgraded, backed up, and rolled back without disc
 - If production CORS origins are not configured, the API must refuse startup instead of reflecting arbitrary origins.
 - Live paid-provider tests may be opt-in to avoid spending credits in every CI run, but non-live provider contract tests remain mandatory.
 - Backup export must complete within hosting/proxy timeout budgets or move to an asynchronous job before production traffic.
+- Backup/restore helpers must not hardcode Windows-only executables when the API can be hosted on Linux.
 
 ## Route / state / data implications
 
