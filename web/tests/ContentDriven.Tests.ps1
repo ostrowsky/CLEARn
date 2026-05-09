@@ -2,6 +2,8 @@
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$workspaceRoot = Split-Path -Parent $projectRoot
+$platformRoot = Join-Path $workspaceRoot 'platform'
 . (Join-Path $PSScriptRoot 'Assertions.ps1')
 
 Write-TestStep 'Content template contains editable UI, practice, and runtime meta'
@@ -122,14 +124,14 @@ Assert-Match -Actual $appScript -Pattern 'getPracticeScreenConfig'
 Assert-Match -Actual $appScript -Pattern 'getBlockGroupConfig'
 
 Write-TestStep 'Shared platform client reads visible copy and runtime rules from content meta'
-$screenSource = Get-Content -LiteralPath 'D:\Projects\SOFTskills\platform\apps\client\src\components\Screen.tsx' -Raw
-$sectionsSource = Get-Content -LiteralPath 'D:\Projects\SOFTskills\platform\apps\client\app\(tabs)\sections.tsx' -Raw
-$sectionSource = Get-Content -LiteralPath 'D:\Projects\SOFTskills\platform\apps\client\app\section\[id].tsx' -Raw
-$clarifySource = Get-Content -LiteralPath 'D:\Projects\SOFTskills\platform\apps\client\app\practice\asking\clarify.tsx' -Raw
-$answeringSource = Get-Content -LiteralPath 'D:\Projects\SOFTskills\platform\apps\client\app\practice\answering\[mode].tsx' -Raw
-$contentMetaSource = Get-Content -LiteralPath 'D:\Projects\SOFTskills\platform\apps\client\src\lib\contentMeta.ts' -Raw
-$domainSource = Get-Content -LiteralPath 'D:\Projects\SOFTskills\platform\packages\domain\src\content.ts' -Raw
-$indexSource = Get-Content -LiteralPath 'D:\Projects\SOFTskills\platform\apps\client\app\(tabs)\index.tsx' -Raw
+$screenSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\src\components\Screen.tsx') -Raw
+$sectionsSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\(tabs)\sections.tsx') -Raw
+$sectionSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\section\[id].tsx') -Raw
+$clarifySource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\practice\asking\clarify.tsx') -Raw
+$answeringSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\practice\answering\[mode].tsx') -Raw
+$contentMetaSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\src\lib\contentMeta.ts') -Raw
+$domainSource = Get-Content -LiteralPath (Join-Path $platformRoot 'packages\domain\src\content.ts') -Raw
+$indexSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\(tabs)\index.tsx') -Raw
 foreach ($source in @($sectionsSource, $sectionSource, $clarifySource, $answeringSource)) {
     Assert-Match -Actual $source -Pattern 'getNestedString'
 }
@@ -175,7 +177,7 @@ Assert-Match -Actual $domainSource -Pattern 'export type BlockKind = string;'
 Assert-Match -Actual $domainSource -Pattern 'export type SectionType = string;'
 
 Write-TestStep 'Platform admin screen reads visible copy from content meta'
-$platformAdminSource = Get-Content -LiteralPath 'D:\Projects\SOFTskills\platform\apps\client\app\admin.tsx' -Raw
+$platformAdminSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\admin.tsx') -Raw
 foreach ($pattern in @(
     'SOFTskills content admin',
     'Open learner app',
@@ -198,8 +200,8 @@ foreach ($pattern in @(
     Assert-Match -Actual $platformAdminSource -Pattern $pattern
 }
 Write-TestStep 'Shared platform API no longer hardcodes practice feedback text'
-$practiceServiceSource = Get-Content -LiteralPath 'D:\Projects\SOFTskills\platform\apps\api\src\modules\practice\practice.service.ts' -Raw
-$answeringServiceSource = Get-Content -LiteralPath 'D:\Projects\SOFTskills\platform\apps\api\src\modules\session\answering.service.ts' -Raw
+$practiceServiceSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\modules\practice\practice.service.ts') -Raw
+$answeringServiceSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\modules\session\answering.service.ts') -Raw
 foreach ($pattern in @(
     'Strong clarification question',
     'Good follow-up',
