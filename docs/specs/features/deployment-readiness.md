@@ -21,6 +21,7 @@ The app can be hosted, tested, upgraded, backed up, and rolled back without disc
 - The canonical public learner entry point is `/`; legacy `/sections` links may redirect to `/`.
 - Static Vercel builds must include the uploaded learner media referenced by bundled content so read-only videos and audio can play without the API upload server.
 - Production Vercel builds for interactive practice must fail before deployment when `EXPO_PUBLIC_API_BASE_URL` is missing or points back to the static learner domain.
+- The production API must have a Git-tracked hosting blueprint with health checks, persistent storage, and Redis session storage configured through environment variables.
 - Admin routes must not be publicly editable without authentication.
 - Learner routes remain public unless commercial gating is explicitly enabled.
 - Failed pre-deploy checks stop the release and do not replace the currently running version.
@@ -47,6 +48,7 @@ The app can be hosted, tested, upgraded, backed up, and rolled back without disc
 - If a required env var is absent in production, deployment should fail during preflight or startup instead of failing at first customer request.
 - If production CORS origins are not configured, the API must refuse startup instead of reflecting arbitrary origins.
 - If production storage still points at repository-local default files, the API must refuse startup instead of losing edits on redeploy.
+- If production Redis still points at the local development default, the API must refuse startup instead of accepting chat/answering sessions that cannot persist.
 - Live paid-provider tests may be opt-in to avoid spending credits in every CI run, but non-live provider contract tests remain mandatory.
 - Backup export must complete within hosting/proxy timeout budgets or move to an asynchronous job before production traffic.
 - Backup/restore helpers must not hardcode Windows-only executables when the API can be hosted on Linux.

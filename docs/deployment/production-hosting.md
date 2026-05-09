@@ -35,6 +35,12 @@ Keep `vercel.json` intentionally simple: no `framework` override and a single SP
 
 ## Render API
 
+Use the root `render.yaml` Blueprint to create:
+
+- `clearn-api` as a Node web service.
+- `clearn-redis` as Render Key Value session storage.
+- `/var/lib/clearn` as persistent disk storage for content, admin auth, and uploads.
+
 Service type:
 
 - Web Service.
@@ -42,6 +48,7 @@ Service type:
 - Root directory: repository root.
 - Build command: `cd platform && npm install --legacy-peer-deps && npm run --workspace @softskills/api build`.
 - Start command: `cd platform/apps/api && node ../../node_modules/tsx/dist/cli.mjs src/index.ts`.
+- Health check path: `/api/health`.
 
 Persistent disk:
 
@@ -59,6 +66,22 @@ Required production secrets:
 - `EXPO_PUBLIC_API_BASE_URL=https://api.clearn.example` for frontend builds
 
 See `platform/.env.production.example`.
+
+After Render creates the service:
+
+1. Add the custom domain `api.clearn.me` to the `clearn-api` service.
+2. Add the DNS record Render shows for `api.clearn.me`.
+3. Set Vercel frontend env `EXPO_PUBLIC_API_BASE_URL=https://api.clearn.me` for Production and Preview.
+4. Redeploy Vercel from the latest `main`.
+
+Production smoke checks:
+
+```powershell
+Invoke-RestMethod https://api.clearn.me/api/health
+Invoke-RestMethod https://api.clearn.me/api/content
+```
+
+Both must return JSON before admin, AI generation, STT, TTS, uploads, or backups can work on `https://clearn.me`.
 
 ## Branch Protection
 

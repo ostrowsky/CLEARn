@@ -75,6 +75,10 @@ if (parsedEnv.APP_ENV === 'production') {
   if (usesDefaultRepoStorage) {
     throw new Error('APP_STORAGE_ROOT or explicit durable DEV_CONTENT_PATH, ADMIN_AUTH_PATH, and MEDIA_UPLOADS_PATH must be configured in production.');
   }
+
+  if (parsedEnv.REDIS_URL === 'redis://localhost:6379') {
+    throw new Error('REDIS_URL must point to production Redis in production.');
+  }
 }
 
 export const env = parsedEnv;

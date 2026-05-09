@@ -8,6 +8,7 @@ $platformRoot = Join-Path $workspaceRoot 'platform'
 Write-TestStep 'Checking platform monorepo files'
 Assert-True -Condition (Test-Path -LiteralPath (Join-Path $workspaceRoot 'package.json'))
 Assert-True -Condition (Test-Path -LiteralPath (Join-Path $workspaceRoot 'vercel.json'))
+Assert-True -Condition (Test-Path -LiteralPath (Join-Path $workspaceRoot 'render.yaml'))
 Assert-True -Condition (Test-Path -LiteralPath (Join-Path $workspaceRoot '.github\branch-protection-main.json'))
 Assert-True -Condition (Test-Path -LiteralPath (Join-Path $workspaceRoot 'docs\deployment\production-hosting.md'))
 Assert-True -Condition (Test-Path -LiteralPath (Join-Path $platformRoot 'package.json'))
@@ -111,6 +112,7 @@ $prDescriptionScript = Get-Content -LiteralPath (Join-Path $workspaceRoot 'tools
 $branchProtection = Get-Content -LiteralPath (Join-Path $workspaceRoot '.github\branch-protection-main.json') -Raw
 $hostingPlan = Get-Content -LiteralPath (Join-Path $workspaceRoot 'docs\deployment\production-hosting.md') -Raw
 $productionEnvExample = Get-Content -LiteralPath (Join-Path $platformRoot '.env.production.example') -Raw
+$renderBlueprint = Get-Content -LiteralPath (Join-Path $workspaceRoot 'render.yaml') -Raw
 foreach ($pattern in @(
     'vercel-build',
     'cd platform && npm run --workspace @softskills/client build'
@@ -146,11 +148,37 @@ foreach ($pattern in @(
 foreach ($pattern in @(
     'Vercel',
     'Render',
+    'render.yaml',
+    'api.clearn.me',
+    '/api/health',
     'APP_STORAGE_ROOT=/var/lib/clearn',
     'EXPO_PUBLIC_API_BASE_URL',
     'gh api --method PUT repos/ostrowsky/CLEARn/branches/main/protection'
 )) {
     Assert-Match -Actual $hostingPlan -Pattern $pattern
+}
+foreach ($pattern in @(
+    'type: web',
+    'name: clearn-api',
+    'type: keyvalue',
+    'name: clearn-redis',
+    'buildCommand: cd platform && npm install --legacy-peer-deps && npm run --workspace @softskills/api build',
+    'startCommand: cd platform/apps/api && npm run start',
+    'healthCheckPath: /api/health',
+    'mountPath: /var/lib/clearn',
+    'APP_BASE_URL',
+    'https://api.clearn.me',
+    'CORS_ALLOWED_ORIGINS',
+    'https://clearn.me,https://www.clearn.me',
+    'ADMIN_SESSION_SECRET',
+    'generateValue: true',
+    'REDIS_URL',
+    'fromService:',
+    'property: connectionString',
+    'HF_TOKEN',
+    'sync: false'
+)) {
+    Assert-Match -Actual $renderBlueprint -Pattern ([regex]::Escape($pattern))
 }
 foreach ($pattern in @(
     'APP_ENV=production',
@@ -163,6 +191,9 @@ foreach ($pattern in @(
 )) {
     Assert-Match -Actual $productionEnvExample -Pattern $pattern
 }
+
+$apiEnvSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\config\env.ts') -Raw
+Assert-Match -Actual $apiEnvSource -Pattern 'REDIS_URL must point to production Redis in production'
 
 Write-Host 'Platform architecture tests passed.'
 

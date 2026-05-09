@@ -1,0 +1,63 @@
+services:
+  - type: keyvalue
+    name: clearn-redis
+    plan: free
+    region: frankfurt
+    ipAllowList: []
+
+  - type: web
+    name: clearn-api
+    runtime: node
+    plan: starter
+    region: frankfurt
+    rootDir: .
+    buildCommand: cd platform && npm install --legacy-peer-deps && npm run --workspace @softskills/api build
+    startCommand: cd platform/apps/api && npm run start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: clearn-api-storage
+      mountPath: /var/lib/clearn
+      sizeGB: 1
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_PORT
+        value: 10000
+      - key: APP_BASE_URL
+        value: https://api.clearn.me
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://clearn.me,https://www.clearn.me
+      - key: APP_STORAGE_ROOT
+        value: /var/lib/clearn
+      - key: ADMIN_SESSION_SECRET
+        generateValue: true
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: clearn-redis
+          property: connectionString
+      - key: HTTP_BODY_LIMIT_BYTES
+        value: 26214400
+      - key: LLM_TEXT_PROVIDER
+        value: huggingface
+      - key: LLM_STT_PROVIDER
+        value: huggingface
+      - key: LLM_TTS_PROVIDER
+        value: huggingface
+      - key: LLM_FALLBACK_CHAIN
+        value: huggingface,openai,selfhosted
+      - key: HF_CHAT_MODEL
+        value: Qwen/Qwen3-8B
+      - key: LLM_STT_MODEL
+        value: openai/whisper-large-v3
+      - key: LLM_TTS_MODEL
+        value: hexgrad/Kokoro-82M
+      - key: HF_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SELF_HOSTED_BASE_URL
+        sync: false
+      - key: SELF_HOSTED_SPEECH_BASE_URL
+        sync: false
