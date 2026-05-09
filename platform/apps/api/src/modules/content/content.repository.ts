@@ -1,4 +1,5 @@
-﻿import { readFile, writeFile } from 'node:fs/promises';
+import { existsSync, mkdirSync } from 'node:fs';
+import { copyFile, cp, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { AppContent } from '@softskills/domain';
 import { env } from '../../config/env';
@@ -16,12 +17,32 @@ function decodeJsonBuffer(buffer: Buffer): string {
   return buffer.toString('utf8');
 }
 
+function resolvePath(value: string): string {
+  return path.isAbsolute(value) ? value : path.resolve(process.cwd(), value);
+}
+
 export class FileSystemContentRepository implements ContentRepository {
-  private readonly filePath = path.isAbsolute(env.DEV_CONTENT_PATH)
-    ? env.DEV_CONTENT_PATH
-    : path.resolve(process.cwd(), env.DEV_CONTENT_PATH);
+  private readonly filePath = resolvePath(env.DEV_CONTENT_PATH);
+  private readonly defaultContentPath = path.resolve(process.cwd(), '..', '..', 'web', 'data', 'content.json');
+  private readonly defaultUploadsPath = path.resolve(process.cwd(), '..', '..', 'web', 'static', 'uploads');
+  private readonly mediaUploadsPath = resolvePath(env.MEDIA_UPLOADS_PATH);
+
+  private async ensureStorageSeeded(): Promise<void> {
+    if (existsSync(this.filePath)) {
+      return;
+    }
+
+    mkdirSync(path.dirname(this.filePath), { recursive: true });
+    await copyFile(this.defaultContentPath, this.filePath);
+
+    if (!existsSync(this.mediaUploadsPath) && existsSync(this.defaultUploadsPath)) {
+      mkdirSync(path.dirname(this.mediaUploadsPath), { recursive: true });
+      await cp(this.defaultUploadsPath, this.mediaUploadsPath, { recursive: true });
+    }
+  }
 
   async get(): Promise<AppContent> {
+    await this.ensureStorageSeeded();
     const file = decodeJsonBuffer(await readFile(this.filePath));
 
     try {
@@ -33,6 +54,7 @@ export class FileSystemContentRepository implements ContentRepository {
   }
 
   async save(content: AppContent): Promise<AppContent> {
+    await this.ensureStorageSeeded();
     const next = {
       ...content,
       meta: {
