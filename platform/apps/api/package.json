@@ -1,27 +1,27 @@
 {
-    "name":  "@softskills/api",
-    "version":  "0.1.0",
-    "private":  true,
-    "type":  "module",
-    "scripts":  {
-                    "dev":  "node ../../node_modules/tsx/dist/cli.mjs watch src/index.ts",
-                    "build":  "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
-                    "start":  "node ../../node_modules/tsx/dist/cli.mjs src/index.ts",
-                    "lint":  "node ../../node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
-                    "test":  "node -e \"console.log(\u0027Add vitest/jest here\u0027)\""
-                },
-    "dependencies":  {
-                         "@fastify/cors":  "^10.0.1",
-                         "@fastify/sensible":  "^6.0.3",
-                         "@softskills/contracts": "file:../../packages/contracts",
-                         "@softskills/domain": "file:../../packages/domain"
-                         "dotenv":  "^16.4.5",
-                         "fastify":  "^5.0.0",
-                         "ioredis":  "^5.4.1",
-                         "tsx":  "^4.19.1",
-                         "zod":  "^3.23.8"
-                     },
-    "devDependencies":  {
-                            "typescript":  "^5.6.3"
-                        }
+  "name": "@softskills/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ../../node_modules/tsx/dist/cli.mjs watch src/index.ts",
+    "build": "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
+    "start": "node ../../node_modules/tsx/dist/cli.mjs src/index.ts",
+    "lint": "node ../../node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
+    "test": "node -e \"console.log('Add vitest/jest here')\""
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "@fastify/sensible": "^6.0.3",
+    "@softskills/contracts": "file:../../packages/contracts",
+    "@softskills/domain": "file:../../packages/domain",
+    "dotenv": "^16.4.5",
+    "fastify": "^5.0.0",
+    "ioredis": "^5.4.1",
+    "tsx": "^4.19.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
 }
