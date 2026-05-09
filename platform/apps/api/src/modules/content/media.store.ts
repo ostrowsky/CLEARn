@@ -1,7 +1,7 @@
 ﻿import crypto from 'node:crypto';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { env } from '../../config/env';
 
 export interface MediaStore {
   upload(input: { fileName: string; base64: string }): Promise<{ url: string; fileName: string; size: number }>;
@@ -14,10 +14,10 @@ function safeName(fileName: string): string {
   return `${base || 'asset'}-${crypto.randomUUID().slice(0, 8)}${extension.toLowerCase()}`;
 }
 
-const currentDir = path.dirname(fileURLToPath(import.meta.url));
-
 export function getLocalUploadsRoot() {
-  return path.resolve(currentDir, '../../../../../../web/static/uploads');
+  return path.isAbsolute(env.MEDIA_UPLOADS_PATH)
+    ? env.MEDIA_UPLOADS_PATH
+    : path.resolve(process.cwd(), env.MEDIA_UPLOADS_PATH);
 }
 
 export function resolveLocalUploadPath(url: string) {

@@ -5,6 +5,16 @@ import { z } from 'zod';
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultDevContentPath = path.resolve(configDir, '..', '..', '..', '..', '..', 'web', 'data', 'content.json');
+const defaultAdminAuthPath = path.resolve(configDir, '..', '..', '..', '..', '..', 'web', 'data', 'admin-auth.json');
+const defaultMediaUploadsPath = path.resolve(configDir, '..', '..', '..', '..', '..', 'web', 'static', 'uploads');
+
+function resolveStoragePath(storageRoot: string | undefined, relativePath: string, fallback: string) {
+  if (storageRoot && storageRoot.trim()) {
+    return path.resolve(storageRoot, relativePath);
+  }
+
+  return fallback;
+}
 
 const schema = z.object({
   APP_ENV: z.enum(['development', 'staging', 'production']).default('development'),
@@ -30,14 +40,22 @@ const schema = z.object({
   LLM_FALLBACK_CHAIN: z.string().default('huggingface,openai,selfhosted'),
   SELF_HOSTED_BASE_URL: z.string().default('http://localhost:11434/v1'),
   SELF_HOSTED_SPEECH_BASE_URL: z.string().default('http://localhost:8010/v1'),
+  APP_STORAGE_ROOT: z.string().optional(),
   DEV_CONTENT_PATH: z.string().default(defaultDevContentPath),
-  ADMIN_AUTH_PATH: z.string().default(path.resolve(configDir, '..', '..', '..', '..', '..', 'web', 'data', 'admin-auth.json')),
+  ADMIN_AUTH_PATH: z.string().default(defaultAdminAuthPath),
+  MEDIA_UPLOADS_PATH: z.string().default(defaultMediaUploadsPath),
   ADMIN_SESSION_SECRET: z.string().optional(),
   CORS_ALLOWED_ORIGINS: z.string().optional(),
   HTTP_BODY_LIMIT_BYTES: z.coerce.number().default(26214400),
 });
 
-const parsedEnv = schema.parse(process.env);
+const parsedRawEnv = schema.parse(process.env);
+const parsedEnv = {
+  ...parsedRawEnv,
+  DEV_CONTENT_PATH: resolveStoragePath(parsedRawEnv.APP_STORAGE_ROOT, 'content.json', parsedRawEnv.DEV_CONTENT_PATH),
+  ADMIN_AUTH_PATH: resolveStoragePath(parsedRawEnv.APP_STORAGE_ROOT, 'admin-auth.json', parsedRawEnv.ADMIN_AUTH_PATH),
+  MEDIA_UPLOADS_PATH: resolveStoragePath(parsedRawEnv.APP_STORAGE_ROOT, 'uploads', parsedRawEnv.MEDIA_UPLOADS_PATH),
+};
 
 if (parsedEnv.APP_ENV === 'production') {
   if (!parsedEnv.ADMIN_SESSION_SECRET || parsedEnv.ADMIN_SESSION_SECRET.length < 32 || parsedEnv.ADMIN_SESSION_SECRET === 'replace-with-a-long-random-production-secret') {
@@ -50,6 +68,12 @@ if (parsedEnv.APP_ENV === 'production') {
     .filter(Boolean);
   if (!allowedOrigins.length) {
     throw new Error('CORS_ALLOWED_ORIGINS must list at least one production web origin.');
+  }
+
+  const usesDefaultRepoStorage = [parsedEnv.DEV_CONTENT_PATH, parsedEnv.ADMIN_AUTH_PATH, parsedEnv.MEDIA_UPLOADS_PATH]
+    .some((value) => [defaultDevContentPath, defaultAdminAuthPath, defaultMediaUploadsPath].includes(path.resolve(value)));
+  if (usesDefaultRepoStorage) {
+    throw new Error('APP_STORAGE_ROOT or explicit durable DEV_CONTENT_PATH, ADMIN_AUTH_PATH, and MEDIA_UPLOADS_PATH must be configured in production.');
   }
 }
 

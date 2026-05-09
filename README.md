@@ -30,6 +30,7 @@ Copy `platform/.env.example` to your local environment configuration if needed. 
 
 - `ADMIN_SESSION_SECRET` - strong non-placeholder secret, at least 32 characters.
 - `CORS_ALLOWED_ORIGINS` - comma-separated public web origins allowed to send credentialed API requests.
+- `APP_STORAGE_ROOT` - persistent volume root for `content.json`, `admin-auth.json`, and uploaded media, or explicit durable `DEV_CONTENT_PATH`, `ADMIN_AUTH_PATH`, and `MEDIA_UPLOADS_PATH`.
 - Persistent paths/storage for content, admin auth, uploads, and backups.
 
 ## Development
@@ -74,6 +75,20 @@ cd platform
 pnpm audit --prod --audit-level high
 ```
 
+Pull requests must use the `pr-description` skill format:
+
+```markdown
+## What
+## Why
+## Changes
+```
+
+Generate a local draft before opening a PR:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\prepare-pr-description.ps1
+```
+
 ## Admin Access
 
 On first admin entry, the app asks for:
@@ -96,3 +111,17 @@ The current project is ready for staged hosting as a pre-production prototype af
 - staging environment with smoke checks for public learner/admin/API URLs
 
 See `docs/specs/features/deployment-readiness.md` for the deployment contract.
+
+## Vercel Frontend Deployment
+
+Vercel can host the Expo web client as a static frontend. The repository includes root-level `package.json` and `vercel.json` for this.
+
+Recommended Vercel settings:
+
+- Framework preset: `Other`.
+- Install command: `cd platform && pnpm install --frozen-lockfile`.
+- Build command: `cd platform && pnpm --filter @softskills/client build`.
+- Output directory: `platform/apps/client/dist`.
+- Environment variable: `EXPO_PUBLIC_API_BASE_URL=https://your-api-host.example.com`.
+
+The Fastify API, uploaded media, admin auth file, local STT service, and backup/restore jobs should be hosted separately on a Node runtime with durable storage, for example Render, Fly.io, Railway, or a VPS. Vercel is a good fit for the static frontend, but not for the current stateful API/runtime bundle without a larger serverless adapter migration.

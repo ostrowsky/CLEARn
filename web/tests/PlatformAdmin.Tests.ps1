@@ -90,9 +90,13 @@ foreach ($pattern in @(
 $envSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\config\env.ts') -Raw
 Assert-Match -Actual $envSource -Pattern 'HTTP_BODY_LIMIT_BYTES'
 foreach ($pattern in @(
+    'APP_STORAGE_ROOT',
+    'MEDIA_UPLOADS_PATH',
     'CORS_ALLOWED_ORIGINS',
     'ADMIN_SESSION_SECRET must be set',
     'CORS_ALLOWED_ORIGINS must list at least one production web origin',
+    'APP_STORAGE_ROOT or explicit durable DEV_CONTENT_PATH, ADMIN_AUTH_PATH, and MEDIA_UPLOADS_PATH must be configured in production',
+    'resolveStoragePath',
     "APP_ENV === 'production'"
 )) {
     Assert-Match -Actual $envSource -Pattern $pattern
@@ -117,6 +121,9 @@ foreach ($pattern in @(
 )) {
     Assert-Match -Actual $routesSource -Pattern $pattern
 }
+$mediaStoreSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\modules\content\media.store.ts') -Raw
+Assert-Match -Actual $mediaStoreSource -Pattern 'env\.MEDIA_UPLOADS_PATH'
+Assert-True -Condition ($mediaStoreSource -cnotmatch 'web/static/uploads') -Message 'Media store should not hardcode repository-local uploads storage.'
 Assert-Match -Actual $routesSource -Pattern "env\.APP_ENV === 'production' && !await requireAdminSession\(request, reply\)"
 Assert-Match -Actual $routesSource -Pattern "/api/debug/logs"
 Assert-Match -Actual $routesSource -Pattern "/api/debug/log"
