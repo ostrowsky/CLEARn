@@ -2,6 +2,9 @@
   "name": "clearn",
   "private": true,
   "packageManager": "pnpm@10.8.0",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "build": "cd platform && pnpm run build",
     "test": "powershell -ExecutionPolicy Bypass -File ./web/tests/run-tests.ps1",
