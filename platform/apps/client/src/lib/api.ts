@@ -170,6 +170,15 @@ export const apiClient = {
       body: JSON.stringify({ fileName, base64 }),
     });
   },
+  getAdminMediaBackupExportUrl() {
+    return resolveApiUrl('/api/admin/backup/media/export');
+  },
+  restoreAdminMediaBackup(fileName: string, base64: string) {
+    return request<{ restored: boolean; restartRequired: boolean; restoredAt: string; fileCount: number }>('/api/admin/backup/media/import', {
+      method: 'POST',
+      body: JSON.stringify({ fileName, base64 }),
+    });
+  },
   generateClarify(context: string, offset = 0): Promise<ClarifyExercise> {
     return request('/api/practice/clarify', { method: 'POST', body: JSON.stringify({ context, offset }) });
   },
