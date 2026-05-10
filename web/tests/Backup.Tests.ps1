@@ -28,8 +28,11 @@ $backupScriptSource = Get-Content -LiteralPath $backupScript -Raw
 Assert-Match -Actual $backupScriptSource -Pattern 'function Get-IncludedFiles' -Message 'Backup script should prune excluded folders before traversal.'
 Assert-True -Condition ($backupScriptSource -cnotmatch 'Get-ChildItem[^\r\n]*-Recurse') -Message 'Backup script must not recursively traverse excluded dependency and cache folders.'
 $backupServiceSource = Get-Content -LiteralPath (Join-Path $workspaceRoot 'platform\apps\api\src\modules\backup\backup.service.ts') -Raw
-Assert-Match -Actual $backupServiceSource -Pattern 'process\.env\.POWERSHELL_PATH'
-Assert-Match -Actual $backupServiceSource -Pattern "process\.platform === 'win32' \? 'powershell\.exe' : 'pwsh'"
+Assert-Match -Actual $backupServiceSource -Pattern 'clearn-content-backup-v1' -Message 'Backup service should create content backup JSON files.'
+Assert-Match -Actual $backupServiceSource -Pattern 'clearn-media-backup-v1' -Message 'Backup service should create media backup JSON files.'
+Assert-Match -Actual $backupServiceSource -Pattern 'async createMediaBackup\(' -Message 'Backup service should expose separate media export.'
+Assert-Match -Actual $backupServiceSource -Pattern 'async restoreMediaBackup\(' -Message 'Backup service should expose separate media restore.'
+Assert-True -Condition ($backupServiceSource -cnotmatch "spawn\(|pwsh|powershell\.exe|POWERSHELL_PATH") -Message 'API backup service must not depend on PowerShell on production Linux hosts.'
 
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('softskills-backup-test-' + [Guid]::NewGuid().ToString('N'))
 $extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('softskills-backup-extract-' + [Guid]::NewGuid().ToString('N'))
