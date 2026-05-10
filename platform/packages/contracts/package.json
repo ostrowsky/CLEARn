@@ -5,6 +5,6 @@
   "type": "module",
   "main": "src/index.ts",
   "dependencies": {
-    "@softskills/domain": "file:../domain"
+    "@softskills/domain": "workspace:*"
   }
 }
