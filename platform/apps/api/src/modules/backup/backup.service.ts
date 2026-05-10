@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { env } from '../../config/env';
@@ -14,9 +14,9 @@ function cleanBase64Payload(base64: string) {
   return dataUrlPrefix.test(normalized) ? normalized.replace(dataUrlPrefix, '') : normalized;
 }
 
-function buildBackupFileName() {
+function buildBackupFileName(kind: 'content' | 'media') {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  return `clearn-content-backup-${timestamp}.json`;
+  return `clearn-${kind}-backup-${timestamp}.json`;
 }
 
 function resolvePath(value: string): string {
@@ -32,27 +32,63 @@ async function readJsonFileIfExists(filePath: string) {
   return JSON.parse(raw);
 }
 
+async function listFilesRecursive(rootPath: string, basePath = rootPath): Promise<Array<{ path: string; base64: string }>> {
+  if (!existsSync(rootPath)) {
+    return [];
+  }
+
+  const rootStat = await stat(rootPath);
+  if (rootStat.isFile()) {
+    return [{ path: path.relative(basePath, rootPath).replace(/\\/g, '/'), base64: (await readFile(rootPath)).toString('base64') }];
+  }
+
+  const entries = await readdir(rootPath, { withFileTypes: true });
+  const files: Array<{ path: string; base64: string }> = [];
+  for (const entry of entries) {
+    const fullPath = path.join(rootPath, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...await listFilesRecursive(fullPath, basePath));
+    } else if (entry.isFile()) {
+      files.push({ path: path.relative(basePath, fullPath).replace(/\\/g, '/'), base64: (await readFile(fullPath)).toString('base64') });
+    }
+  }
+  return files;
+}
+
+function safeRelativePath(value: string) {
+  const relativePath = String(value || '').replace(/^[/\\]+/, '').replace(/\\/g, '/');
+  if (!relativePath || relativePath.split('/').some((part) => part === '..')) {
+    return '';
+  }
+  return relativePath;
+}
+
 export class BackupService {
   async createBackup() {
     const contentPath = resolvePath(env.DEV_CONTENT_PATH);
     const adminAuthPath = resolvePath(env.ADMIN_AUTH_PATH);
-
     const backup = {
       schema: 'clearn-content-backup-v1',
       createdAt: new Date().toISOString(),
       appEnv: env.APP_ENV,
       content: await readJsonFileIfExists(contentPath),
       adminAuth: await readJsonFileIfExists(adminAuthPath),
-      media: {
-        included: false,
-        note: 'Media files are excluded from this content backup to avoid browser memory issues. Back up uploads separately from Render disk storage.',
-      },
+      media: { included: false, note: 'Media files are excluded from this content backup. Use the separate media backup buttons.' },
     };
 
-    return {
-      fileName: buildBackupFileName(),
-      bytes: Buffer.from(JSON.stringify(backup, null, 2), 'utf8'),
+    return { fileName: buildBackupFileName('content'), bytes: Buffer.from(JSON.stringify(backup, null, 2), 'utf8') };
+  }
+
+  async createMediaBackup() {
+    const uploadsPath = resolvePath(env.MEDIA_UPLOADS_PATH);
+    const backup = {
+      schema: 'clearn-media-backup-v1',
+      createdAt: new Date().toISOString(),
+      appEnv: env.APP_ENV,
+      uploads: await listFilesRecursive(uploadsPath),
     };
+
+    return { fileName: buildBackupFileName('media'), bytes: Buffer.from(JSON.stringify(backup, null, 2), 'utf8') };
   }
 
   async restoreBackup(fileName: string, base64: string) {
@@ -66,11 +102,7 @@ export class BackupService {
 
     try {
       await writeFile(tempPath, Buffer.from(cleanBase64, 'base64'));
-      const parsed = JSON.parse(await readFile(tempPath, 'utf8')) as {
-        schema?: string;
-        content?: unknown;
-        adminAuth?: unknown;
-      };
+      const parsed = JSON.parse(await readFile(tempPath, 'utf8')) as { schema?: string; content?: unknown; adminAuth?: unknown };
 
       if (parsed.schema && parsed.schema !== 'clearn-content-backup-v1' && parsed.schema !== 'clearn-node-json-backup-v1') {
         throw new Error('Unsupported backup schema. Choose a content backup JSON file.');
@@ -91,13 +123,42 @@ export class BackupService {
         fileCount += 1;
       }
 
-      return {
-        restored: true,
-        restartRequired: false,
-        restoredAt: new Date().toISOString(),
-        fileCount,
-        mediaRestored: false,
-      };
+      return { restored: true, restartRequired: false, restoredAt: new Date().toISOString(), fileCount, mediaRestored: false };
+    } finally {
+      await rm(tempPath, { force: true }).catch(() => undefined);
+    }
+  }
+
+  async restoreMediaBackup(fileName: string, base64: string) {
+    const cleanBase64 = cleanBase64Payload(base64);
+    if (!cleanBase64) {
+      throw new Error('Media backup archive is empty.');
+    }
+
+    const safeFileName = path.basename(String(fileName || 'clearn-media-backup.json')).replace(/[^A-Za-z0-9._-]/g, '-');
+    const tempPath = path.join(os.tmpdir(), `${Date.now()}-${safeFileName || 'clearn-media-backup.json'}`);
+
+    try {
+      await writeFile(tempPath, Buffer.from(cleanBase64, 'base64'));
+      const parsed = JSON.parse(await readFile(tempPath, 'utf8')) as { schema?: string; uploads?: Array<{ path: string; base64: string }> };
+      if (parsed.schema !== 'clearn-media-backup-v1' && parsed.schema !== 'clearn-node-json-backup-v1') {
+        throw new Error('Unsupported media backup schema. Choose a media backup JSON file.');
+      }
+
+      const uploadsPath = resolvePath(env.MEDIA_UPLOADS_PATH);
+      await rm(uploadsPath, { recursive: true, force: true });
+      await mkdir(uploadsPath, { recursive: true });
+      let fileCount = 0;
+      for (const file of parsed.uploads || []) {
+        const relativePath = safeRelativePath(file.path);
+        if (!relativePath) continue;
+        const targetPath = path.join(uploadsPath, relativePath);
+        await mkdir(path.dirname(targetPath), { recursive: true });
+        await writeFile(targetPath, Buffer.from(String(file.base64 || ''), 'base64'));
+        fileCount += 1;
+      }
+
+      return { restored: true, restartRequired: false, restoredAt: new Date().toISOString(), fileCount };
     } finally {
       await rm(tempPath, { force: true }).catch(() => undefined);
     }
