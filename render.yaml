@@ -11,8 +11,8 @@ services:
     plan: starter
     region: frankfurt
     rootDir: .
-    buildCommand: cd platform && npm install --legacy-peer-deps && npm run --workspace @softskills/api build
-    startCommand: cd platform/apps/api && npm run start
+    buildCommand: cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @softskills/api build
+    startCommand: cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm --filter @softskills/api start
     healthCheckPath: /api/health
     autoDeploy: true
     disk:
