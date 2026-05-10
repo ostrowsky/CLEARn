@@ -115,14 +115,14 @@ $productionEnvExample = Get-Content -LiteralPath (Join-Path $platformRoot '.env.
 $renderBlueprint = Get-Content -LiteralPath (Join-Path $workspaceRoot 'render.yaml') -Raw
 foreach ($pattern in @(
     'vercel-build',
-    'cd platform && npm run --workspace @softskills/client build'
+    'cd platform && pnpm --filter @softskills/client build'
 )) {
     Assert-Match -Actual $rootPackage -Pattern $pattern
 }
 foreach ($pattern in @(
     '"outputDirectory": "platform/apps/client/dist"',
-    '"buildCommand": "cd platform && npm run --workspace @softskills/client build"',
-    '"installCommand": "cd platform && npm install --legacy-peer-deps"',
+    '"buildCommand": "cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm --filter @softskills/client build"',
+    '"installCommand": "cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm install --frozen-lockfile"',
     '"destination": "/index.html"'
 )) {
     Assert-Match -Actual $vercelConfig -Pattern $pattern
@@ -162,8 +162,8 @@ foreach ($pattern in @(
     'name: clearn-api',
     'type: keyvalue',
     'name: clearn-redis',
-    'buildCommand: cd platform && npm install --legacy-peer-deps && npm run --workspace @softskills/api build',
-    'startCommand: cd platform/apps/api && npm run start',
+    'buildCommand: cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @softskills/api build',
+    'startCommand: cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm --filter @softskills/api start',
     'healthCheckPath: /api/health',
     'mountPath: /var/lib/clearn',
     'APP_BASE_URL',
