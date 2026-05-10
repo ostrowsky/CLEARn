@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd platform && npm install --legacy-peer-deps",
-  "buildCommand": "cd platform && npm run --workspace @softskills/client build",
+  "installCommand": "cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm install --frozen-lockfile",
+  "buildCommand": "cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm --filter @softskills/client build",
   "outputDirectory": "platform/apps/client/dist",
   "rewrites": [
     {
