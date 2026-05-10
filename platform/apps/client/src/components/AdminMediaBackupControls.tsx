@@ -27,6 +27,43 @@ function pickMediaBackupFile() {
   });
 }
 
+function getDownloadFileName(response: Response) {
+  const disposition = response.headers.get('content-disposition') || '';
+  const match = disposition.match(/filename="?([^";]+)"?/i);
+  return match?.[1] || `clearn-media-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+}
+
+async function readErrorMessage(response: Response) {
+  try {
+    const payload = await response.json();
+    return payload.message || payload.error || response.statusText || String(response.status);
+  } catch {
+    return response.statusText || String(response.status);
+  }
+}
+
+async function downloadMediaBackup() {
+  const response = await fetch(resolveApiUrl('/api/admin/backup/media/export'), {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    window.alert(`Media backup download failed: ${await readErrorMessage(response)}`);
+    return;
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = getDownloadFileName(response);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
 export function AdminMediaBackupControls() {
   if (Platform.OS !== 'web' || typeof window === 'undefined') {
     return null;
@@ -50,7 +87,7 @@ export function AdminMediaBackupControls() {
     });
 
     if (!response.ok) {
-      window.alert('Media backup restore failed.');
+      window.alert(`Media backup restore failed: ${await readErrorMessage(response)}`);
       return;
     }
 
@@ -59,10 +96,7 @@ export function AdminMediaBackupControls() {
 
   return (
     <View style={styles.row}>
-      <Pressable
-        style={styles.button}
-        onPress={() => window.open(resolveApiUrl('/api/admin/backup/media/export'), '_blank', 'noopener,noreferrer')}
-      >
+      <Pressable style={styles.button} onPress={() => void downloadMediaBackup()}>
         <Text style={styles.buttonText}>Download media backup</Text>
       </Pressable>
       <Pressable style={styles.button} onPress={() => void restoreMediaBackup()}>
