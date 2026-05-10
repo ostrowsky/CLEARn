@@ -106,6 +106,7 @@ foreach ($pattern in @(
 Write-TestStep 'Checking Vercel frontend and PR description gates'
 $rootPackage = Get-Content -LiteralPath (Join-Path $workspaceRoot 'package.json') -Raw
 $vercelConfig = Get-Content -LiteralPath (Join-Path $workspaceRoot 'vercel.json') -Raw
+$vercelNpmPrep = Get-Content -LiteralPath (Join-Path $platformRoot 'scripts\prepare-vercel-npm-install.mjs') -Raw
 $prTemplate = Get-Content -LiteralPath (Join-Path $workspaceRoot '.github\pull_request_template.md') -Raw
 $prDescriptionWorkflow = Get-Content -LiteralPath (Join-Path $workspaceRoot '.github\workflows\pr-description.yml') -Raw
 $prDescriptionScript = Get-Content -LiteralPath (Join-Path $workspaceRoot 'tools\prepare-pr-description.ps1') -Raw
@@ -121,11 +122,20 @@ foreach ($pattern in @(
 }
 foreach ($pattern in @(
     '"outputDirectory": "platform/apps/client/dist"',
-    '"buildCommand": "cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm --filter @softskills/client build"',
-    '"installCommand": "cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm install --frozen-lockfile"',
+    '"buildCommand": "cd platform && npm run --workspace @softskills/client build"',
+    '"installCommand": "cd platform && node ./scripts/prepare-vercel-npm-install.mjs && npm install --legacy-peer-deps"',
     '"destination": "/index.html"'
 )) {
     Assert-Match -Actual $vercelConfig -Pattern $pattern
+}
+foreach ($pattern in @(
+    'workspace:\*',
+    'file:../../packages/contracts',
+    'file:../../packages/domain',
+    'expo-linking',
+    '~7.0.5'
+)) {
+    Assert-Match -Actual $vercelNpmPrep -Pattern $pattern
 }
 Assert-True -Condition ($vercelConfig -cnotmatch '"framework"') -Message 'Vercel config should not use a nullable framework override.'
 Assert-True -Condition ($vercelConfig -cnotmatch '\?!') -Message 'Vercel SPA fallback should avoid complex negative-lookahead rewrites.'
