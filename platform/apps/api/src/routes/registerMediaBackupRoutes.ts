@@ -32,10 +32,11 @@ export async function registerMediaBackupRoutes(app: FastifyInstance) {
     }
 
     const backup = await backupService.createMediaBackup();
+
     return reply
-      .header('Content-Type', 'application/json')
+      .header('Content-Type', 'application/zip')
       .header('Content-Disposition', 'attachment; filename=' + JSON.stringify(backup.fileName))
-      .send(backup.bytes);
+      .send(backup.stream);
   });
 
   app.post('/api/admin/backup/media/import', async (request, reply) => {
@@ -44,6 +45,10 @@ export async function registerMediaBackupRoutes(app: FastifyInstance) {
     }
 
     const body = request.body as { fileName?: string; base64?: string };
-    return backupService.restoreMediaBackup(String(body.fileName || 'clearn-media-backup.json'), String(body.base64 || ''));
+
+    return backupService.restoreMediaBackup(
+      String(body.fileName || 'clearn-media-backup.zip'),
+      String(body.base64 || ''),
+    );
   });
 }
