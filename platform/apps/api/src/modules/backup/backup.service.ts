@@ -4,6 +4,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { env } from '../../config/env';
 
+const MAX_MEDIA_BACKUP_BYTES = Number(process.env.MEDIA_BACKUP_MAX_BYTES || 32 * 1024 * 1024);
+const MAX_MEDIA_BACKUP_FILES = Number(process.env.MEDIA_BACKUP_MAX_FILES || 500);
+
 function cleanBase64Payload(base64: string) {
   const normalized = String(base64 || '').trim();
   if (!normalized) {
@@ -32,13 +35,30 @@ async function readJsonFileIfExists(filePath: string) {
   return JSON.parse(raw);
 }
 
-async function listFilesRecursive(rootPath: string, basePath = rootPath): Promise<Array<{ path: string; base64: string }>> {
+function assertMediaBackupBudget(fileCount: number, byteCount: number) {
+  if (fileCount > MAX_MEDIA_BACKUP_FILES) {
+    throw new Error(`Media backup is too large: ${fileCount} files exceeds the ${MAX_MEDIA_BACKUP_FILES} file limit. Download or prune media manually, then try again.`);
+  }
+
+  if (byteCount > MAX_MEDIA_BACKUP_BYTES) {
+    throw new Error(`Media backup is too large: ${byteCount} bytes exceeds the ${MAX_MEDIA_BACKUP_BYTES} byte limit. Download or prune media manually, then try again.`);
+  }
+}
+
+async function listFilesRecursive(
+  rootPath: string,
+  basePath = rootPath,
+  budget = { fileCount: 0, byteCount: 0 },
+): Promise<Array<{ path: string; base64: string }>> {
   if (!existsSync(rootPath)) {
     return [];
   }
 
   const rootStat = await stat(rootPath);
   if (rootStat.isFile()) {
+    budget.fileCount += 1;
+    budget.byteCount += rootStat.size;
+    assertMediaBackupBudget(budget.fileCount, budget.byteCount);
     return [{ path: path.relative(basePath, rootPath).replace(/\\/g, '/'), base64: (await readFile(rootPath)).toString('base64') }];
   }
 
@@ -47,8 +67,12 @@ async function listFilesRecursive(rootPath: string, basePath = rootPath): Promis
   for (const entry of entries) {
     const fullPath = path.join(rootPath, entry.name);
     if (entry.isDirectory()) {
-      files.push(...await listFilesRecursive(fullPath, basePath));
+      files.push(...await listFilesRecursive(fullPath, basePath, budget));
     } else if (entry.isFile()) {
+      const fileStat = await stat(fullPath);
+      budget.fileCount += 1;
+      budget.byteCount += fileStat.size;
+      assertMediaBackupBudget(budget.fileCount, budget.byteCount);
       files.push({ path: path.relative(basePath, fullPath).replace(/\\/g, '/'), base64: (await readFile(fullPath)).toString('base64') });
     }
   }
@@ -85,6 +109,7 @@ export class BackupService {
       schema: 'clearn-media-backup-v1',
       createdAt: new Date().toISOString(),
       appEnv: env.APP_ENV,
+      limits: { maxBytes: MAX_MEDIA_BACKUP_BYTES, maxFiles: MAX_MEDIA_BACKUP_FILES },
       uploads: await listFilesRecursive(uploadsPath),
     };
 
