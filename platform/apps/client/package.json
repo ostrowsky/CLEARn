@@ -20,7 +20,6 @@
     "@softskills/domain": "workspace:*",
     "expo": "^52.0.11",
     "expo-constants": "~17.0.8",
-    "expo-linking": "~7.0.5",
     "expo-router": "^4.0.22",
     "expo-status-bar": "~2.0.1",
     "react": "18.3.1",
