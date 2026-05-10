@@ -26,9 +26,18 @@ async function patchPackageJson(relativePath) {
     }
   }
 
+  if (relativePath === 'apps/client/package.json') {
+    json.dependencies ||= {};
+
+    if (!json.dependencies['expo-linking']) {
+      json.dependencies['expo-linking'] = '~7.0.5';
+      changed = true;
+    }
+  }
+
   if (changed) {
     await writeFile(packagePath, `${JSON.stringify(json, null, 2)}\n`, 'utf8');
-    console.log(`[vercel] patched workspace deps in ${relativePath}`);
+    console.log(`[vercel] patched dependencies in ${relativePath}`);
   }
 }
 
