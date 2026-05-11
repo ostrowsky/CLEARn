@@ -4,6 +4,7 @@ import Fastify from 'fastify';
 import { env } from './config/env';
 import { registerRoutes } from './routes/registerRoutes';
 import { registerMediaBackupRoutes } from './routes/registerMediaBackupRoutes';
+import { registerVideoTranscriptSegmentRoutes } from './routes/registerVideoTranscriptSegmentRoutes';
 
 const app = Fastify({ logger: true, bodyLimit: env.HTTP_BODY_LIMIT_BYTES });
 
@@ -24,6 +25,7 @@ await app.register(cors, {
 });
 await app.register(sensible);
 await registerRoutes(app);
+await registerVideoTranscriptSegmentRoutes(app);
 await registerMediaBackupRoutes(app);
 
 await app.listen({ port: env.APP_PORT, host: '0.0.0.0' });
