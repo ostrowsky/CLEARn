@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { resolveApiUrl } from '../lib/api';
 import { tokens } from '../theme/tokens';
@@ -10,7 +11,7 @@ function pickMediaBackupFile() {
   return new Promise<{ fileName: string; base64: string } | null>((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json,application/json';
+    input.accept = '.zip,.json,application/zip,application/json';
     input.onchange = () => {
       const file = input.files?.[0];
       if (!file) {
@@ -30,7 +31,7 @@ function pickMediaBackupFile() {
 function getDownloadFileName(response: Response) {
   const disposition = response.headers.get('content-disposition') || '';
   const match = disposition.match(/filename="?([^";]+)"?/i);
-  return match?.[1] || `clearn-media-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+  return match?.[1] || `clearn-media-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
 }
 
 async function readErrorMessage(response: Response) {
@@ -40,6 +41,20 @@ async function readErrorMessage(response: Response) {
   } catch {
     return response.statusText || String(response.status);
   }
+}
+
+async function isAdminAuthenticated() {
+  const response = await fetch(resolveApiUrl('/api/admin/auth/status'), {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+
+  const status = await response.json() as { configured?: boolean; authenticated?: boolean };
+  return Boolean(status.configured && status.authenticated);
 }
 
 async function downloadMediaBackup() {
@@ -65,11 +80,43 @@ async function downloadMediaBackup() {
 }
 
 export function AdminMediaBackupControls() {
+  const [canShowControls, setCanShowControls] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined' || window.location.pathname !== '/admin') {
+      setCanShowControls(false);
+      return;
+    }
+
+    let active = true;
+
+    async function refreshAuthStatus() {
+      try {
+        const authenticated = await isAdminAuthenticated();
+        if (active) {
+          setCanShowControls(authenticated);
+        }
+      } catch {
+        if (active) {
+          setCanShowControls(false);
+        }
+      }
+    }
+
+    void refreshAuthStatus();
+    const intervalId = window.setInterval(() => void refreshAuthStatus(), 1500);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
   if (Platform.OS !== 'web' || typeof window === 'undefined') {
     return null;
   }
 
-  if (window.location.pathname !== '/admin') {
+  if (window.location.pathname !== '/admin' || !canShowControls) {
     return null;
   }
 
