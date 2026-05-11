@@ -23,14 +23,10 @@ function Convert-ToSeconds {
         return $total
     }
 
-    $hours = 0
-    $minutes = 0
-    $seconds = 0
-    if ($clean -match '(\d+)h') { $hours = [int]$Matches[1] }
-    if ($clean -match '(\d+)m') { $minutes = [int]$Matches[1] }
-    if ($clean -match '(\d+)s?') { $seconds = [int]$Matches[1] }
-
-    if (($hours + $minutes + $seconds) -gt 0) {
+    if ($clean -match '^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$' -and ($Matches[1] -or $Matches[2] -or $Matches[3])) {
+        $hours = if ($Matches[1]) { [int]$Matches[1] } else { 0 }
+        $minutes = if ($Matches[2]) { [int]$Matches[2] } else { 0 }
+        $seconds = if ($Matches[3]) { [int]$Matches[3] } else { 0 }
         return ($hours * 3600) + ($minutes * 60) + $seconds
     }
 
@@ -74,6 +70,63 @@ function Get-MetaValue {
     }
 
     return ''
+}
+
+function Get-TranscriptSegments {
+    param([object]$Material)
+
+    if ($null -eq $Material.meta) {
+        return @()
+    }
+
+    if ($Material.meta.PSObject.Properties.Name -contains 'transcriptSegments' -and $null -ne $Material.meta.transcriptSegments) {
+        return @($Material.meta.transcriptSegments)
+    }
+
+    return @()
+}
+
+function Get-PlainTranscript {
+    param([object]$Material)
+
+    $plain = Get-MetaValue -Material $Material -Names @('transcript', 'videoTranscript', 'caption')
+    return ([string]$plain).Trim()
+}
+
+function Test-TranscriptSegmentsCoverBounds {
+    param(
+        [object]$Material,
+        [int]$SegmentStart,
+        [int]$SegmentEnd,
+        [string]$Context
+    )
+
+    $segments = Get-TranscriptSegments -Material $Material
+    Assert-True -Condition ($segments.Count -gt 0) -Message "$Context must define transcriptSegments when transcript timing must be validated."
+
+    $matchingTimedSegments = 0
+    foreach ($segment in $segments) {
+        $text = ''
+        if ($segment.PSObject.Properties.Name -contains 'text') {
+            $text = [string]$segment.text
+        }
+        Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($text)) -Message "$Context transcript segment must contain non-empty text."
+
+        $segmentStartRaw = if ($segment.PSObject.Properties.Name -contains 'start') { [string]$segment.start } else { '' }
+        $segmentEndRaw = if ($segment.PSObject.Properties.Name -contains 'end') { [string]$segment.end } else { '' }
+        Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($segmentStartRaw)) -Message "$Context transcript segment must define start time."
+        Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($segmentEndRaw)) -Message "$Context transcript segment must define end time."
+
+        $segmentTranscriptStart = Convert-ToSeconds $segmentStartRaw
+        $segmentTranscriptEnd = Convert-ToSeconds $segmentEndRaw
+        Assert-True -Condition ($segmentTranscriptEnd -gt $segmentTranscriptStart) -Message "$Context transcript segment end must be greater than start."
+        Assert-True -Condition ($segmentTranscriptStart -ge $SegmentStart) -Message "$Context transcript segment starts before the configured video segment."
+        Assert-True -Condition ($segmentTranscriptStart -lt $SegmentEnd) -Message "$Context transcript segment starts after the configured video segment end."
+        Assert-True -Condition ($segmentTranscriptEnd -le $SegmentEnd) -Message "$Context transcript segment ends after the configured video segment end."
+        $matchingTimedSegments += 1
+    }
+
+    Assert-True -Condition ($matchingTimedSegments -gt 0) -Message "$Context must have at least one transcript segment inside the configured video segment."
 }
 
 function Find-VideoMaterials {
@@ -125,6 +178,71 @@ function Test-YouTubeUrl {
 function Test-UploadedMediaUrl {
     param([string]$Url)
     return $Url -match '^/uploads/' -or $Url -match '/uploads/'
+}
+
+function Get-VideoSegmentBounds {
+    param([object]$Material)
+
+    $url = [string]$Material.url
+    $startRaw = ''
+    $endRaw = ''
+
+    if (Test-YouTubeUrl -Url $url) {
+        $startRaw = Get-QueryParam -Url $url -Name 'start'
+        if ([string]::IsNullOrWhiteSpace($startRaw)) {
+            $startRaw = Get-QueryParam -Url $url -Name 't'
+        }
+        $endRaw = Get-QueryParam -Url $url -Name 'end'
+    } else {
+        if ($url -match '#t=([^,]+),([^&]+)$') {
+            $startRaw = $Matches[1]
+            $endRaw = $Matches[2]
+        }
+
+        if ([string]::IsNullOrWhiteSpace($startRaw)) {
+            $startRaw = Get-MetaValue -Material $Material -Names @('segmentStart', 'start', 'clipStart')
+        }
+        if ([string]::IsNullOrWhiteSpace($endRaw)) {
+            $endRaw = Get-MetaValue -Material $Material -Names @('segmentEnd', 'end', 'clipEnd')
+        }
+    }
+
+    return [pscustomobject]@{
+        StartRaw = $startRaw
+        EndRaw = $endRaw
+        Start = Convert-ToSeconds $startRaw
+        End = Convert-ToSeconds $endRaw
+    }
+}
+
+function Invoke-YouTubeTranscriptLiveCheck {
+    param(
+        [string]$Url,
+        [int]$ExpectedStart,
+        [int]$ExpectedEnd,
+        [string]$Context
+    )
+
+    if ([string]$env:RUN_YOUTUBE_TRANSCRIPT_LIVE_TESTS -ne '1') {
+        return
+    }
+
+    $baseUrl = [string]$env:YOUTUBE_TRANSCRIPT_TEST_API_BASE_URL
+    if ([string]::IsNullOrWhiteSpace($baseUrl)) {
+        $baseUrl = [string]$env:EXPO_PUBLIC_API_BASE_URL
+    }
+    if ([string]::IsNullOrWhiteSpace($baseUrl)) {
+        $baseUrl = 'https://clearn-api.onrender.com'
+    }
+
+    $encodedUrl = [System.Uri]::EscapeDataString($Url)
+    $endpoint = "$($baseUrl.TrimEnd('/'))/api/media/youtube-transcript-segment?url=$encodedUrl"
+    $response = Invoke-RestMethod -Method Get -Uri $endpoint -TimeoutSec 45
+
+    Assert-True -Condition ([bool]$response.available) -Message "$Context live YouTube transcript must be available from $endpoint"
+    Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$response.text)) -Message "$Context live YouTube transcript text must not be empty."
+    Assert-Equal -Expected ([string]$ExpectedStart) -Actual ([string][int]$response.start) -Message "$Context live YouTube transcript start must match video start."
+    Assert-Equal -Expected ([string]$ExpectedEnd) -Actual ([string][int]$response.end) -Message "$Context live YouTube transcript end must match video end."
 }
 
 Write-TestStep 'Learner video materials render inline for uploaded files and streaming URLs'
@@ -192,45 +310,61 @@ foreach ($fileName in @('content.json', 'content.template.json')) {
             continue
         }
 
+        $bounds = Get-VideoSegmentBounds -Material $material
         if (Test-YouTubeUrl -Url $url) {
-            $startRaw = Get-QueryParam -Url $url -Name 'start'
-            if ([string]::IsNullOrWhiteSpace($startRaw)) {
-                $startRaw = Get-QueryParam -Url $url -Name 't'
-            }
-            $endRaw = Get-QueryParam -Url $url -Name 'end'
-            Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($startRaw)) -Message "$fileName $($video.Path) YouTube video must define start/t; otherwise the full video can be shown. URL: $url"
-            Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($endRaw)) -Message "$fileName $($video.Path) YouTube video must define end; otherwise playback can continue to the full video. URL: $url"
-
-            $segmentStart = Convert-ToSeconds $startRaw
-            $segmentEnd = Convert-ToSeconds $endRaw
-            $segmentDuration = $segmentEnd - $segmentStart
-            Assert-True -Condition ($segmentStart -ge 0) -Message "$fileName $($video.Path) YouTube segment start must be >= 0. URL: $url"
-            Assert-True -Condition ($segmentEnd -gt $segmentStart) -Message "$fileName $($video.Path) YouTube segment end must be greater than start. URL: $url"
-            Assert-True -Condition ($segmentDuration -gt 0) -Message "$fileName $($video.Path) YouTube segment duration must be positive. URL: $url"
+            Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($bounds.StartRaw)) -Message "$fileName $($video.Path) YouTube video must define start/t; otherwise the full video can be shown. URL: $url"
+            Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($bounds.EndRaw)) -Message "$fileName $($video.Path) YouTube video must define end; otherwise playback can continue to the full video. URL: $url"
         } elseif (Test-UploadedMediaUrl -Url $url) {
             $relativePath = ($url -replace '^https?://[^/]+', '') -replace '^/', ''
             $relativePath = ($relativePath -split '[?#]')[0]
             $assetPath = Join-Path $webRoot "static\$relativePath"
             Assert-True -Condition (Test-Path -LiteralPath $assetPath) -Message "$fileName $($video.Path) uploaded video file must exist: $relativePath"
+            Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($bounds.StartRaw)) -Message "$fileName $($video.Path) uploaded video must define segment start via #t=start,end or material.meta.segmentStart/start/clipStart. Full uploaded videos must not pass. URL: $url"
+            Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($bounds.EndRaw)) -Message "$fileName $($video.Path) uploaded video must define segment end via #t=start,end or material.meta.segmentEnd/end/clipEnd. Full uploaded videos must not pass. URL: $url"
+        }
 
-            $fragmentStart = ''
-            $fragmentEnd = ''
-            if ($url -match '#t=([^,]+),([^&]+)$') {
-                $fragmentStart = $Matches[1]
-                $fragmentEnd = $Matches[2]
+        Assert-True -Condition ($bounds.Start -ge 0) -Message "$fileName $($video.Path) video segment start must be >= 0. URL: $url"
+        Assert-True -Condition ($bounds.End -gt $bounds.Start) -Message "$fileName $($video.Path) video segment end must be greater than start. URL: $url"
+        Assert-True -Condition (($bounds.End - $bounds.Start) -gt 0) -Message "$fileName $($video.Path) video segment duration must be positive. URL: $url"
+    }
+}
+
+Write-TestStep 'Every configured video material has transcript coverage for its time segment'
+foreach ($fileName in @('content.json', 'content.template.json')) {
+    $contentPath = Join-Path $webRoot "data\$fileName"
+    $content = Get-Content -LiteralPath $contentPath -Raw | ConvertFrom-Json
+    $videos = Find-VideoMaterials -Node $content -Path $fileName
+
+    foreach ($video in $videos) {
+        $material = $video.Material
+        $url = [string]$material.url
+        if ([string]::IsNullOrWhiteSpace($url)) {
+            continue
+        }
+
+        $bounds = Get-VideoSegmentBounds -Material $material
+        $context = "$fileName $($video.Path) URL: $url"
+        $plainTranscript = Get-PlainTranscript -Material $material
+        $segments = Get-TranscriptSegments -Material $material
+
+        if (Test-YouTubeUrl -Url $url) {
+            Assert-True -Condition ($bounds.End -gt $bounds.Start) -Message "$context must have valid start/end before transcript validation."
+            if ($segments.Count -gt 0) {
+                Test-TranscriptSegmentsCoverBounds -Material $material -SegmentStart $bounds.Start -SegmentEnd $bounds.End -Context $context
+            } elseif (-not [string]::IsNullOrWhiteSpace($plainTranscript)) {
+                Assert-True -Condition ($plainTranscript.Length -ge 20) -Message "$context plain transcript must contain meaningful text."
+            } else {
+                Assert-Match -Actual $sectionSource -Pattern 'apiClient\.getVideoTranscript\(mediaUrl\)'
+                Assert-Match -Actual (Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\src\lib\api.ts') -Raw) -Pattern '/api/media/youtube-transcript-segment\?url='
+                Invoke-YouTubeTranscriptLiveCheck -Url $url -ExpectedStart $bounds.Start -ExpectedEnd $bounds.End -Context $context
             }
-
-            $metaStart = Get-MetaValue -Material $material -Names @('segmentStart', 'start', 'clipStart')
-            $metaEnd = Get-MetaValue -Material $material -Names @('segmentEnd', 'end', 'clipEnd')
-            $startRaw = if (-not [string]::IsNullOrWhiteSpace($fragmentStart)) { $fragmentStart } else { $metaStart }
-            $endRaw = if (-not [string]::IsNullOrWhiteSpace($fragmentEnd)) { $fragmentEnd } else { $metaEnd }
-
-            Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($startRaw)) -Message "$fileName $($video.Path) uploaded video must define segment start via #t=start,end or material.meta.segmentStart/start/clipStart. Full uploaded videos must not pass. URL: $url"
-            Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($endRaw)) -Message "$fileName $($video.Path) uploaded video must define segment end via #t=start,end or material.meta.segmentEnd/end/clipEnd. Full uploaded videos must not pass. URL: $url"
-
-            $segmentStart = Convert-ToSeconds $startRaw
-            $segmentEnd = Convert-ToSeconds $endRaw
-            Assert-True -Condition (($segmentEnd - $segmentStart) -gt 0) -Message "$fileName $($video.Path) uploaded video segment duration must be positive and shorter than the unconstrained full video playback. URL: $url"
+        } elseif (Test-UploadedMediaUrl -Url $url) {
+            if ($segments.Count -gt 0) {
+                Test-TranscriptSegmentsCoverBounds -Material $material -SegmentStart $bounds.Start -SegmentEnd $bounds.End -Context $context
+            } else {
+                Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($plainTranscript)) -Message "$context uploaded video must define transcript or transcriptSegments; uploaded videos cannot rely on YouTube auto transcript."
+                Assert-True -Condition ($plainTranscript.Length -ge 20) -Message "$context uploaded video plain transcript must contain meaningful text."
+            }
         }
     }
 }
