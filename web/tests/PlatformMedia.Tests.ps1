@@ -6,20 +6,30 @@ $platformRoot = Join-Path $workspaceRoot 'platform'
 $webRoot = Join-Path $workspaceRoot 'web'
 . (Join-Path $PSScriptRoot 'Assertions.ps1')
 
+function Get-Prop {
+    param([object]$Value, [string]$Name, [object]$Default = $null)
+    if ($null -eq $Value) { return $Default }
+    $prop = $Value.PSObject.Properties[$Name]
+    if ($null -eq $prop) { return $Default }
+    return $prop.Value
+}
+
+function Has-Prop {
+    param([object]$Value, [string]$Name)
+    if ($null -eq $Value) { return $false }
+    return $null -ne $Value.PSObject.Properties[$Name]
+}
+
 function Convert-ToSeconds {
     param([string]$Value)
 
     $clean = ([string]$Value).Trim().ToLowerInvariant()
-    if ([string]::IsNullOrWhiteSpace($clean)) {
-        return 0
-    }
+    if ([string]::IsNullOrWhiteSpace($clean)) { return 0 }
 
     if ($clean -match '^\d+:\d{1,2}(:\d{1,2})?$') {
         $parts = $clean.Split(':') | ForEach-Object { [int]$_ }
         $total = 0
-        foreach ($part in $parts) {
-            $total = ($total * 60) + $part
-        }
+        foreach ($part in $parts) { $total = ($total * 60) + $part }
         return $total
     }
 
@@ -31,41 +41,38 @@ function Convert-ToSeconds {
     }
 
     $numeric = 0
-    if ([int]::TryParse($clean, [ref]$numeric)) {
-        return $numeric
-    }
-
+    if ([int]::TryParse($clean, [ref]$numeric)) { return $numeric }
     return 0
 }
 
 function Get-QueryParam {
-    param(
-        [string]$Url,
-        [string]$Name
-    )
+    param([string]$Url, [string]$Name)
 
     try {
         $uri = [System.Uri]::new($Url)
-        $query = [System.Web.HttpUtility]::ParseQueryString($uri.Query)
-        return [string]$query[$Name]
+        $query = $uri.Query.TrimStart('?')
+        foreach ($pair in ($query -split '&')) {
+            if ([string]::IsNullOrWhiteSpace($pair)) { continue }
+            $parts = $pair -split '=', 2
+            $key = [System.Uri]::UnescapeDataString($parts[0])
+            if ($key -ne $Name) { continue }
+            if ($parts.Count -lt 2) { return '' }
+            return [System.Uri]::UnescapeDataString($parts[1])
+        }
+        return ''
     } catch {
         return ''
     }
 }
 
 function Get-MetaValue {
-    param(
-        [object]$Material,
-        [string[]]$Names
-    )
+    param([object]$Material, [string[]]$Names)
 
-    if ($null -eq $Material.meta) {
-        return ''
-    }
-
+    $meta = Get-Prop -Value $Material -Name 'meta' -Default $null
     foreach ($name in $Names) {
-        if ($Material.meta.PSObject.Properties.Name -contains $name) {
-            return [string]$Material.meta.$name
+        $value = Get-Prop -Value $meta -Name $name -Default $null
+        if ($null -ne $value -and -not [string]::IsNullOrWhiteSpace([string]$value)) {
+            return [string]$value
         }
     }
 
@@ -75,15 +82,10 @@ function Get-MetaValue {
 function Get-TranscriptSegments {
     param([object]$Material)
 
-    if ($null -eq $Material.meta) {
-        return @()
-    }
-
-    if ($Material.meta.PSObject.Properties.Name -contains 'transcriptSegments' -and $null -ne $Material.meta.transcriptSegments) {
-        return @($Material.meta.transcriptSegments)
-    }
-
-    return @()
+    $meta = Get-Prop -Value $Material -Name 'meta' -Default $null
+    $segments = Get-Prop -Value $meta -Name 'transcriptSegments' -Default $null
+    if ($null -eq $segments) { return @() }
+    return @($segments)
 }
 
 function Get-PlainTranscript {
@@ -106,14 +108,11 @@ function Test-TranscriptSegmentsCoverBounds {
 
     $matchingTimedSegments = 0
     foreach ($segment in $segments) {
-        $text = ''
-        if ($segment.PSObject.Properties.Name -contains 'text') {
-            $text = [string]$segment.text
-        }
+        $text = [string](Get-Prop -Value $segment -Name 'text' -Default '')
         Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($text)) -Message "$Context transcript segment must contain non-empty text."
 
-        $segmentStartRaw = if ($segment.PSObject.Properties.Name -contains 'start') { [string]$segment.start } else { '' }
-        $segmentEndRaw = if ($segment.PSObject.Properties.Name -contains 'end') { [string]$segment.end } else { '' }
+        $segmentStartRaw = [string](Get-Prop -Value $segment -Name 'start' -Default '')
+        $segmentEndRaw = [string](Get-Prop -Value $segment -Name 'end' -Default '')
         Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($segmentStartRaw)) -Message "$Context transcript segment must define start time."
         Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($segmentEndRaw)) -Message "$Context transcript segment must define end time."
 
@@ -130,15 +129,10 @@ function Test-TranscriptSegmentsCoverBounds {
 }
 
 function Find-VideoMaterials {
-    param(
-        [object]$Node,
-        [string]$Path = '$'
-    )
+    param([object]$Node, [string]$Path = '$')
 
     $results = New-Object System.Collections.Generic.List[object]
-    if ($null -eq $Node) {
-        return $results
-    }
+    if ($null -eq $Node) { return $results }
 
     if ($Node -is [System.Collections.IEnumerable] -and $Node -isnot [string]) {
         $index = 0
@@ -152,15 +146,14 @@ function Find-VideoMaterials {
     }
 
     if ($Node -is [pscustomobject]) {
-        $propertyNames = $Node.PSObject.Properties.Name
-        if (($propertyNames -contains 'type') -and (($Node.type -as [string]) -eq 'video')) {
+        if ((Has-Prop -Value $Node -Name 'type') -and ([string](Get-Prop -Value $Node -Name 'type') -eq 'video')) {
             $results.Add([pscustomobject]@{
                 Path = $Path
                 Material = $Node
             })
         }
 
-        foreach ($property in $Node.PSObject.Properties) {
+        foreach ($property in @($Node.PSObject.Properties)) {
             foreach ($result in (Find-VideoMaterials -Node $property.Value -Path "$Path.$($property.Name)")) {
                 $results.Add($result)
             }
@@ -183,7 +176,7 @@ function Test-UploadedMediaUrl {
 function Get-VideoSegmentBounds {
     param([object]$Material)
 
-    $url = [string]$Material.url
+    $url = [string](Get-Prop -Value $Material -Name 'url' -Default '')
     $startRaw = ''
     $endRaw = ''
 
@@ -223,17 +216,11 @@ function Invoke-YouTubeTranscriptLiveCheck {
         [string]$Context
     )
 
-    if ([string]$env:RUN_YOUTUBE_TRANSCRIPT_LIVE_TESTS -ne '1') {
-        return
-    }
+    if ([string]$env:RUN_YOUTUBE_TRANSCRIPT_LIVE_TESTS -ne '1') { return }
 
     $baseUrl = [string]$env:YOUTUBE_TRANSCRIPT_TEST_API_BASE_URL
-    if ([string]::IsNullOrWhiteSpace($baseUrl)) {
-        $baseUrl = [string]$env:EXPO_PUBLIC_API_BASE_URL
-    }
-    if ([string]::IsNullOrWhiteSpace($baseUrl)) {
-        $baseUrl = 'https://clearn-api.onrender.com'
-    }
+    if ([string]::IsNullOrWhiteSpace($baseUrl)) { $baseUrl = [string]$env:EXPO_PUBLIC_API_BASE_URL }
+    if ([string]::IsNullOrWhiteSpace($baseUrl)) { $baseUrl = 'https://clearn-api.onrender.com' }
 
     $encodedUrl = [System.Uri]::EscapeDataString($Url)
     $endpoint = "$($baseUrl.TrimEnd('/'))/api/media/youtube-transcript-segment?url=$encodedUrl"
@@ -305,10 +292,8 @@ foreach ($fileName in @('content.json', 'content.template.json')) {
 
     foreach ($video in $videos) {
         $material = $video.Material
-        $url = [string]$material.url
-        if ([string]::IsNullOrWhiteSpace($url)) {
-            continue
-        }
+        $url = [string](Get-Prop -Value $material -Name 'url' -Default '')
+        if ([string]::IsNullOrWhiteSpace($url)) { continue }
 
         $bounds = Get-VideoSegmentBounds -Material $material
         if (Test-YouTubeUrl -Url $url) {
@@ -337,10 +322,8 @@ foreach ($fileName in @('content.json', 'content.template.json')) {
 
     foreach ($video in $videos) {
         $material = $video.Material
-        $url = [string]$material.url
-        if ([string]::IsNullOrWhiteSpace($url)) {
-            continue
-        }
+        $url = [string](Get-Prop -Value $material -Name 'url' -Default '')
+        if ([string]::IsNullOrWhiteSpace($url)) { continue }
 
         $bounds = Get-VideoSegmentBounds -Material $material
         $context = "$fileName $($video.Path) URL: $url"
