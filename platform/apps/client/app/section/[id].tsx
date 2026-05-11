@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
@@ -130,6 +130,18 @@ function getYouTubeVideoInfo(url: string) {
   }
 }
 
+function getEmbeddedYouTubeSegmentEnd(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.includes('youtube.com')) {
+      return 0;
+    }
+    return parseSeconds(parsed.searchParams.get('end') || '');
+  } catch {
+    return 0;
+  }
+}
+
 function getEmbeddedVideoUrl(url: string) {
   if (!url) {
     return '';
@@ -145,6 +157,9 @@ function getEmbeddedVideoUrl(url: string) {
       params.set('end', String(youTubeInfo.end));
     }
     params.set('enablejsapi', '1');
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      params.set('origin', window.location.origin);
+    }
     return `https://www.youtube.com/embed/${youTubeInfo.id}?${params.toString()}`;
   }
 
@@ -278,6 +293,49 @@ function WebAudioPlayer({ url }: { url: string }) {
 
 function WebVideoEmbed({ url }: { url: string }) {
   const active = useFocusedMediaActive();
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const youtubeSegmentEnd = getEmbeddedYouTubeSegmentEnd(url);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !active || !youtubeSegmentEnd) {
+      return undefined;
+    }
+
+    const postMessage = (func: string, args: unknown[] = []) => {
+      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
+    };
+
+    const onMessage = (event: MessageEvent) => {
+      let payload: unknown = event.data;
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload);
+        } catch {
+          return;
+        }
+      }
+
+      const data = asRecord(payload);
+      if (data.event !== 'infoDelivery') {
+        return;
+      }
+
+      const currentTime = Number(asRecord(data.info).currentTime);
+      if (Number.isFinite(currentTime) && currentTime >= youtubeSegmentEnd) {
+        postMessage('pauseVideo');
+        postMessage('seekTo', [youtubeSegmentEnd, true]);
+      }
+    };
+
+    const intervalId = window.setInterval(() => postMessage('getCurrentTime'), 500);
+    window.addEventListener('message', onMessage);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('message', onMessage);
+    };
+  }, [active, url, youtubeSegmentEnd]);
+
   if (Platform.OS !== 'web' || !url) {
     return null;
   }
@@ -288,6 +346,7 @@ function WebVideoEmbed({ url }: { url: string }) {
         <iframe
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
+          ref={iframeRef}
           src={url}
           style={webFrameStyle}
           title="embedded-video"
@@ -833,4 +892,3 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 });
-
