@@ -58,7 +58,7 @@ foreach ($pattern in @(
     Assert-Match -Actual $sectionSource -Pattern $pattern
 }
 
-Write-TestStep 'API upload route supports byte ranges for browser video playback and segmented YouTube transcripts'
+Write-TestStep 'API upload route supports byte ranges for browser video playback'
 $routesSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\routes\registerRoutes.ts') -Raw
 foreach ($pattern in @(
     'createReadStream',
@@ -83,23 +83,34 @@ foreach ($pattern in @(
     Assert-Match -Actual $routesSource -Pattern $pattern
 }
 
-Write-TestStep 'Backend transcript loader mirrors youtube-transcript segment semantics'
+Write-TestStep 'Segmented YouTube transcript route mirrors youtube-transcript segment semantics'
+$segmentTranscriptSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\routes\registerVideoTranscriptSegmentRoutes.ts') -Raw
 foreach ($pattern in @(
+    '/api/media/youtube-transcript-segment',
     'parsed\.searchParams\.get\(''end''\)',
-    "for \(const language of \['ru', 'ru-RU', 'en', 'en-US', 'en-GB'\]\)",
-    'type VideoTranscriptSegment = \{',
-    'offset\??|start:',
-    'pickTranscriptSegmentText\(segments: VideoTranscriptSegment\[\], start: number, end: number\)',
+    "const transcriptLanguages = \['ru', 'ru-RU', 'en', 'en-US', 'en-GB'\]",
+    'type TranscriptSegment = \{',
+    'start: number',
+    'pickTranscriptSegmentText\(segments: TranscriptSegment\[\], start: number, end: number\)',
     'const segmentStart = Math\.max\(0, start \|\| 0\)',
     'const segmentEnd = end > segmentStart \? end : segmentStart \+ 45',
     'segments\.filter\(\(item\) => item\.start >= segmentStart && item\.start < segmentEnd\)',
     'selected\.map\(\(item\) => item\.text\)\.join\('' ''\)',
-    'No transcript text was found for this segment'
+    'Transcript for the selected YouTube segment was not found'
 )) {
-    Assert-Match -Actual $routesSource -Pattern $pattern
+    Assert-Match -Actual $segmentTranscriptSource -Pattern $pattern
 }
-Assert-True -Condition ($routesSource -cnotmatch 'pickTranscriptSegmentText\(segments, info\.start\)') -Message 'Transcript selection must pass both start and end; start-only selection hides end-boundary bugs.'
-Assert-True -Condition ($routesSource -cnotmatch "for \(const language of \['en', 'en-US', 'en-GB'\]\)") -Message 'Transcript lookup must try Russian before English, matching the admin-provided YouTube transcript workflow.'
+Assert-True -Condition ($segmentTranscriptSource -cnotmatch 'pickTranscriptSegmentText\(segments, info\.start\)') -Message 'Transcript selection must pass both start and end; start-only selection hides end-boundary bugs.'
+Assert-True -Condition ($segmentTranscriptSource -cnotmatch "for \(const language of \['en', 'en-US', 'en-GB'\]\)") -Message 'Transcript lookup must try Russian before English, matching the admin-provided YouTube transcript workflow.'
+
+Write-TestStep 'API registers the segmented YouTube transcript route'
+$apiIndexSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\index.ts') -Raw
+foreach ($pattern in @(
+    'registerVideoTranscriptSegmentRoutes',
+    'await registerVideoTranscriptSegmentRoutes\(app\)'
+)) {
+    Assert-Match -Actual $apiIndexSource -Pattern $pattern
+}
 
 Write-TestStep 'Admin exposes editable video transcript metadata'
 $adminSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\admin.tsx') -Raw
