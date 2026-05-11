@@ -3,6 +3,11 @@ import { Platform } from 'react-native';
 
 const extra = (Constants.expoConfig?.extra ?? {}) as { apiBaseUrl?: string };
 
+const productionApiFallbacks: Record<string, string> = {
+  'clearn.me': 'https://clearn-api.onrender.com',
+  'www.clearn.me': 'https://clearn-api.onrender.com',
+};
+
 function guessApiBaseUrl() {
   if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_BASE_URL) {
     return process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -21,7 +26,7 @@ function guessApiBaseUrl() {
       return `${protocol}//${hostname}:4000`;
     }
 
-    return origin;
+    return productionApiFallbacks[hostname] || origin;
   }
 
   const legacyManifest = (Constants as unknown as { manifest?: { debuggerHost?: string } }).manifest;
