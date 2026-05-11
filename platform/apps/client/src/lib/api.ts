@@ -159,7 +159,7 @@ export const apiClient = {
     });
   },
   getVideoTranscript(url: string): Promise<VideoTranscriptResponse> {
-    return request(`/api/media/video-transcript?url=${encodeURIComponent(url)}`);
+    return request(`/api/media/youtube-transcript-segment?url=${encodeURIComponent(url)}`);
   },
   getAdminBackupExportUrl() {
     return resolveApiUrl('/api/admin/backup/export');
