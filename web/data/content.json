@@ -1,7 +1,7 @@
 {
   "meta": {
     "appTitle": "CLEARn",
-    "updatedAt": "2026-05-05T22:00:17.852Z",
+    "updatedAt": "2026-05-12T19:32:34.462Z",
     "ui": {
       "brandTagline": "Shared web + mobile prototype",
       "footerNote": "",
@@ -1961,7 +1961,7 @@
               "url": "https://www.youtube.com/watch?v=s7aNuultC_E&start=211&end=253",
               "alt": "Why Outcomes Matter More Than Code Output",
               "meta": {
-                "transcript": "I think those are still what makes me tick, at least as engineers specifically. But there are different flavors of engineers.\nSome people really like the the hands on part, and they really like and they hold a lot of passion in the craft of creating code\nwhere they say, this is elegant code and we've refactored it and it's not really nice. That's the female part. I think that's impacted the most so far.\nYeah. It's look, if you if you look at software development, at least in my opinion,\nwhat we used to do is we would have a problem with challenge. And we would start figuring out what is the algorithm\nto get to a solution, aka the coding, the, you know,"
+                "transcript": ""
               }
             },
             {
@@ -1972,7 +1972,7 @@
               "url": "https://www.youtube.com/watch?v=s7aNuultC_E&start=368&end=457",
               "alt": "",
               "meta": {
-                "transcript": "You know, is better at doing one task than another. And, and, you know, keeps the control and,\nand has some, some responsibilities there, but it should be seamless. And with that additional process involved\nin the operations of the, in the outcomes because that is what we're actually doing, that algorithm algorithm that will be solved by AI.\nI will take care of that work for us. And when it doesn't work, we can still dive into the code, into the nitty gritty.\nSome things are maybe way too bleeding edge for an agent to understand what could be.\nBut that is then the more some work, right? Is you asking us to set up the, internal, internal of thing.\nAnd one of the things that came out have to it is that that's actually the work that developers enjoy doing.\nAnd figuring out to the solution, figuring out the outcomes. So, yeah, it is shifting. It is changing.\nI think that for the for the coders that like to code, That's great. We still have people also writing, the Linux kernel, right?"
+                "transcript": ""
               }
             },
             {
@@ -1983,17 +1983,8 @@
               "url": "https://www.youtube.com/watch?v=s7aNuultC_E&start=1934&end=1991",
               "alt": "",
               "meta": {
-                "transcript": "But but yes, support,support the support maker, support the contributors and the companies that, need to project allies that have the time and and resources in that sense.\nWell, but yes, you need to add something really special. Yeah.\nOtherwise it's not good enough anymore. I feel like open source is, the value of open source and kind of the monetization model.\nIt was always challenging. So open source projects really nailed it. And they are thriving. And the other ones that added it like an add on that one is the, I think\nimpacted the most in terms of now people being able to kind of copy and and merge things, which means if that incentive is gone,\nI hope we don't get into a cycle where we have less and less things that are open out for people to use.\nBecause I do love a lot of my open source software, and I do think it is."
+                "transcript": ""
               }
-            },
-            {
-              "id": "material-gcy1s9sx",
-              "type": "video",
-              "title": "Dealing with Questions",
-              "body": "",
-              "url": "https://libertexgroup.udemy.com/course/professional-speech-english/learn/lecture/48724233",
-              "alt": "",
-              "meta": {}
             }
           ]
         }

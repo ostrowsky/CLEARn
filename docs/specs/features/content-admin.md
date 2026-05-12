@@ -23,6 +23,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - After setup, admins must log in before reading or changing `/api/admin/*` content, media, backup, and restore endpoints.
 - Admin sessions use server-issued signed cookies and can be cleared with logout.
 - Admin sessions must survive API process restarts and multi-instance routing as long as `ADMIN_SESSION_SECRET` stays stable.
+- Development admin sessions must work on local HTTP preview URLs such as `http://localhost:8081`, even when production `APP_BASE_URL` values are present in the shell environment.
 - Admin setup must reject mismatched passwords and incomplete credentials.
 - Admins can set block layout width (`auto`, `full`, or `half`) so selected blocks can appear on the same horizontal row on wide screens.
 - Saved content appears in learner routes without code changes.

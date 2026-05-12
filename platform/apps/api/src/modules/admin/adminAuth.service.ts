@@ -119,7 +119,7 @@ function buildCookie(value: string, maxAgeSeconds: number) {
     `Max-Age=${maxAgeSeconds}`,
   ];
 
-  if (env.APP_ENV === 'production' || env.APP_BASE_URL.startsWith('https://')) {
+  if (env.APP_ENV === 'production') {
     parts.push('SameSite=None', 'Secure');
   } else {
     parts.push('SameSite=Lax');

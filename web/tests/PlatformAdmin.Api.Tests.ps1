@@ -93,7 +93,7 @@ $uploadedUrl = ''
 
 try {
     Write-TestStep 'Platform API protects admin routes with setup and login'
-    $command = "Set-Location '$platformRoot'; `$env:APP_ENV='development'; `$env:APP_PORT='$port'; `$env:APP_BASE_URL='$baseUrl'; `$env:DEV_CONTENT_PATH='$tempContentPath'; `$env:ADMIN_AUTH_PATH='$tempAuthPath'; `$env:ADMIN_SESSION_SECRET='test-admin-session-secret'; & '$($nodeCommand.Source)' '.\node_modules\tsx\dist\cli.mjs' '.\apps\api\src\index.ts' *> '$logPath'"
+    $command = "Set-Location '$platformRoot'; `$env:APP_ENV='development'; `$env:APP_PORT='$port'; `$env:APP_BASE_URL='https://api.clearn.me'; `$env:DEV_CONTENT_PATH='$tempContentPath'; `$env:ADMIN_AUTH_PATH='$tempAuthPath'; `$env:ADMIN_SESSION_SECRET='test-admin-session-secret'; & '$($nodeCommand.Source)' '.\node_modules\tsx\dist\cli.mjs' '.\apps\api\src\index.ts' *> '$logPath'"
     $serverProcess = Start-Process powershell.exe -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', $command) -PassThru -WindowStyle Hidden
 
     if (-not (Wait-ForUrl -Url "$baseUrl/api/health")) {
@@ -146,6 +146,7 @@ try {
 
     $sessionCookie = ($adminSession.Cookies.GetCookies($baseUrl) | Where-Object { $_.Name -eq 'softskills_admin_session' } | Select-Object -First 1)
     Assert-True -Condition ($null -ne $sessionCookie) -Message 'Admin setup should store a signed session cookie.'
+    Assert-True -Condition (-not [bool]$sessionCookie.Secure) -Message 'Development admin cookies must not be Secure, otherwise localhost HTTP admin actions lose authentication after login.'
     $browserSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $browserSession.Cookies.Add($sessionCookie)
     $originProtectedContent = Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/api/admin/content" -Method Get -Headers @{ Origin = 'http://localhost:8081' } -WebSession $browserSession
