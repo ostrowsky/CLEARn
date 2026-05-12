@@ -22,7 +22,6 @@ type SessionRecord = {
 const passwordIterations = 210000;
 const sessionCookieName = 'softskills_admin_session';
 const sessionTtlMs = 1000 * 60 * 60 * 12;
-const sessions = new Map<string, SessionRecord>();
 
 function cleanText(value: unknown) {
   return String(value || '').trim();
@@ -61,28 +60,38 @@ function timingSafeEqualHex(left: string, right: string) {
   return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
 }
 
-function signSessionId(sessionId: string) {
-  return crypto.createHmac('sha256', getSessionSecret()).update(sessionId).digest('hex');
+function signSessionPayload(payload: string) {
+  return crypto.createHmac('sha256', getSessionSecret()).update(payload).digest('hex');
 }
 
-function encodeSessionCookie(sessionId: string) {
-  return `${sessionId}.${signSessionId(sessionId)}`;
+function encodeSessionCookie(session: SessionRecord) {
+  const payload = Buffer.from(JSON.stringify({
+    login: session.login,
+    expiresAt: session.expiresAt,
+    nonce: crypto.randomBytes(16).toString('hex'),
+  }), 'utf8').toString('base64url');
+  return `${payload}.${signSessionPayload(payload)}`;
 }
 
 function decodeSessionCookie(value: string) {
-  const [sessionId, signature] = String(value || '').split('.');
-  if (!sessionId || !signature) {
-    return '';
+  const [payload, signature] = String(value || '').split('.');
+  if (!payload || !signature) {
+    return null;
   }
 
-  const expected = signSessionId(sessionId);
+  const expected = signSessionPayload(payload);
   const expectedBuffer = Buffer.from(expected);
   const actualBuffer = Buffer.from(signature);
   if (expectedBuffer.length !== actualBuffer.length || !crypto.timingSafeEqual(expectedBuffer, actualBuffer)) {
-    return '';
+    return null;
   }
 
-  return sessionId;
+  try {
+    const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as SessionRecord;
+    return parsed?.login && Number.isFinite(parsed.expiresAt) ? parsed : null;
+  } catch {
+    return null;
+  }
 }
 
 function parseCookieHeader(cookieHeader: string | undefined) {
@@ -181,23 +190,17 @@ export class AdminAuthService {
     return this.createSession(record.login);
   }
 
-  logout(cookieHeader?: string) {
-    const sessionId = this.getSessionId(cookieHeader);
-    if (sessionId) {
-      sessions.delete(sessionId);
-    }
+  logout() {
     return { clearedCookie: buildCookie('', 0) };
   }
 
   getSession(cookieHeader?: string) {
-    const sessionId = this.getSessionId(cookieHeader);
-    if (!sessionId) {
+    const session = this.getSessionFromCookie(cookieHeader);
+    if (!session) {
       return null;
     }
 
-    const session = sessions.get(sessionId);
-    if (!session || session.expiresAt <= Date.now()) {
-      sessions.delete(sessionId);
+    if (session.expiresAt <= Date.now()) {
       return null;
     }
 
@@ -205,7 +208,6 @@ export class AdminAuthService {
   }
 
   async resetForTests() {
-    sessions.clear();
     await rm(env.ADMIN_AUTH_PATH, { force: true }).catch(() => undefined);
   }
 
@@ -219,19 +221,18 @@ export class AdminAuthService {
     }
   }
 
-  private getSessionId(cookieHeader?: string) {
+  private getSessionFromCookie(cookieHeader?: string) {
     const rawCookie = parseCookieHeader(cookieHeader).get(sessionCookieName);
-    return rawCookie ? decodeSessionCookie(rawCookie) : '';
+    return rawCookie ? decodeSessionCookie(rawCookie) : null;
   }
 
   private createSession(login: string) {
-    const sessionId = crypto.randomBytes(32).toString('hex');
-    sessions.set(sessionId, { login, expiresAt: Date.now() + sessionTtlMs });
+    const session = { login, expiresAt: Date.now() + sessionTtlMs };
     return {
       configured: true,
       authenticated: true,
       login,
-      cookie: buildCookie(encodeSessionCookie(sessionId), Math.floor(sessionTtlMs / 1000)),
+      cookie: buildCookie(encodeSessionCookie(session), Math.floor(sessionTtlMs / 1000)),
     };
   }
 }

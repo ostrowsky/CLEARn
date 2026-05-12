@@ -21,7 +21,8 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Admins can edit visible labels, instructional text, section/block/material order, material fields, and media.
 - Admin access is protected by an initial setup flow. Before the first admin can use `/admin`, the app asks for login, password, password confirmation, and recovery email.
 - After setup, admins must log in before reading or changing `/api/admin/*` content, media, backup, and restore endpoints.
-- Admin sessions use server-issued cookies and can be cleared with logout.
+- Admin sessions use server-issued signed cookies and can be cleared with logout.
+- Admin sessions must survive API process restarts and multi-instance routing as long as `ADMIN_SESSION_SECRET` stays stable.
 - Admin setup must reject mismatched passwords and incomplete credentials.
 - Admins can set block layout width (`auto`, `full`, or `half`) so selected blocks can appear on the same horizontal row on wide screens.
 - Saved content appears in learner routes without code changes.
@@ -47,6 +48,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Backup/restore may omit generated dependencies and local model caches that can be recreated from scripts.
 - Watermark text must come from content metadata, not component constants.
 - Admin credentials must never be stored as plain text.
+- Admin session authorization must not depend on process-local memory only.
 
 ## Edge cases and failure policy
 

@@ -595,7 +595,7 @@ export async function registerRoutes(app: FastifyInstance) {
     }
   });
   app.post('/api/admin/auth/logout', async (request, reply) => {
-    const result = adminAuthService.logout(request.headers.cookie);
+    const result = adminAuthService.logout();
     return reply.header('Set-Cookie', result.clearedCookie).send({ loggedOut: true });
   });
 

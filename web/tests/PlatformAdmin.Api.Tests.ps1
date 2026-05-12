@@ -144,6 +144,13 @@ try {
     $protectedContent = Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/api/admin/content" -Method Get -WebSession $adminSession
     Assert-Equal -Expected 200 -Actual ([int]$protectedContent.StatusCode)
 
+    $sessionCookie = ($adminSession.Cookies.GetCookies($baseUrl) | Where-Object { $_.Name -eq 'softskills_admin_session' } | Select-Object -First 1)
+    Assert-True -Condition ($null -ne $sessionCookie) -Message 'Admin setup should store a signed session cookie.'
+    $browserSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+    $browserSession.Cookies.Add($sessionCookie)
+    $originProtectedContent = Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/api/admin/content" -Method Get -Headers @{ Origin = 'http://localhost:8081' } -WebSession $browserSession
+    Assert-Equal -Expected 200 -Actual ([int]$originProtectedContent.StatusCode) -Message 'Browser-style admin requests from the web origin should stay authenticated with the signed cookie.'
+
     Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/logout" -Method Post -Payload @{} -Session $adminSession | Out-Null
     try {
         Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/api/admin/content" -Method Get -WebSession $adminSession | Out-Null
