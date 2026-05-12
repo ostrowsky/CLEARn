@@ -264,12 +264,16 @@ $segmentTranscriptSource = Get-Content -LiteralPath (Join-Path $platformRoot 'ap
 foreach ($pattern in @(
     '/api/media/youtube-transcript-segment',
     'parsed\.searchParams\.get\(''end''\)',
+    "const innertubeClientVersion = '20\.10\.38'",
+    "clientName: 'ANDROID'",
+    '<p\\s\+\[\^>\]\*>',
     "const transcriptLanguages = \['ru', 'ru-RU', 'en', 'en-US', 'en-GB'\]",
     'pickTranscriptSegmentText\(segments: TranscriptSegment\[\], start: number, end: number\)',
     'segments\.filter\(\(item\) => item\.start >= segmentStart && item\.start < segmentEnd\)',
     'Transcript for the selected YouTube segment was not found'
 )) { Assert-Match -Actual $segmentTranscriptSource -Pattern $pattern }
 Assert-True -Condition ($segmentTranscriptSource -cnotmatch 'pickTranscriptSegmentText\(segments, info\.start\)') -Message 'Transcript selection must pass both start and end; start-only selection hides end-boundary bugs.'
+Invoke-YouTubeTranscriptLiveCheck -Url 'https://www.youtube.com/watch?v=s7aNuultC_E&&start=600&end=700' -ExpectedStart 600 -ExpectedEnd 700 -Context 'Runtime video library YouTube segment with double ampersand URL'
 
 Write-TestStep 'API registers the segmented YouTube transcript route'
 $apiIndexSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\index.ts') -Raw

@@ -301,8 +301,12 @@ function WebVideoEmbed({ url }: { url: string }) {
       return undefined;
     }
 
+    const playerId = `youtube-segment-${Math.random().toString(36).slice(2)}`;
     const postMessage = (func: string, args: unknown[] = []) => {
-      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
+      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', id: playerId, func, args }), '*');
+    };
+    const subscribe = () => {
+      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'listening', id: playerId }), '*');
     };
 
     const onMessage = (event: MessageEvent) => {
@@ -327,7 +331,11 @@ function WebVideoEmbed({ url }: { url: string }) {
       }
     };
 
-    const intervalId = window.setInterval(() => postMessage('getCurrentTime'), 500);
+    subscribe();
+    const intervalId = window.setInterval(() => {
+      subscribe();
+      postMessage('getCurrentTime');
+    }, 500);
     window.addEventListener('message', onMessage);
 
     return () => {

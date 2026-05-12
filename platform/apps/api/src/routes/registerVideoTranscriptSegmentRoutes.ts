@@ -15,7 +15,9 @@ type VideoInfo = {
 const youTubeIdPattern = /^[A-Za-z0-9_-]{6,}$/;
 const youTubeLegacyPattern = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i;
 const transcriptLanguages = ['ru', 'ru-RU', 'en', 'en-US', 'en-GB'];
-const youtubeUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 CLEARn transcript fetcher';
+const youtubeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36,gzip(gfe)';
+const innertubeClientVersion = '20.10.38';
+const innertubeUserAgent = `com.google.android.youtube/${innertubeClientVersion} (Linux; U; Android 14)`;
 
 function parseSeconds(value: string) {
   const clean = String(value || '').trim().toLowerCase();
@@ -113,6 +115,19 @@ function parseJson3Transcript(payload: unknown): TranscriptSegment[] {
 }
 
 function parseXmlTranscript(payload: string): TranscriptSegment[] {
+  const richMatches = payload.match(/<p\s+[^>]*>[\s\S]*?<\/p>/g) || [];
+  const richSegments = richMatches
+    .map((item) => {
+      const start = Number.parseInt(item.match(/\bt="([^"]+)"/)?.[1] || '0', 10) / 1000;
+      const duration = Number.parseInt(item.match(/\bd="([^"]+)"/)?.[1] || '0', 10) / 1000;
+      const text = decodeHtmlEntities(stripTags(item)).replace(/\s+/g, ' ').trim();
+      return { start, duration, text };
+    })
+    .filter((segment) => Number.isFinite(segment.start) && segment.text);
+  if (richSegments.length) {
+    return richSegments;
+  }
+
   const matches = payload.match(/<text\b[^>]*>[\s\S]*?<\/text>/g) || [];
   return matches
     .map((item) => {
@@ -248,13 +263,13 @@ async function fetchInnertubePlayerResponse(videoId: string) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'User-Agent': youtubeUserAgent,
+      'User-Agent': innertubeUserAgent,
     },
     body: JSON.stringify({
       context: {
         client: {
-          clientName: 'WEB',
-          clientVersion: '2.20250502.00.00',
+          clientName: 'ANDROID',
+          clientVersion: innertubeClientVersion,
           hl: 'en',
           gl: 'US',
         },
@@ -271,7 +286,6 @@ async function fetchInnertubePlayerResponse(videoId: string) {
 
 async function fetchTranscriptTrack(trackUrl: string) {
   const transcriptUrl = new URL(decodeHtmlEntities(trackUrl));
-  transcriptUrl.searchParams.set('fmt', 'json3');
 
   const response = await fetch(transcriptUrl, { headers: { 'User-Agent': youtubeUserAgent } });
   if (!response.ok) return [];
@@ -287,6 +301,13 @@ async function fetchTranscriptTrack(trackUrl: string) {
 }
 
 async function fetchTranscriptSegments(videoId: string) {
+  const innertubeResponse = await fetchInnertubePlayerResponse(videoId);
+  const innerTubeBaseUrl = innertubeResponse ? getCaptionTrackBaseUrl(innertubeResponse) : '';
+  if (innerTubeBaseUrl) {
+    const segments = await fetchTranscriptTrack(innerTubeBaseUrl);
+    if (segments.length) return segments;
+  }
+
   const watchResponse = await fetchWatchPlayerResponse(videoId);
   const watchBaseUrl = watchResponse ? getCaptionTrackBaseUrl(watchResponse) : '';
   if (watchBaseUrl) {
@@ -297,9 +318,7 @@ async function fetchTranscriptSegments(videoId: string) {
   const timedTextSegments = await fetchTimedTextTranscript(videoId);
   if (timedTextSegments.length) return timedTextSegments;
 
-  const innertubeResponse = await fetchInnertubePlayerResponse(videoId);
-  const innerTubeBaseUrl = innertubeResponse ? getCaptionTrackBaseUrl(innertubeResponse) : '';
-  return innerTubeBaseUrl ? fetchTranscriptTrack(innerTubeBaseUrl) : [];
+  return [];
 }
 
 function pickTranscriptSegmentText(segments: TranscriptSegment[], start: number, end: number) {
