@@ -396,6 +396,18 @@ function pickTranscriptSegmentText(segments: TranscriptSegment[], start: number,
 
 function runPythonTranscriptHelper(command: string, info: VideoInfo) {
   return new Promise<PythonTranscriptAttempt>((resolve) => {
+    const parseOutput = () => {
+      try {
+        const parsed = JSON.parse(stdout) as { text?: unknown; error?: unknown };
+        return {
+          text: typeof parsed.text === 'string' ? parsed.text.trim() : '',
+          error: typeof parsed.error === 'string' ? parsed.error.trim() : '',
+        };
+      } catch {
+        return { text: stderr ? '' : stdout.trim(), error: stderr.trim() };
+      }
+    };
+
     const child = spawn(command, [pythonTranscriptScriptPath, info.id, String(info.start), String(info.end || info.start + 45)], {
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -419,21 +431,13 @@ function runPythonTranscriptHelper(command: string, info: VideoInfo) {
     });
     child.on('close', (code) => {
       clearTimeout(timer);
+      const parsed = parseOutput();
       if (code !== 0) {
-        resolve({ command, text: '', error: stderr.trim() || `Python transcript helper exited with code ${code}.` });
+        resolve({ command, text: '', error: parsed.error || stderr.trim() || stdout.trim() || `Python transcript helper exited with code ${code}.` });
         return;
       }
 
-      try {
-        const parsed = JSON.parse(stdout) as { text?: unknown; error?: unknown };
-        resolve({
-          command,
-          text: typeof parsed.text === 'string' ? parsed.text.trim() : '',
-          error: typeof parsed.error === 'string' ? parsed.error.trim() : '',
-        });
-      } catch {
-        resolve({ command, text: stderr ? '' : stdout.trim(), error: stderr.trim() });
-      }
+      resolve({ command, text: parsed.text, error: parsed.error });
     });
   });
 }
