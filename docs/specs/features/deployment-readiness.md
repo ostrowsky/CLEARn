@@ -42,6 +42,7 @@ The app can be hosted, tested, upgraded, backed up, and rolled back without disc
 - Pull requests must include the `pr-description` skill sections: `What`, `Why`, and `Changes`.
 - Static hosting must not assume an API is available on `:4000` for non-local web domains.
 - Interactive AI, STT, TTS, admin save, backup, and upload flows require a separately hosted API; they must not silently fall through to the static SPA route.
+- Development admin sessions must remain usable on local HTTP preview origins even if the developer shell contains production HTTPS URL values.
 
 ## Edge cases and failure policy
 
@@ -49,6 +50,7 @@ The app can be hosted, tested, upgraded, backed up, and rolled back without disc
 - If production CORS origins are not configured, the API must refuse startup instead of reflecting arbitrary origins.
 - If production storage still points at repository-local default files, the API must refuse startup instead of losing edits on redeploy.
 - If production Redis still points at the local development default, the API must refuse startup instead of accepting chat/answering sessions that cannot persist.
+- If local development inherits production URL variables, admin cookies must still be issued as local HTTP-compatible cookies so authenticated admin actions remain available after login.
 - Live paid-provider tests may be opt-in to avoid spending credits in every CI run, but non-live provider contract tests remain mandatory.
 - Backup export must complete within hosting/proxy timeout budgets or move to an asynchronous job before production traffic.
 - Backup/restore helpers must not hardcode Windows-only executables when the API can be hosted on Linux.
