@@ -64,7 +64,9 @@ $clientConfig = Get-Content (Join-Path $platformRoot 'apps\client\src\lib\config
 $clientApi = Get-Content (Join-Path $platformRoot 'apps\client\src\lib\api.ts') -Raw
 $clientRoot = Get-Content (Join-Path $platformRoot 'apps\client\app\index.tsx') -Raw
 $clientSections = Get-Content (Join-Path $platformRoot 'apps\client\app\(tabs)\sections.tsx') -Raw
-Assert-Match -Actual $clientConfig -Pattern 'return origin'
+Assert-Match -Actual $clientConfig -Pattern 'EXPO_PUBLIC_API_BASE_URL'
+Assert-Match -Actual $clientConfig -Pattern 'productionApiBaseUrl'
+Assert-Match -Actual $clientConfig -Pattern 'clearn-api\.onrender\.com'
 Assert-Match -Actual $clientConfig -Pattern 'hostname.*localhost'
 Assert-Match -Actual $clientApi -Pattern 'staticContent'
 Assert-Match -Actual $clientApi -Pattern 'load:static-fallback'
