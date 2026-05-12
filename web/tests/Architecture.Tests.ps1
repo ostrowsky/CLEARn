@@ -26,6 +26,8 @@ Write-TestStep 'Checking scalable backend architecture markers'
 $apiIndex = Get-Content (Join-Path $platformRoot 'apps\api\src\index.ts') -Raw
 Assert-Match -Actual $apiIndex -Pattern 'Fastify'
 $routes = Get-Content (Join-Path $platformRoot 'apps\api\src\routes\registerRoutes.ts') -Raw
+Assert-Match -Actual $routes -Pattern "adminSessionMode: 'signed-cookie'"
+Assert-Match -Actual $routes -Pattern "youtubeTranscriptFetcher: 'android-innertube-timedtext'"
 Assert-Match -Actual $routes -Pattern 'RedisSessionStore'
 Assert-Match -Actual $routes -Pattern '/api/speech/stt'
 Assert-Match -Actual $routes -Pattern '/api/admin/content'
