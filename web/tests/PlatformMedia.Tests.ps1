@@ -84,7 +84,7 @@ function Get-PlainTranscript {
 
 function Test-TranscriptSegmentsCoverBounds {
     param([object]$Material, [int]$SegmentStart, [int]$SegmentEnd, [string]$Context)
-    $segments = Get-TranscriptSegments -Material $Material
+    $segments = @(Get-TranscriptSegments -Material $Material)
     Assert-True -Condition ($segments.Count -gt 0) -Message "$Context must define transcriptSegments when transcript timing must be validated."
 
     foreach ($segment in $segments) {
@@ -232,7 +232,7 @@ foreach ($fileName in @('content.json', 'content.template.json')) {
         $bounds = Get-VideoSegmentBounds -Material $material
         $context = "$fileName $($video.Path) URL: $url"
         $plainTranscript = Get-PlainTranscript -Material $material
-        $segments = Get-TranscriptSegments -Material $material
+        $segments = @(Get-TranscriptSegments -Material $material)
 
         if ($segments.Count -gt 0) {
             Test-TranscriptSegmentsCoverBounds -Material $material -SegmentStart $bounds.Start -SegmentEnd $bounds.End -Context $context
