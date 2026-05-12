@@ -84,6 +84,15 @@ New-Item -ItemType Directory -Path $tempRoot | Out-Null
 $tempContentPath = Join-Path $tempRoot 'content.json'
 $tempAuthPath = Join-Path $tempRoot 'admin-auth.json'
 Copy-Item -LiteralPath (Join-Path $webRoot 'data\content.json') -Destination $tempContentPath -Force
+$seedContent = Get-Content -LiteralPath $tempContentPath -Raw | ConvertFrom-Json
+$seedContent.meta.ui.admin.actions.PSObject.Properties.Remove('fetchTranscript')
+$seedContent.meta.ui.admin.messages.PSObject.Properties.Remove('videoTranscriptFetched')
+$seedVideoLibrary = (($seedContent.sections | Where-Object { $_.id -eq 'asking-after-talk' } | Select-Object -First 1).blocks | Where-Object { $_.id -eq 'block-ayctl2c6' } | Select-Object -First 1)
+$seedVideo = @($seedVideoLibrary.materials | Where-Object { $_.type -eq 'video' } | Select-Object -First 1)[0]
+if ($seedVideo -and $seedVideo.meta) {
+    $seedVideo.meta.transcript = ''
+}
+$seedContent | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $tempContentPath -Encoding UTF8
 $logPath = Join-Path $tempRoot 'platform-api.log'
 
 $port = Get-FreePort
@@ -143,6 +152,12 @@ try {
 
     $protectedContent = Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/api/admin/content" -Method Get -WebSession $adminSession
     Assert-Equal -Expected 200 -Actual ([int]$protectedContent.StatusCode)
+    $protectedJson = $protectedContent.Content | ConvertFrom-Json
+    Assert-Equal -Expected 'Fetch transcript' -Actual ([string]$protectedJson.meta.ui.admin.actions.fetchTranscript) -Message 'Admin content should migrate newly bundled admin action labels into old mutable storage.'
+    Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$protectedJson.meta.ui.admin.messages.videoTranscriptFetched)) -Message 'Admin content should migrate newly bundled admin messages into old mutable storage.'
+    $migratedVideoLibrary = (($protectedJson.sections | Where-Object { $_.id -eq 'asking-after-talk' } | Select-Object -First 1).blocks | Where-Object { $_.id -eq 'block-ayctl2c6' } | Select-Object -First 1)
+    $migratedVideo = @($migratedVideoLibrary.materials | Where-Object { $_.type -eq 'video' } | Select-Object -First 1)[0]
+    Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$migratedVideo.meta.transcript)) -Message 'Admin content should migrate bundled video transcripts into old mutable storage when the material ID matches.'
 
     $sessionCookie = ($adminSession.Cookies.GetCookies($baseUrl) | Where-Object { $_.Name -eq 'softskills_admin_session' } | Select-Object -First 1)
     Assert-True -Condition ($null -ne $sessionCookie) -Message 'Admin setup should store a signed session cookie.'

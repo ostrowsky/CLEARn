@@ -38,6 +38,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Backup export must exclude rebuildable runtime folders such as dependency directories, virtual environments, build outputs, caches, and preview artifacts so it can complete through the public Cloudflare preview.
 - Every learner/admin screen displays a small low-contrast watermark from editable content metadata.
 - Admin actions should report clear success or failure messages.
+- When the codebase adds new editable admin labels or messages, old mutable production content must be backfilled from bundled content defaults without deleting existing admin edits.
 
 ## Invariants
 
@@ -50,6 +51,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Watermark text must come from content metadata, not component constants.
 - Admin credentials must never be stored as plain text.
 - Admin session authorization must not depend on process-local memory only.
+- Production content migration may fill missing admin metadata from bundled defaults, but must not overwrite non-empty admin-edited values.
 
 ## Edge cases and failure policy
 

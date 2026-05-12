@@ -35,6 +35,7 @@ Learners see and practice only the configured video clip segment, and transcript
 - Segment start must be greater than or equal to zero.
 - Stored `transcriptSegments` must have non-empty text and timed bounds inside the configured video segment.
 - Stored video library transcript text must be meaningful enough for practice and must not rely on server-side YouTube availability in production.
+- When a production content store has an older matching video material with an empty transcript, the API may backfill the transcript from the bundled Git-tracked content by material ID.
 - Uploaded video materials must not rely on YouTube auto transcript fallback.
 - YouTube transcript fallback must call `/api/media/youtube-transcript-segment`, not a full-video transcript endpoint.
 - YouTube transcript fallback must support modern YouTube timed text XML with `<p t="..." d="...">` entries, because those are returned by the Android InnerTube caption flow.

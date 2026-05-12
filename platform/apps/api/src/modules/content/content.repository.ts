@@ -41,6 +41,82 @@ function findRepoRoot(startDir: string): string {
 
 const repoRoot = findRepoRoot(process.cwd());
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function ensureObject(parent: Record<string, unknown>, key: string): Record<string, unknown> {
+  const current = asRecord(parent[key]);
+  parent[key] = current;
+  return current;
+}
+
+function copyMissingString(target: Record<string, unknown>, source: Record<string, unknown>, key: string) {
+  if (typeof target[key] === 'string' && String(target[key]).trim()) {
+    return false;
+  }
+
+  if (typeof source[key] !== 'string' || !String(source[key]).trim()) {
+    return false;
+  }
+
+  target[key] = source[key];
+  return true;
+}
+
+function findMaterialsById(content: AppContent): Map<string, Record<string, unknown>> {
+  const materials = new Map<string, Record<string, unknown>>();
+  for (const section of content.sections || []) {
+    for (const block of section.blocks || []) {
+      for (const material of block.materials || []) {
+        if (material.id) {
+          materials.set(material.id, material as unknown as Record<string, unknown>);
+        }
+      }
+    }
+  }
+  return materials;
+}
+
+function mergeBundledContentDefaults(content: AppContent, bundledContent: AppContent): { content: AppContent; changed: boolean } {
+  let changed = false;
+
+  const targetMeta = asRecord(content.meta);
+  const sourceMeta = asRecord(bundledContent.meta);
+  const targetUi = ensureObject(targetMeta, 'ui');
+  const sourceUi = asRecord(sourceMeta.ui);
+  const targetAdmin = ensureObject(targetUi, 'admin');
+  const sourceAdmin = asRecord(sourceUi.admin);
+
+  for (const groupName of ['actions', 'messages', 'fieldLabels']) {
+    const targetGroup = ensureObject(targetAdmin, groupName);
+    const sourceGroup = asRecord(sourceAdmin[groupName]);
+    for (const key of Object.keys(sourceGroup)) {
+      if (copyMissingString(targetGroup, sourceGroup, key)) {
+        changed = true;
+      }
+    }
+  }
+
+  const bundledMaterials = findMaterialsById(bundledContent);
+  for (const material of findMaterialsById(content).values()) {
+    const id = typeof material.id === 'string' ? material.id : '';
+    const bundledMaterial = bundledMaterials.get(id);
+    if (!bundledMaterial) {
+      continue;
+    }
+
+    const targetMetaForMaterial = ensureObject(material, 'meta');
+    const sourceMetaForMaterial = asRecord(bundledMaterial.meta);
+    if (copyMissingString(targetMetaForMaterial, sourceMetaForMaterial, 'transcript')) {
+      changed = true;
+    }
+  }
+
+  content.meta = targetMeta as AppContent['meta'];
+  return { content, changed };
+}
+
 export class FileSystemContentRepository implements ContentRepository {
   private readonly filePath = resolvePath(env.DEV_CONTENT_PATH);
   private readonly defaultContentPath = path.resolve(repoRoot, 'web', 'data', 'content.json');
@@ -66,7 +142,14 @@ export class FileSystemContentRepository implements ContentRepository {
     const file = decodeJsonBuffer(await readFile(this.filePath));
 
     try {
-      return JSON.parse(file) as AppContent;
+      const parsed = JSON.parse(file) as AppContent;
+      const bundled = JSON.parse(decodeJsonBuffer(await readFile(this.defaultContentPath))) as AppContent;
+      const merged = mergeBundledContentDefaults(parsed, bundled);
+      if (merged.changed) {
+        await writeFile(this.filePath, JSON.stringify(merged.content, null, 2), 'utf8');
+      }
+
+      return merged.content;
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to parse content file at ${this.filePath}: ${reason}`);
