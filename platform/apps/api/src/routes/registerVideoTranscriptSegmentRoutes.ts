@@ -19,6 +19,7 @@ const youtubeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleW
 const innertubeClientVersion = '20.10.38';
 const innertubeUserAgent = `com.google.android.youtube/${innertubeClientVersion} (Linux; U; Android 14)`;
 const innertubeApiKeyPattern = /"INNERTUBE_API_KEY":\s*"([A-Za-z0-9_-]+)"/;
+const youtubeConsentValuePattern = /name="v"\s+value="([^"]+)"/;
 
 function parseSeconds(value: string) {
   const clean = String(value || '').trim().toLowerCase();
@@ -209,21 +210,34 @@ function getCaptionTrackBaseUrl(playerResponse: Record<string, unknown>) {
   return typeof preferred?.baseUrl === 'string' ? preferred.baseUrl : '';
 }
 
-async function fetchWatchHtml(videoId: string) {
+async function fetchWatchHtml(videoId: string, consentCookie = '') {
   const watchUrl = new URL('https://www.youtube.com/watch');
   watchUrl.searchParams.set('v', videoId);
   watchUrl.searchParams.set('hl', 'en');
 
+  const headers: Record<string, string> = {
+    'Accept-Language': 'en-US,en;q=0.9,ru;q=0.8',
+    'User-Agent': youtubeUserAgent,
+  };
+  if (consentCookie) {
+    headers.Cookie = consentCookie;
+  }
+
   const response = await fetch(watchUrl, {
-    headers: {
-      'Accept-Language': 'en-US,en;q=0.9,ru;q=0.8',
-      'User-Agent': youtubeUserAgent,
-    },
+    headers,
   });
 
   if (!response.ok) return null;
 
-  return response.text();
+  const html = await response.text();
+  if (!consentCookie && html.includes('action="https://consent.youtube.com/s"')) {
+    const consentValue = html.match(youtubeConsentValuePattern)?.[1] || '';
+    if (consentValue) {
+      return fetchWatchHtml(videoId, `CONSENT=YES+${consentValue}`);
+    }
+  }
+
+  return html;
 }
 
 function extractInnertubeApiKey(html: string) {

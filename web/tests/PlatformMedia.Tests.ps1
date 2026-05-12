@@ -266,6 +266,8 @@ foreach ($pattern in @(
     'parsed\.searchParams\.get\(''end''\)',
     "const innertubeClientVersion = '20\.10\.38'",
     'INNERTUBE_API_KEY',
+    'CONSENT=YES',
+    'consent\.youtube\.com',
     'fetchInnertubePlayerResponse\(videoId, apiKey\)',
     "endpoint\.searchParams\.set\('key', apiKey\)",
     "clientName: 'ANDROID'",
