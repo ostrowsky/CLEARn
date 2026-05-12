@@ -18,6 +18,7 @@ const transcriptLanguages = ['ru', 'ru-RU', 'en', 'en-US', 'en-GB'];
 const youtubeUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36,gzip(gfe)';
 const innertubeClientVersion = '20.10.38';
 const innertubeUserAgent = `com.google.android.youtube/${innertubeClientVersion} (Linux; U; Android 14)`;
+const innertubeApiKeyPattern = /"INNERTUBE_API_KEY":\s*"([A-Za-z0-9_-]+)"/;
 
 function parseSeconds(value: string) {
   const clean = String(value || '').trim().toLowerCase();
@@ -208,7 +209,7 @@ function getCaptionTrackBaseUrl(playerResponse: Record<string, unknown>) {
   return typeof preferred?.baseUrl === 'string' ? preferred.baseUrl : '';
 }
 
-async function fetchWatchPlayerResponse(videoId: string) {
+async function fetchWatchHtml(videoId: string) {
   const watchUrl = new URL('https://www.youtube.com/watch');
   watchUrl.searchParams.set('v', videoId);
   watchUrl.searchParams.set('hl', 'en');
@@ -222,7 +223,17 @@ async function fetchWatchPlayerResponse(videoId: string) {
 
   if (!response.ok) return null;
 
-  const html = await response.text();
+  return response.text();
+}
+
+function extractInnertubeApiKey(html: string) {
+  return html.match(innertubeApiKeyPattern)?.[1] || '';
+}
+
+async function fetchWatchPlayerResponse(videoId: string) {
+  const html = await fetchWatchHtml(videoId);
+  if (!html) return null;
+
   const rawJson = extractBalancedJson(html, 'ytInitialPlayerResponse');
   if (!rawJson) return null;
 
@@ -258,8 +269,14 @@ async function fetchTimedTextTranscript(videoId: string) {
   return [];
 }
 
-async function fetchInnertubePlayerResponse(videoId: string) {
-  const response = await fetch('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
+async function fetchInnertubePlayerResponse(videoId: string, apiKey = '') {
+  const endpoint = new URL('https://www.youtube.com/youtubei/v1/player');
+  endpoint.searchParams.set('prettyPrint', 'false');
+  if (apiKey) {
+    endpoint.searchParams.set('key', apiKey);
+  }
+
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -301,14 +318,29 @@ async function fetchTranscriptTrack(trackUrl: string) {
 }
 
 async function fetchTranscriptSegments(videoId: string) {
-  const innertubeResponse = await fetchInnertubePlayerResponse(videoId);
+  const watchHtml = await fetchWatchHtml(videoId);
+  const apiKey = watchHtml ? extractInnertubeApiKey(watchHtml) : '';
+  const innertubeResponse = await fetchInnertubePlayerResponse(videoId, apiKey);
   const innerTubeBaseUrl = innertubeResponse ? getCaptionTrackBaseUrl(innertubeResponse) : '';
   if (innerTubeBaseUrl) {
     const segments = await fetchTranscriptTrack(innerTubeBaseUrl);
     if (segments.length) return segments;
   }
 
-  const watchResponse = await fetchWatchPlayerResponse(videoId);
+  let watchResponse: Record<string, unknown> | null = null;
+  if (watchHtml) {
+    const rawJson = extractBalancedJson(watchHtml, 'ytInitialPlayerResponse');
+    if (rawJson) {
+      try {
+        watchResponse = JSON.parse(rawJson) as Record<string, unknown>;
+      } catch {
+        watchResponse = null;
+      }
+    }
+  }
+  if (!watchResponse) {
+    watchResponse = await fetchWatchPlayerResponse(videoId);
+  }
   const watchBaseUrl = watchResponse ? getCaptionTrackBaseUrl(watchResponse) : '';
   if (watchBaseUrl) {
     const segments = await fetchTranscriptTrack(watchBaseUrl);

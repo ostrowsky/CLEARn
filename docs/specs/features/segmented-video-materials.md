@@ -22,7 +22,7 @@ Learners see and practice only the configured video clip segment, and transcript
 - Transcript text displayed below a video corresponds to the configured segment.
 - If transcript text is already stored in material metadata, it is displayed without a network transcript request.
 - If a YouTube material has no stored transcript, the client requests a segment transcript endpoint with the video URL, including start and end parameters.
-- The YouTube transcript fallback uses the same segment logic as a working `youtube_transcript_api` flow: extract the video ID, fetch Russian or English transcript entries, keep entries where `start <= entry.start < end`, and join only those entries.
+- The YouTube transcript fallback uses the same segment logic as a working `youtube_transcript_api` flow: extract the video ID, read the YouTube watch page, reuse the page `INNERTUBE_API_KEY` for Android InnerTube caption discovery, fetch Russian or English transcript entries, keep entries where `start <= entry.start < end`, and join only those entries.
 - On mobile/native clients where inline web embedding is unavailable, the material remains openable through the external media button.
 
 ## Invariants
@@ -36,6 +36,7 @@ Learners see and practice only the configured video clip segment, and transcript
 - Uploaded video materials must not rely on YouTube auto transcript fallback.
 - YouTube transcript fallback must call `/api/media/youtube-transcript-segment`, not a full-video transcript endpoint.
 - YouTube transcript fallback must support modern YouTube timed text XML with `<p t="..." d="...">` entries, because those are returned by the Android InnerTube caption flow.
+- YouTube transcript fallback must use the watch-page InnerTube API key when available, because hosted server IPs may not receive caption tracks from unauthenticated keyless InnerTube calls.
 
 ## Edge cases and failure policy
 
