@@ -321,7 +321,8 @@ Assert-True -Condition ($segmentTranscriptSource -cnotmatch 'web.+data.+content\
 Assert-Match -Actual $pythonTranscriptScript -Pattern 'from youtube_transcript_api import YouTubeTranscriptApi'
 Assert-Match -Actual $pythonTranscriptScript -Pattern 'ytt_api\.fetch\(video_id, languages=\["ru", "en"\]\)'
 Assert-Match -Actual $pythonTranscriptScript -Pattern 'start_time <= float\(item\.get\("start", 0\)\) < end_time'
-Assert-Match -Actual $renderSource -Pattern 'pip install --user -r apps/api/requirements\.txt'
+Assert-Match -Actual $renderSource -Pattern 'pip install -r apps/api/requirements\.txt'
+Assert-True -Condition ($renderSource -cnotmatch 'pip install --user') -Message 'Render runs the Node service build inside a Python virtualenv, so pip --user breaks deploys.'
 Invoke-YouTubeTranscriptLiveCheck -Url 'https://www.youtube.com/watch?v=s7aNuultC_E&&start=600&end=700' -ExpectedStart 600 -ExpectedEnd 700 -Context 'Runtime video library YouTube segment with double ampersand URL'
 Invoke-YouTubeTranscriptLiveCheck -Url 'https://www.youtube.com/watch?v=s7aNuultC_E&start=1800&end=1810' -ExpectedStart 1800 -ExpectedEnd 1810 -Context 'New admin YouTube segment without stored transcript'
 
