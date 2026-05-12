@@ -15,6 +15,12 @@ type VideoInfo = {
   end: number;
 };
 
+type PythonTranscriptAttempt = {
+  command: string;
+  text: string;
+  error: string;
+};
+
 const youTubeIdPattern = /^[A-Za-z0-9_-]{6,}$/;
 const youTubeLegacyPattern = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i;
 const transcriptLanguages = ['ru', 'ru-RU', 'en', 'en-US', 'en-GB'];
@@ -389,7 +395,7 @@ function pickTranscriptSegmentText(segments: TranscriptSegment[], start: number,
 }
 
 function runPythonTranscriptHelper(command: string, info: VideoInfo) {
-  return new Promise<string>((resolve) => {
+  return new Promise<PythonTranscriptAttempt>((resolve) => {
     const child = spawn(command, [pythonTranscriptScriptPath, info.id, String(info.start), String(info.end || info.start + 45)], {
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -398,7 +404,7 @@ function runPythonTranscriptHelper(command: string, info: VideoInfo) {
     let stderr = '';
     const timer = setTimeout(() => {
       child.kill();
-      resolve('');
+      resolve({ command, text: '', error: 'Python transcript helper timed out.' });
     }, 30000);
 
     child.stdout.on('data', (chunk) => {
@@ -409,40 +415,47 @@ function runPythonTranscriptHelper(command: string, info: VideoInfo) {
     });
     child.on('error', () => {
       clearTimeout(timer);
-      resolve('');
+      resolve({ command, text: '', error: `Unable to start ${command}.` });
     });
     child.on('close', (code) => {
       clearTimeout(timer);
       if (code !== 0) {
-        resolve('');
+        resolve({ command, text: '', error: stderr.trim() || `Python transcript helper exited with code ${code}.` });
         return;
       }
 
       try {
-        const parsed = JSON.parse(stdout) as { text?: unknown };
-        resolve(typeof parsed.text === 'string' ? parsed.text.trim() : '');
+        const parsed = JSON.parse(stdout) as { text?: unknown; error?: unknown };
+        resolve({
+          command,
+          text: typeof parsed.text === 'string' ? parsed.text.trim() : '',
+          error: typeof parsed.error === 'string' ? parsed.error.trim() : '',
+        });
       } catch {
-        resolve(stderr ? '' : stdout.trim());
+        resolve({ command, text: stderr ? '' : stdout.trim(), error: stderr.trim() });
       }
     });
   });
 }
 
 async function fetchPythonTranscriptSegment(info: VideoInfo) {
+  const attempts: PythonTranscriptAttempt[] = [];
   for (const command of ['python3', 'python']) {
-    const transcript = await runPythonTranscriptHelper(command, info);
-    if (transcript) return transcript;
+    const attempt = await runPythonTranscriptHelper(command, info);
+    attempts.push(attempt);
+    if (attempt.text) return { text: attempt.text, attempts };
   }
 
-  return '';
+  return { text: '', attempts };
 }
 
 export async function registerVideoTranscriptSegmentRoutes(app: FastifyInstance) {
   const cache = new Map<string, { available: boolean; source: 'youtube' | 'unsupported'; text: string; start: number; end: number; message?: string }>();
 
   app.get('/api/media/youtube-transcript-segment', async (request, reply) => {
-    const query = request.query as { url?: string };
+    const query = request.query as { url?: string; debug?: string };
     const url = String(query.url || '').trim();
+    const includeDebug = String(query.debug || '') === '1';
     if (!url) {
       return reply.code(400).send({ available: false, source: 'unsupported', text: '', start: 0, end: 0, message: 'Video URL is required.' });
     }
@@ -458,13 +471,14 @@ export async function registerVideoTranscriptSegmentRoutes(app: FastifyInstance)
 
     try {
       const pythonTranscript = await fetchPythonTranscriptSegment(info);
-      if (pythonTranscript) {
+      if (pythonTranscript.text) {
         const result = {
           available: true,
           source: 'youtube' as const,
-          text: pythonTranscript,
+          text: pythonTranscript.text,
           start: info.start,
           end: info.end > info.start ? info.end : info.start + 45,
+          ...(includeDebug ? { diagnostics: { python: pythonTranscript.attempts } } : {}),
         };
 
         cache.set(url, result);
@@ -480,6 +494,7 @@ export async function registerVideoTranscriptSegmentRoutes(app: FastifyInstance)
         start: picked.start,
         end: picked.end,
         ...(picked.text ? {} : { message: 'Transcript for the selected YouTube segment was not found.' }),
+        ...(includeDebug ? { diagnostics: { python: pythonTranscript.attempts, typeScriptSegments: segments.length } } : {}),
       };
 
       cache.set(url, result);
