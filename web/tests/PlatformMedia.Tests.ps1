@@ -295,9 +295,14 @@ foreach ($pattern in @(
 
 Write-TestStep 'Segmented YouTube transcript route mirrors youtube-transcript segment semantics'
 $segmentTranscriptSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\routes\registerVideoTranscriptSegmentRoutes.ts') -Raw
+$pythonTranscriptScriptPath = Join-Path $platformRoot 'apps\api\scripts\fetch-youtube-transcript.py'
+$pythonTranscriptScript = Get-Content -LiteralPath $pythonTranscriptScriptPath -Raw
+$renderSource = Get-Content -LiteralPath (Join-Path $workspaceRoot 'render.yaml') -Raw
 foreach ($pattern in @(
     '/api/media/youtube-transcript-segment',
     'parsed\.searchParams\.get\(''end''\)',
+    'fetchPythonTranscriptSegment\(info\)',
+    'spawn\(command, \[pythonTranscriptScriptPath',
     "const innertubeClientVersion = '20\.10\.38'",
     'INNERTUBE_API_KEY',
     'CONSENT=YES',
@@ -312,7 +317,13 @@ foreach ($pattern in @(
     'Transcript for the selected YouTube segment was not found'
 )) { Assert-Match -Actual $segmentTranscriptSource -Pattern $pattern }
 Assert-True -Condition ($segmentTranscriptSource -cnotmatch 'pickTranscriptSegmentText\(segments, info\.start\)') -Message 'Transcript selection must pass both start and end; start-only selection hides end-boundary bugs.'
+Assert-True -Condition ($segmentTranscriptSource -cnotmatch 'web.+data.+content\.json') -Message 'Fetch transcript must not read Git-tracked content as a fallback; new admin videos need live YouTube integration.'
+Assert-Match -Actual $pythonTranscriptScript -Pattern 'from youtube_transcript_api import YouTubeTranscriptApi'
+Assert-Match -Actual $pythonTranscriptScript -Pattern 'ytt_api\.fetch\(video_id, languages=\["ru", "en"\]\)'
+Assert-Match -Actual $pythonTranscriptScript -Pattern 'start_time <= float\(item\.get\("start", 0\)\) < end_time'
+Assert-Match -Actual $renderSource -Pattern 'pip install --user -r apps/api/requirements\.txt'
 Invoke-YouTubeTranscriptLiveCheck -Url 'https://www.youtube.com/watch?v=s7aNuultC_E&&start=600&end=700' -ExpectedStart 600 -ExpectedEnd 700 -Context 'Runtime video library YouTube segment with double ampersand URL'
+Invoke-YouTubeTranscriptLiveCheck -Url 'https://www.youtube.com/watch?v=s7aNuultC_E&start=1800&end=1810' -ExpectedStart 1800 -ExpectedEnd 1810 -Context 'New admin YouTube segment without stored transcript'
 
 Write-TestStep 'API registers the segmented YouTube transcript route'
 $apiIndexSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\index.ts') -Raw

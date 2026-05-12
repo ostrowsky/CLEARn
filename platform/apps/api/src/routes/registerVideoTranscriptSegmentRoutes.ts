@@ -1,3 +1,6 @@
+import { spawn } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { FastifyInstance } from 'fastify';
 
 type TranscriptSegment = {
@@ -20,6 +23,8 @@ const innertubeClientVersion = '20.10.38';
 const innertubeUserAgent = `com.google.android.youtube/${innertubeClientVersion} (Linux; U; Android 14)`;
 const innertubeApiKeyPattern = /"INNERTUBE_API_KEY":\s*"([A-Za-z0-9_-]+)"/;
 const youtubeConsentValuePattern = /name="v"\s+value="([^"]+)"/;
+const routeDir = path.dirname(fileURLToPath(import.meta.url));
+const pythonTranscriptScriptPath = path.resolve(routeDir, '..', '..', 'scripts', 'fetch-youtube-transcript.py');
 
 function parseSeconds(value: string) {
   const clean = String(value || '').trim().toLowerCase();
@@ -383,6 +388,55 @@ function pickTranscriptSegmentText(segments: TranscriptSegment[], start: number,
   };
 }
 
+function runPythonTranscriptHelper(command: string, info: VideoInfo) {
+  return new Promise<string>((resolve) => {
+    const child = spawn(command, [pythonTranscriptScriptPath, info.id, String(info.start), String(info.end || info.start + 45)], {
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => {
+      child.kill();
+      resolve('');
+    }, 30000);
+
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on('error', () => {
+      clearTimeout(timer);
+      resolve('');
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code !== 0) {
+        resolve('');
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(stdout) as { text?: unknown };
+        resolve(typeof parsed.text === 'string' ? parsed.text.trim() : '');
+      } catch {
+        resolve(stderr ? '' : stdout.trim());
+      }
+    });
+  });
+}
+
+async function fetchPythonTranscriptSegment(info: VideoInfo) {
+  for (const command of ['python3', 'python']) {
+    const transcript = await runPythonTranscriptHelper(command, info);
+    if (transcript) return transcript;
+  }
+
+  return '';
+}
+
 export async function registerVideoTranscriptSegmentRoutes(app: FastifyInstance) {
   const cache = new Map<string, { available: boolean; source: 'youtube' | 'unsupported'; text: string; start: number; end: number; message?: string }>();
 
@@ -403,6 +457,20 @@ export async function registerVideoTranscriptSegmentRoutes(app: FastifyInstance)
     }
 
     try {
+      const pythonTranscript = await fetchPythonTranscriptSegment(info);
+      if (pythonTranscript) {
+        const result = {
+          available: true,
+          source: 'youtube' as const,
+          text: pythonTranscript,
+          start: info.start,
+          end: info.end > info.start ? info.end : info.start + 45,
+        };
+
+        cache.set(url, result);
+        return result;
+      }
+
       const segments = await fetchTranscriptSegments(info.id);
       const picked = pickTranscriptSegmentText(segments, info.start, info.end);
       const result = {

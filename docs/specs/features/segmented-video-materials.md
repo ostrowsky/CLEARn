@@ -24,6 +24,7 @@ Learners see and practice only the configured video clip segment, and transcript
 - If a YouTube material has no stored transcript, the client requests a segment transcript endpoint with the video URL, including start and end parameters.
 - Ask-after-talk video library materials intended for production demos must store transcript text in content metadata.
 - The YouTube transcript fallback uses the same segment logic as a working `youtube_transcript_api` flow: extract the video ID, read the YouTube watch page, handle the YouTube consent page by retrying with a `CONSENT=YES+...` cookie, reuse the page `INNERTUBE_API_KEY` for Android InnerTube caption discovery, fetch Russian or English transcript entries, keep entries where `start <= entry.start < end`, and join only those entries.
+- The production API transcript endpoint must try the Python `youtube_transcript_api` integration before lower-level TypeScript fallbacks, because the admin `Fetch transcript` button must work for newly added videos that do not already have transcript metadata.
 - On mobile/native clients where inline web embedding is unavailable, the material remains openable through the external media button.
 
 ## Invariants
@@ -41,6 +42,7 @@ Learners see and practice only the configured video clip segment, and transcript
 - YouTube transcript fallback must support modern YouTube timed text XML with `<p t="..." d="...">` entries, because those are returned by the Android InnerTube caption flow.
 - YouTube transcript fallback must use the watch-page InnerTube API key when available, because hosted server IPs may not receive caption tracks from unauthenticated keyless InnerTube calls.
 - YouTube transcript fallback must retry watch-page parsing with the YouTube consent cookie when a hosting region receives the consent interstitial.
+- The `Fetch transcript` API must not use Git-tracked `web/data/content.json` as a transcript source, because that would only return transcripts after they were already fetched and saved.
 
 ## Edge cases and failure policy
 
