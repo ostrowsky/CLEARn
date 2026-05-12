@@ -724,6 +724,32 @@ export default function AdminScreen() {
     }
   }
 
+  async function handleFetchVideoTranscript(sectionId: string, blockId: string, materialId: string, url: string) {
+    if (!url) {
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const transcript = await apiClient.getVideoTranscript(url);
+      if (!transcript.available || !transcript.text.trim()) {
+        throw new Error(transcript.message || 'Transcript for this video segment was not found.');
+      }
+
+      updateContent((draft) => {
+        const targetMaterial = draft.sections.find((item) => item.id === sectionId)?.blocks.find((item) => item.id === blockId)?.materials.find((item) => item.id === materialId);
+        if (!targetMaterial) return;
+        const meta = ensureMaterialMeta(targetMaterial);
+        meta.transcript = transcript.text.trim();
+      });
+      setStatus(String(messages.videoTranscriptFetched || messages.contentSaved || ''), 'success');
+    } catch (nextError) {
+      setStatus(nextError instanceof Error ? nextError.message : String(nextError), 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleDeleteMaterialAsset(sectionId: string, blockId: string, materialId: string, url: string) {
     await deleteUploadedAsset(url);
     updateContent((draft) => {
@@ -1097,16 +1123,21 @@ export default function AdminScreen() {
                           })} style={styles.input} />
                         </Field>
 
-                        {material.type === 'video' ? (
-                          <Field label={String(fieldLabels.transcript || '')}>
-                            <TextInput value={readMaterialMetaString(material, 'transcript')} onChangeText={(value) => updateContent((draft) => {
-                              const targetMaterial = draft.sections.find((item) => item.id === selectedSection.id)?.blocks.find((item) => item.id === block.id)?.materials.find((item) => item.id === material.id);
-                              if (!targetMaterial) return;
-                              const meta = ensureMaterialMeta(targetMaterial);
-                              meta.transcript = value;
-                            })} style={[styles.input, styles.textArea]} multiline />
-                          </Field>
-                        ) : null}
+                          {material.type === 'video' ? (
+                            <Field label={String(fieldLabels.transcript || '')}>
+                              <TextInput value={readMaterialMetaString(material, 'transcript')} onChangeText={(value) => updateContent((draft) => {
+                                const targetMaterial = draft.sections.find((item) => item.id === selectedSection.id)?.blocks.find((item) => item.id === block.id)?.materials.find((item) => item.id === material.id);
+                                if (!targetMaterial) return;
+                                const meta = ensureMaterialMeta(targetMaterial);
+                                meta.transcript = value;
+                              })} style={[styles.input, styles.textArea]} multiline />
+                              {material.url ? (
+                                <Pressable style={styles.secondaryButton} onPress={() => void handleFetchVideoTranscript(selectedSection.id, block.id, material.id, String(material.url || ''))}>
+                                  <Text style={styles.secondaryButtonText}>{String(actions.fetchTranscript || '')}</Text>
+                                </Pressable>
+                              ) : null}
+                            </Field>
+                          ) : null}
 
                         {isClarifyAudioMaterial(block, material) ? (
                           <>

@@ -1,7 +1,7 @@
 {
   "meta": {
     "appTitle": "SOFTskills",
-    "updatedAt": "2026-04-02T11:45:49.055Z",
+    "updatedAt": "2026-05-12T19:59:15.271Z",
     "ui": {
       "brandTagline": "Shared web + mobile prototype",
       "footerNote": "Prototype focus: asking and answering questions for workplace English.",
@@ -235,7 +235,8 @@
           "moveUp": "Move up",
           "moveDown": "Move down",
           "downloadBackup": "Download full backup",
-          "restoreBackup": "Restore full backup"
+          "restoreBackup": "Restore full backup",
+          "fetchTranscript": "Fetch transcript"
         },
         "messages": {
           "savingContent": "Saving content...",
@@ -252,7 +253,8 @@
           "uploadedPattern": "Uploaded {fileName}.",
           "backupDownloadStarted": "Backup download started.",
           "backupRestored": "Backup restored successfully.",
-          "backupRestartRequired": "Restart the preview to load the restored code and data."
+          "backupRestartRequired": "Restart the preview to load the restored code and data.",
+          "videoTranscriptFetched": "Transcript loaded into the material. Save content to persist it."
         },
         "taxonomies": {
           "sectionTypes": {

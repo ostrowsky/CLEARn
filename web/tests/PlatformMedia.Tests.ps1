@@ -129,6 +129,22 @@ function Find-VideoMaterials {
     return $results
 }
 
+function Find-SectionById {
+    param([object]$Content, [string]$SectionId)
+    foreach ($section in @($Content.sections)) {
+        if ([string](Get-Prop -Value $section -Name 'id' -Default '') -eq $SectionId) { return $section }
+    }
+    return $null
+}
+
+function Find-BlockById {
+    param([object]$Section, [string]$BlockId)
+    foreach ($block in @($Section.blocks)) {
+        if ([string](Get-Prop -Value $block -Name 'id' -Default '') -eq $BlockId) { return $block }
+    }
+    return $null
+}
+
 function Test-YouTubeUrl {
     param([string]$Url)
     return $Url -match 'youtu\.be/' -or $Url -match 'youtube\.com/(watch|embed|shorts|live)'
@@ -157,6 +173,24 @@ function Invoke-YouTubeTranscriptLiveCheck {
     Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$response.text)) -Message "$Context live YouTube transcript text must not be empty."
     Assert-Equal -Expected ([string]$ExpectedStart) -Actual ([string][int]$response.start) -Message "$Context live YouTube transcript start must match video start."
     Assert-Equal -Expected ([string]$ExpectedEnd) -Actual ([string][int]$response.end) -Message "$Context live YouTube transcript end must match video end."
+}
+
+Write-TestStep 'Ask-after-talk video library stores production-ready transcripts'
+foreach ($fileName in @('content.json')) {
+    $content = Get-Content -LiteralPath (Join-Path $webRoot "data\$fileName") -Raw | ConvertFrom-Json
+    $section = Find-SectionById -Content $content -SectionId 'asking-after-talk'
+    Assert-True -Condition ($null -ne $section) -Message "$fileName should include the ask-after-talk section."
+    $videoLibrary = Find-BlockById -Section $section -BlockId 'block-ayctl2c6'
+    Assert-True -Condition ($null -ne $videoLibrary) -Message "$fileName should include the ask-after-talk video library block."
+
+    foreach ($material in @($videoLibrary.materials)) {
+        $url = [string](Get-Prop -Value $material -Name 'url' -Default '')
+        if ([string](Get-Prop -Value $material -Name 'type' -Default '') -ne 'video' -or -not (Test-YouTubeUrl -Url $url)) { continue }
+
+        $context = "$fileName ask-after-talk video library material '$([string](Get-Prop -Value $material -Name 'title' -Default ''))'"
+        $plainTranscript = Get-PlainTranscript -Material $material
+        Assert-True -Condition ($plainTranscript.Length -ge 80) -Message "$context must store transcript metadata instead of relying on live YouTube fetching in production."
+    }
 }
 
 Write-TestStep 'Learner video materials render inline for uploaded files and streaming URLs'
@@ -286,11 +320,13 @@ foreach ($pattern in @('registerVideoTranscriptSegmentRoutes', 'await registerVi
 
 Write-TestStep 'Admin exposes editable video transcript metadata'
 $adminSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\admin.tsx') -Raw
-foreach ($pattern in @("material\.type === 'video'", 'fieldLabels\.transcript', "readMaterialMetaString\(material, 'transcript'\)", 'meta\.transcript = value')) { Assert-Match -Actual $adminSource -Pattern $pattern }
+foreach ($pattern in @("material\.type === 'video'", 'fieldLabels\.transcript', "readMaterialMetaString\(material, 'transcript'\)", 'meta\.transcript = value', 'handleFetchVideoTranscript', 'apiClient\.getVideoTranscript\(url\)', 'actions\.fetchTranscript', 'videoTranscriptFetched')) { Assert-Match -Actual $adminSource -Pattern $pattern }
 
 foreach ($fileName in @('content.json', 'content.template.json')) {
     $content = Get-Content -LiteralPath (Join-Path $webRoot "data\$fileName") -Raw | ConvertFrom-Json
     Assert-Equal -Expected 'Transcript' -Actual ([string]$content.meta.ui.admin.fieldLabels.transcript) -Message "$fileName should expose the video transcript field label."
+    Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$content.meta.ui.admin.actions.fetchTranscript)) -Message "$fileName should expose the fetch transcript admin action label."
+    Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$content.meta.ui.admin.messages.videoTranscriptFetched)) -Message "$fileName should expose the fetch transcript admin success message."
 }
 
 Write-Host 'Platform media tests passed.'
