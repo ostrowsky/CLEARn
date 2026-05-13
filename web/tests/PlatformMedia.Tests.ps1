@@ -314,13 +314,24 @@ foreach ($pattern in @(
     "const transcriptLanguages = \['ru', 'ru-RU', 'en', 'en-US', 'en-GB'\]",
     'pickTranscriptSegmentText\(segments: TranscriptSegment\[\], start: number, end: number\)',
     'segments\.filter\(\(item\) => item\.start >= segmentStart && item\.start < segmentEnd\)',
-    'Transcript for the selected YouTube segment was not found'
+    'Transcript for the selected YouTube segment was not found',
+    'getYouTubeTranscriptFailureMessage',
+    'YouTube blocked transcript requests from the hosted API IP',
+    'if \(!includeDebug && cache\.has\(url\)\)'
 )) { Assert-Match -Actual $segmentTranscriptSource -Pattern $pattern }
 Assert-True -Condition ($segmentTranscriptSource -cnotmatch 'pickTranscriptSegmentText\(segments, info\.start\)') -Message 'Transcript selection must pass both start and end; start-only selection hides end-boundary bugs.'
 Assert-True -Condition ($segmentTranscriptSource -cnotmatch 'web.+data.+content\.json') -Message 'Fetch transcript must not read Git-tracked content as a fallback; new admin videos need live YouTube integration.'
 Assert-Match -Actual $pythonTranscriptScript -Pattern 'from youtube_transcript_api import YouTubeTranscriptApi'
+Assert-Match -Actual $pythonTranscriptScript -Pattern 'from youtube_transcript_api\.proxies import GenericProxyConfig, WebshareProxyConfig'
+Assert-Match -Actual $pythonTranscriptScript -Pattern 'YOUTUBE_TRANSCRIPT_PROXY_URL'
+Assert-Match -Actual $pythonTranscriptScript -Pattern 'YOUTUBE_TRANSCRIPT_WEBSHARE_USERNAME'
+Assert-Match -Actual $pythonTranscriptScript -Pattern 'YOUTUBE_TRANSCRIPT_WEBSHARE_PASSWORD'
+Assert-Match -Actual $pythonTranscriptScript -Pattern 'YouTubeTranscriptApi\(proxy_config=proxy_config\)'
 Assert-Match -Actual $pythonTranscriptScript -Pattern 'ytt_api\.fetch\(video_id, languages=\["ru", "en"\]\)'
 Assert-Match -Actual $pythonTranscriptScript -Pattern 'start_time <= float\(item\.get\("start", 0\)\) < end_time'
+Assert-Match -Actual $segmentTranscriptSource -Pattern 'YOUTUBE_TRANSCRIPT_PROXY_URL'
+Assert-Match -Actual $segmentTranscriptSource -Pattern 'YOUTUBE_TRANSCRIPT_WEBSHARE_USERNAME'
+Assert-Match -Actual $segmentTranscriptSource -Pattern 'Configure YOUTUBE_TRANSCRIPT_PROXY_URL'
 Assert-Match -Actual $renderSource -Pattern 'pip install -r apps/api/requirements\.txt'
 Assert-True -Condition ($renderSource -cnotmatch 'pip install --user') -Message 'Render runs the Node service build inside a Python virtualenv, so pip --user breaks deploys.'
 Invoke-YouTubeTranscriptLiveCheck -Url 'https://www.youtube.com/watch?v=s7aNuultC_E&&start=600&end=700' -ExpectedStart 600 -ExpectedEnd 700 -Context 'Runtime video library YouTube segment with double ampersand URL'

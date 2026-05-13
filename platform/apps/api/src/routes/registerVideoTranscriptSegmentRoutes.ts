@@ -31,6 +31,33 @@ const innertubeApiKeyPattern = /"INNERTUBE_API_KEY":\s*"([A-Za-z0-9_-]+)"/;
 const youtubeConsentValuePattern = /name="v"\s+value="([^"]+)"/;
 const routeDir = path.dirname(fileURLToPath(import.meta.url));
 const pythonTranscriptScriptPath = path.resolve(routeDir, '..', '..', 'scripts', 'fetch-youtube-transcript.py');
+const youtubeTranscriptProxyEnvNames = [
+  'YOUTUBE_TRANSCRIPT_PROXY_URL',
+  'YOUTUBE_TRANSCRIPT_HTTP_PROXY',
+  'YOUTUBE_TRANSCRIPT_HTTPS_PROXY',
+  'YOUTUBE_TRANSCRIPT_WEBSHARE_USERNAME',
+  'YOUTUBE_TRANSCRIPT_WEBSHARE_PASSWORD',
+];
+
+function isYouTubeTranscriptProxyConfigured() {
+  return youtubeTranscriptProxyEnvNames.some((name) => Boolean(process.env[name]?.trim()));
+}
+
+function isHostedIpBlockedError(error: string) {
+  return /blocking requests from your IP|cloud provider|IP has been blocked/i.test(error);
+}
+
+function getYouTubeTranscriptFailureMessage(attempts: PythonTranscriptAttempt[]) {
+  const blockedAttempt = attempts.find((attempt) => isHostedIpBlockedError(attempt.error));
+  if (blockedAttempt) {
+    return isYouTubeTranscriptProxyConfigured()
+      ? 'YouTube blocked transcript requests from the configured API proxy. Rotate the proxy or update the YouTube transcript proxy settings, then retry Fetch transcript.'
+      : 'YouTube blocked transcript requests from the hosted API IP. Configure YOUTUBE_TRANSCRIPT_PROXY_URL or YOUTUBE_TRANSCRIPT_WEBSHARE_USERNAME/YOUTUBE_TRANSCRIPT_WEBSHARE_PASSWORD on the API host, then retry Fetch transcript.';
+  }
+
+  const firstError = attempts.map((attempt) => attempt.error).find((error) => error.trim());
+  return firstError || 'Transcript for the selected YouTube segment was not found.';
+}
 
 function parseSeconds(value: string) {
   const clean = String(value || '').trim().toLowerCase();
@@ -433,7 +460,11 @@ function runPythonTranscriptHelper(command: string, info: VideoInfo) {
       clearTimeout(timer);
       const parsed = parseOutput();
       if (code !== 0) {
-        resolve({ command, text: '', error: parsed.error || stderr.trim() || stdout.trim() || `Python transcript helper exited with code ${code}.` });
+        const error = parsed.error || stderr.trim() || stdout.trim() || `Python transcript helper exited with code ${code}.`;
+        const proxyHint = !isYouTubeTranscriptProxyConfigured() && isHostedIpBlockedError(error)
+          ? ' Configure YOUTUBE_TRANSCRIPT_PROXY_URL or YOUTUBE_TRANSCRIPT_WEBSHARE_USERNAME/YOUTUBE_TRANSCRIPT_WEBSHARE_PASSWORD for hosted environments.'
+          : '';
+        resolve({ command, text: '', error: `${error}${proxyHint}` });
         return;
       }
 
@@ -464,7 +495,7 @@ export async function registerVideoTranscriptSegmentRoutes(app: FastifyInstance)
       return reply.code(400).send({ available: false, source: 'unsupported', text: '', start: 0, end: 0, message: 'Video URL is required.' });
     }
 
-    if (cache.has(url)) {
+    if (!includeDebug && cache.has(url)) {
       return cache.get(url);
     }
 
@@ -491,17 +522,18 @@ export async function registerVideoTranscriptSegmentRoutes(app: FastifyInstance)
 
       const segments = await fetchTranscriptSegments(info.id);
       const picked = pickTranscriptSegmentText(segments, info.start, info.end);
+      const failureMessage = picked.text ? '' : getYouTubeTranscriptFailureMessage(pythonTranscript.attempts);
       const result = {
         available: Boolean(picked.text),
         source: 'youtube' as const,
         text: picked.text,
         start: picked.start,
         end: picked.end,
-        ...(picked.text ? {} : { message: 'Transcript for the selected YouTube segment was not found.' }),
+        ...(picked.text ? {} : { message: failureMessage }),
         ...(includeDebug ? { diagnostics: { python: pythonTranscript.attempts, typeScriptSegments: segments.length } } : {}),
       };
 
-      cache.set(url, result);
+      if (!includeDebug) cache.set(url, result);
       if (cache.size > 100) {
         const firstKey = cache.keys().next().value;
         if (firstKey) cache.delete(firstKey);
