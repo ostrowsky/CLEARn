@@ -21,7 +21,7 @@ foreach ($pattern in @(
     'postMessage',
     'getCurrentTime',
     'pauseVideo|stopVideo',
-    'currentTime >= segmentEnd',
+    'currentTime >= youtubeSegmentEnd',
     'youtubeSegmentEnd'
 )) {
     Assert-Match -Actual $sectionSource -Pattern $pattern
@@ -58,7 +58,13 @@ foreach ($pattern in @(
     "transcriptUrl\.searchParams\.set\('fmt', 'json3'\)",
     'youtubei/v1/player',
     'captionTracks',
+    'type TranscriptFetcher',
+    'fetchBrowserlessTranscriptSegment',
+    'getBrowserlessFunctionCode',
+    'TRANSCRIPT_FETCH_PROVIDER',
+    'BROWSERLESS_API_KEY',
     'fetchTranscriptSegments',
+    'fetchTranscriptWithProviders',
     'pickTranscriptSegmentText',
     'segments\.filter',
     'item\.start >= segmentStart && item\.start < segmentEnd',
@@ -67,7 +73,6 @@ foreach ($pattern in @(
     Assert-Match -Actual $transcriptRouteSource -Pattern $pattern
 }
 
-Assert-True -Condition ($transcriptRouteSource -cnotmatch 'youtube_transcript_api') -Message 'YouTube transcript fetching must be implemented in the existing TypeScript backend, not Python.'
-Assert-True -Condition ($transcriptRouteSource -cnotmatch 'python') -Message 'The production transcript route must not shell out to Python.'
+Assert-True -Condition ($transcriptRouteSource -cnotmatch 'EXPO_PUBLIC.*BROWSERLESS') -Message 'Browserless credentials must never be exposed through frontend public variables.'
 
 Write-Host 'Platform YouTube segment tests passed.'

@@ -47,6 +47,12 @@ const schema = z.object({
   ADMIN_SESSION_SECRET: z.string().optional(),
   CORS_ALLOWED_ORIGINS: z.string().optional(),
   HTTP_BODY_LIMIT_BYTES: z.coerce.number().default(26214400),
+  TRANSCRIPT_FETCH_PROVIDER: z.enum(['auto', 'browserless', 'direct']).default('auto'),
+  BROWSERLESS_API_URL: z.string().url().default('https://production-sfo.browserless.io'),
+  BROWSERLESS_API_KEY: z.string().optional(),
+  BROWSERLESS_USE_RESIDENTIAL_PROXY: z.coerce.boolean().default(false),
+  BROWSERLESS_PROXY_COUNTRY: z.string().default('us'),
+  TRANSCRIPT_FETCH_TIMEOUT_MS: z.coerce.number().default(90000),
 });
 
 const parsedRawEnv = schema.parse(process.env);

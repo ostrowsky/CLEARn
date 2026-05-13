@@ -26,6 +26,7 @@ Learners see and practice only the configured video clip segment, and transcript
 - The YouTube transcript fallback uses the same segment logic as a working `youtube_transcript_api` flow: extract the video ID, read the YouTube watch page, handle the YouTube consent page by retrying with a `CONSENT=YES+...` cookie, reuse the page `INNERTUBE_API_KEY` for Android InnerTube caption discovery, fetch Russian or English transcript entries, keep entries where `start <= entry.start < end`, and join only those entries.
 - The production API transcript endpoint must try the Python `youtube_transcript_api` integration before lower-level TypeScript fallbacks, because the admin `Fetch transcript` button must work for newly added videos that do not already have transcript metadata.
 - Hosted production environments must support configuring a YouTube transcript proxy through environment variables, because YouTube may block datacenter IPs even when the same transcript request works from localhost.
+- Hosted production environments may route transcript fetching through a Browserless provider when `TRANSCRIPT_FETCH_PROVIDER=browserless`; this provider must call Browserless server-side only, keep the API key out of the frontend, extract YouTube caption tracks in a browser context, and return only transcript text for the configured `[start,end)` segment.
 - On mobile/native clients where inline web embedding is unavailable, the material remains openable through the external media button.
 
 ## Invariants
@@ -45,6 +46,7 @@ Learners see and practice only the configured video clip segment, and transcript
 - YouTube transcript fallback must retry watch-page parsing with the YouTube consent cookie when a hosting region receives the consent interstitial.
 - The `Fetch transcript` API must not use Git-tracked `web/data/content.json` as a transcript source, because that would only return transcripts after they were already fetched and saved.
 - When YouTube blocks a hosted server IP, the API response shown by the admin `Fetch transcript` button must surface an actionable diagnostic that tells operators to configure `YOUTUBE_TRANSCRIPT_PROXY_URL` or Webshare credentials rather than silently returning the generic "not found" message.
+- Browserless credentials must be read only from API-side environment variables such as `BROWSERLESS_API_KEY`; no `EXPO_PUBLIC_*` frontend variable may contain Browserless credentials.
 
 ## Edge cases and failure policy
 
@@ -58,6 +60,7 @@ Learners see and practice only the configured video clip segment, and transcript
 ## Route / state / data implications
 
 - `GET /api/media/youtube-transcript-segment?url=...` returns transcript text and normalized segment bounds for a YouTube clip URL.
+- `TRANSCRIPT_FETCH_PROVIDER` controls provider order: `browserless` tries Browserless first then direct fallbacks, `direct` disables Browserless, and `auto` uses Browserless first only when `BROWSERLESS_API_KEY` is configured.
 - `ContentMaterial.meta.transcript`, `videoTranscript`, or `caption` may store plain transcript text.
 - `ContentMaterial.meta.transcriptSegments` may store timed transcript snippets with `start`, `end`, and `text`.
 - `ContentMaterial.meta.segmentStart`, `segmentEnd`, `clipStart`, `clipEnd`, `start`, or `end` may define bounds for uploaded/direct media when the URL has no media fragment.

@@ -27,7 +27,7 @@ $apiIndex = Get-Content (Join-Path $platformRoot 'apps\api\src\index.ts') -Raw
 Assert-Match -Actual $apiIndex -Pattern 'Fastify'
 $routes = Get-Content (Join-Path $platformRoot 'apps\api\src\routes\registerRoutes.ts') -Raw
 Assert-Match -Actual $routes -Pattern "adminSessionMode: 'signed-cookie'"
-Assert-Match -Actual $routes -Pattern "youtubeTranscriptFetcher: 'android-innertube-timedtext'"
+Assert-Match -Actual $routes -Pattern "youtubeTranscriptFetcher: env\.TRANSCRIPT_FETCH_PROVIDER === 'browserless' \? 'browserless-function' : 'android-innertube-timedtext'"
 Assert-Match -Actual $routes -Pattern 'RedisSessionStore'
 Assert-Match -Actual $routes -Pattern '/api/speech/stt'
 Assert-Match -Actual $routes -Pattern '/api/admin/content'
@@ -203,6 +203,10 @@ foreach ($pattern in @(
     'ADMIN_SESSION_SECRET',
     'CORS_ALLOWED_ORIGINS',
     'REDIS_URL',
+    'TRANSCRIPT_FETCH_PROVIDER',
+    'BROWSERLESS_API_URL',
+    'BROWSERLESS_API_KEY',
+    'BROWSERLESS_USE_RESIDENTIAL_PROXY',
     'EXPO_PUBLIC_API_BASE_URL',
     'ALLOW_STATIC_ONLY_PREVIEW=0'
 )) {
@@ -211,6 +215,8 @@ foreach ($pattern in @(
 
 $apiEnvSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\config\env.ts') -Raw
 Assert-Match -Actual $apiEnvSource -Pattern 'REDIS_URL must point to production Redis in production'
+Assert-Match -Actual $apiEnvSource -Pattern "TRANSCRIPT_FETCH_PROVIDER: z\.enum\(\['auto', 'browserless', 'direct'\]\)"
+Assert-Match -Actual $apiEnvSource -Pattern 'BROWSERLESS_API_KEY'
 
 Write-Host 'Platform architecture tests passed.'
 

@@ -317,7 +317,16 @@ foreach ($pattern in @(
     'Transcript for the selected YouTube segment was not found',
     'getYouTubeTranscriptFailureMessage',
     'YouTube blocked transcript requests from the hosted API IP',
-    'if \(!includeDebug && cache\.has\(url\)\)'
+    'if \(!includeDebug && cache\.has\(url\)\)',
+    'type TranscriptFetcher',
+    'fetchBrowserlessTranscriptSegment',
+    'getBrowserlessFunctionCode',
+    "new URL\('function'",
+    'BROWSERLESS_API_KEY',
+    'TRANSCRIPT_FETCH_PROVIDER',
+    'proxyCountry',
+    'fetchTranscriptWithProviders',
+    "env\.TRANSCRIPT_FETCH_PROVIDER === 'browserless'"
 )) { Assert-Match -Actual $segmentTranscriptSource -Pattern $pattern }
 Assert-True -Condition ($segmentTranscriptSource -cnotmatch 'pickTranscriptSegmentText\(segments, info\.start\)') -Message 'Transcript selection must pass both start and end; start-only selection hides end-boundary bugs.'
 Assert-True -Condition ($segmentTranscriptSource -cnotmatch 'web.+data.+content\.json') -Message 'Fetch transcript must not read Git-tracked content as a fallback; new admin videos need live YouTube integration.'

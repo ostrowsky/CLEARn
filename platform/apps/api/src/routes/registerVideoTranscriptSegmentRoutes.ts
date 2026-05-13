@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { FastifyInstance } from 'fastify';
+import { env } from '../config/env';
 
 type TranscriptSegment = {
   start: number;
@@ -19,6 +20,18 @@ type PythonTranscriptAttempt = {
   command: string;
   text: string;
   error: string;
+};
+
+type TranscriptFetchResult = {
+  text: string;
+  provider: string;
+  diagnostics?: Record<string, unknown>;
+  error?: string;
+};
+
+type TranscriptFetcher = {
+  name: string;
+  fetch(info: VideoInfo): Promise<TranscriptFetchResult>;
 };
 
 const youTubeIdPattern = /^[A-Za-z0-9_-]{6,}$/;
@@ -57,6 +70,185 @@ function getYouTubeTranscriptFailureMessage(attempts: PythonTranscriptAttempt[])
 
   const firstError = attempts.map((attempt) => attempt.error).find((error) => error.trim());
   return firstError || 'Transcript for the selected YouTube segment was not found.';
+}
+
+function parseBrowserlessPayload(payload: unknown): { text: string; error: string; diagnostics?: Record<string, unknown> } {
+  const record = asRecord(payload);
+  const directText = typeof record.text === 'string' ? record.text.trim() : '';
+  if (directText) {
+    return { text: directText, error: '', diagnostics: asRecord(record.diagnostics) };
+  }
+
+  const data = record.data;
+  if (data && typeof data === 'object') {
+    return parseBrowserlessPayload(data);
+  }
+
+  const result = record.result;
+  if (result && typeof result === 'object') {
+    return parseBrowserlessPayload(result);
+  }
+
+  const error = typeof record.error === 'string'
+    ? record.error.trim()
+    : typeof record.message === 'string'
+      ? record.message.trim()
+      : '';
+  return { text: '', error, diagnostics: asRecord(record.diagnostics) };
+}
+
+function getBrowserlessFunctionCode() {
+  return `export default async function ({ page, context }) {
+  const videoId = String(context.videoId || '');
+  const start = Number(context.start || 0);
+  const end = Number(context.end || (start + 45));
+  const languages = Array.isArray(context.languages) ? context.languages : ['ru', 'ru-RU', 'en', 'en-US', 'en-GB'];
+
+  function cleanText(value) {
+    return String(value || '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/\\s+/g, ' ')
+      .trim();
+  }
+
+  function parseJson3(payload) {
+    const events = Array.isArray(payload && payload.events) ? payload.events : [];
+    return events.map((event) => ({
+      start: Number(event.tStartMs || 0) / 1000,
+      duration: Number(event.dDurationMs || 0) / 1000,
+      text: Array.isArray(event.segs) ? event.segs.map((seg) => String(seg.utf8 || '')).join('').replace(/\\s+/g, ' ').trim() : '',
+    })).filter((segment) => segment.text);
+  }
+
+  function parseXml(payload) {
+    const source = String(payload || '');
+    const rich = source.match(/<p\\s+[^>]*>[\\s\\S]*?<\\/p>/g) || [];
+    const richSegments = rich.map((item) => ({
+      start: Number.parseInt((item.match(/\\bt="([^"]+)"/) || [])[1] || '0', 10) / 1000,
+      duration: Number.parseInt((item.match(/\\bd="([^"]+)"/) || [])[1] || '0', 10) / 1000,
+      text: cleanText(item),
+    })).filter((segment) => Number.isFinite(segment.start) && segment.text);
+    if (richSegments.length) return richSegments;
+
+    return (source.match(/<text\\b[^>]*>[\\s\\S]*?<\\/text>/g) || []).map((item) => ({
+      start: Number.parseFloat((item.match(/\\bstart="([^"]+)"/) || [])[1] || '0'),
+      duration: Number.parseFloat((item.match(/\\bdur="([^"]+)"/) || [])[1] || '0'),
+      text: cleanText(item),
+    })).filter((segment) => Number.isFinite(segment.start) && segment.text);
+  }
+
+  function getCaptionTracks(playerResponse) {
+    return (((playerResponse || {}).captions || {}).playerCaptionsTracklistRenderer || {}).captionTracks || [];
+  }
+
+  function chooseTrack(tracks) {
+    const available = Array.isArray(tracks) ? tracks.filter((track) => track && track.baseUrl) : [];
+    for (const language of languages) {
+      const exact = available.find((track) => String(track.languageCode || '').toLowerCase() === String(language).toLowerCase());
+      if (exact) return exact;
+    }
+    return available.find((track) => String(track.languageCode || '').toLowerCase().startsWith('ru'))
+      || available.find((track) => String(track.languageCode || '').toLowerCase().startsWith('en'))
+      || available.find((track) => String(track.kind || '').toLowerCase() === 'asr')
+      || available[0];
+  }
+
+  await page.goto('https://www.youtube.com/watch?v=' + encodeURIComponent(videoId) + '&hl=en', {
+    waitUntil: 'domcontentloaded',
+    timeout: Math.min(Number(context.timeoutMs || 90000), 90000),
+  });
+
+  const result = await page.evaluate(async ({ start, end }) => {
+    const playerResponse = window.ytInitialPlayerResponse || {};
+    const tracks = (((playerResponse || {}).captions || {}).playerCaptionsTracklistRenderer || {}).captionTracks || [];
+    return { tracks };
+  }, { start, end });
+
+  const track = chooseTrack(result.tracks);
+  if (!track || !track.baseUrl) {
+    return { text: '', error: 'Browserless could not find YouTube caption tracks.', diagnostics: { trackCount: Array.isArray(result.tracks) ? result.tracks.length : 0 } };
+  }
+
+  const trackUrl = new URL(String(track.baseUrl).replace(/&amp;/g, '&'));
+  trackUrl.searchParams.set('fmt', 'json3');
+  const raw = await page.evaluate(async (url) => {
+    const response = await fetch(url);
+    return { ok: response.ok, status: response.status, text: await response.text() };
+  }, trackUrl.toString());
+
+  if (!raw.ok || !raw.text) {
+    return { text: '', error: 'Browserless could not download YouTube caption track.', diagnostics: { status: raw.status, languageCode: track.languageCode || '' } };
+  }
+
+  let segments = [];
+  try {
+    segments = parseJson3(JSON.parse(raw.text));
+  } catch {
+    segments = parseXml(raw.text);
+  }
+
+  const selected = segments.filter((segment) => segment.start >= start && segment.start < end);
+  return {
+    text: selected.map((segment) => segment.text).join(' ').replace(/\\s+/g, ' ').trim(),
+    diagnostics: { provider: 'browserless', languageCode: track.languageCode || '', segmentCount: segments.length, selectedCount: selected.length },
+  };
+}`;
+}
+
+function buildBrowserlessFunctionUrl() {
+  const endpoint = new URL('function', `${env.BROWSERLESS_API_URL.replace(/\/+$/, '')}/`);
+  if (env.BROWSERLESS_API_KEY?.trim()) {
+    endpoint.searchParams.set('token', env.BROWSERLESS_API_KEY.trim());
+  }
+  if (env.BROWSERLESS_USE_RESIDENTIAL_PROXY) {
+    endpoint.searchParams.set('proxy', 'residential');
+    endpoint.searchParams.set('proxyCountry', env.BROWSERLESS_PROXY_COUNTRY || 'us');
+  }
+  return endpoint.toString();
+}
+
+async function fetchBrowserlessTranscriptSegment(info: VideoInfo): Promise<TranscriptFetchResult> {
+  if (!env.BROWSERLESS_API_KEY?.trim()) {
+    return { provider: 'browserless', text: '', error: 'BROWSERLESS_API_KEY is not configured.' };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), env.TRANSCRIPT_FETCH_TIMEOUT_MS);
+  try {
+    const response = await fetch(buildBrowserlessFunctionUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        code: getBrowserlessFunctionCode(),
+        context: {
+          videoId: info.id,
+          start: info.start,
+          end: info.end > info.start ? info.end : info.start + 45,
+          languages: transcriptLanguages,
+          timeoutMs: env.TRANSCRIPT_FETCH_TIMEOUT_MS,
+        },
+      }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    const parsed = parseBrowserlessPayload(payload);
+    if (!response.ok) {
+      return { provider: 'browserless', text: '', error: parsed.error || `Browserless transcript fetch failed with HTTP ${response.status}.`, diagnostics: parsed.diagnostics };
+    }
+
+    return { provider: 'browserless', text: parsed.text, error: parsed.error, diagnostics: parsed.diagnostics };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { provider: 'browserless', text: '', error: `Browserless transcript fetch failed: ${message}` };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function parseSeconds(value: string) {
@@ -484,6 +676,61 @@ async function fetchPythonTranscriptSegment(info: VideoInfo) {
   return { text: '', attempts };
 }
 
+function getTranscriptFetchers(): TranscriptFetcher[] {
+  const directFetcher: TranscriptFetcher = {
+    name: 'direct',
+    async fetch(info) {
+      const pythonTranscript = await fetchPythonTranscriptSegment(info);
+      if (pythonTranscript.text) {
+        return {
+          provider: 'python',
+          text: pythonTranscript.text,
+          diagnostics: { python: pythonTranscript.attempts },
+        };
+      }
+
+      const segments = await fetchTranscriptSegments(info.id);
+      const picked = pickTranscriptSegmentText(segments, info.start, info.end);
+      return {
+        provider: 'direct',
+        text: picked.text,
+        error: picked.text ? '' : getYouTubeTranscriptFailureMessage(pythonTranscript.attempts),
+        diagnostics: { python: pythonTranscript.attempts, typeScriptSegments: segments.length },
+      };
+    },
+  };
+
+  const browserlessFetcher: TranscriptFetcher = {
+    name: 'browserless',
+    fetch: fetchBrowserlessTranscriptSegment,
+  };
+
+  if (env.TRANSCRIPT_FETCH_PROVIDER === 'browserless') {
+    return [browserlessFetcher, directFetcher];
+  }
+  if (env.TRANSCRIPT_FETCH_PROVIDER === 'direct') {
+    return [directFetcher];
+  }
+
+  return env.BROWSERLESS_API_KEY?.trim()
+    ? [browserlessFetcher, directFetcher]
+    : [directFetcher];
+}
+
+async function fetchTranscriptWithProviders(info: VideoInfo) {
+  const diagnostics: Array<TranscriptFetchResult & { provider: string }> = [];
+  for (const fetcher of getTranscriptFetchers()) {
+    const result = await fetcher.fetch(info);
+    diagnostics.push({ ...result, provider: result.provider || fetcher.name });
+    if (result.text.trim()) {
+      return { text: result.text.trim(), provider: result.provider || fetcher.name, diagnostics };
+    }
+  }
+
+  const firstError = diagnostics.map((item) => item.error).find((error) => error?.trim());
+  return { text: '', provider: '', error: firstError || 'Transcript for the selected YouTube segment was not found.', diagnostics };
+}
+
 export async function registerVideoTranscriptSegmentRoutes(app: FastifyInstance) {
   const cache = new Map<string, { available: boolean; source: 'youtube' | 'unsupported'; text: string; start: number; end: number; message?: string }>();
 
@@ -505,32 +752,17 @@ export async function registerVideoTranscriptSegmentRoutes(app: FastifyInstance)
     }
 
     try {
-      const pythonTranscript = await fetchPythonTranscriptSegment(info);
-      if (pythonTranscript.text) {
-        const result = {
-          available: true,
-          source: 'youtube' as const,
-          text: pythonTranscript.text,
-          start: info.start,
-          end: info.end > info.start ? info.end : info.start + 45,
-          ...(includeDebug ? { diagnostics: { python: pythonTranscript.attempts } } : {}),
-        };
-
-        cache.set(url, result);
-        return result;
-      }
-
-      const segments = await fetchTranscriptSegments(info.id);
-      const picked = pickTranscriptSegmentText(segments, info.start, info.end);
-      const failureMessage = picked.text ? '' : getYouTubeTranscriptFailureMessage(pythonTranscript.attempts);
+      const transcript = await fetchTranscriptWithProviders(info);
+      const segmentStart = Math.max(0, info.start || 0);
+      const segmentEnd = info.end > segmentStart ? info.end : segmentStart + 45;
       const result = {
-        available: Boolean(picked.text),
+        available: Boolean(transcript.text),
         source: 'youtube' as const,
-        text: picked.text,
-        start: picked.start,
-        end: picked.end,
-        ...(picked.text ? {} : { message: failureMessage }),
-        ...(includeDebug ? { diagnostics: { python: pythonTranscript.attempts, typeScriptSegments: segments.length } } : {}),
+        text: transcript.text,
+        start: segmentStart,
+        end: segmentEnd,
+        ...(transcript.text ? {} : { message: transcript.error || 'Transcript for the selected YouTube segment was not found.' }),
+        ...(includeDebug ? { diagnostics: { providers: transcript.diagnostics } } : {}),
       };
 
       if (!includeDebug) cache.set(url, result);

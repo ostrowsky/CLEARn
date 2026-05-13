@@ -545,7 +545,7 @@ export async function registerRoutes(app: FastifyInstance) {
     ttsProvider: env.LLM_TTS_PROVIDER,
     appEnv: env.APP_ENV,
     adminSessionMode: 'signed-cookie',
-    youtubeTranscriptFetcher: 'android-innertube-timedtext',
+    youtubeTranscriptFetcher: env.TRANSCRIPT_FETCH_PROVIDER === 'browserless' ? 'browserless-function' : 'android-innertube-timedtext',
   }));
 
   app.get('/api/debug/logs', async (request, reply) => {
