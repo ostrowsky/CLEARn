@@ -140,6 +140,12 @@ export const apiClient = {
       body: JSON.stringify(payload),
     });
   },
+  resetAdminPassword(payload: { login: string; recoveryEmail: string; password: string; confirmPassword: string }) {
+    return request<{ configured: boolean; authenticated: boolean; login: string }>('/api/admin/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
   logoutAdmin() {
     return request<{ loggedOut: boolean }>('/api/admin/auth/logout', { method: 'POST', body: JSON.stringify({}) });
   },

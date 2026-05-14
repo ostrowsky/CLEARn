@@ -24,6 +24,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Admin sessions use server-issued signed cookies and can be cleared with logout.
 - Admin sessions must survive API process restarts and multi-instance routing as long as `ADMIN_SESSION_SECRET` stays stable.
 - Development admin sessions must work on local HTTP preview URLs such as `http://localhost:8081`, even when production `APP_BASE_URL` values are present in the shell environment.
+- Admin password reset is available from the login screen after setup. The reset flow requires the configured admin login, recovery email, new password, and password confirmation, then signs the admin in with the new password.
 - Admin setup must reject mismatched passwords and incomplete credentials.
 - Admins can set block layout width (`auto`, `full`, or `half`) so selected blocks can appear on the same horizontal row on wide screens.
 - Saved content appears in learner routes without code changes.
@@ -42,6 +43,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Every learner/admin screen displays a small low-contrast watermark from editable content metadata.
 - Admin actions should report clear success or failure messages.
 - When the codebase adds new editable admin labels or messages, old mutable production content must be backfilled from bundled content defaults without deleting existing admin edits.
+- Admin auth controls must keep non-empty fallback labels during content migration so login, setup, reset, and logout buttons remain visible even when old mutable content lacks newly introduced auth copy.
 
 ## Invariants
 
@@ -54,6 +56,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Watermark text must come from content metadata, not component constants.
 - Admin credentials must never be stored as plain text.
 - Admin session authorization must not depend on process-local memory only.
+- Localhost and production use the same password only when they point at the same durable `admin-auth.json` data, or when the password is reset to the same value in both environments.
 - Production content migration may fill missing admin metadata from bundled defaults, but must not overwrite non-empty admin-edited values.
 
 ## Edge cases and failure policy

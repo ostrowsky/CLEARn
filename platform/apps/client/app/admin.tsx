@@ -113,8 +113,12 @@ function normalizeUploadedAudioTranscript(text: string) {
     .trim();
 }
 
+function getAdminAuthText(content: AppContent | null | undefined, key: string, fallback: string) {
+  return getAdminText(content, ['auth', key], fallback) || fallback;
+}
+
 type StatusTone = 'success' | 'error';
-type AdminAuthMode = 'setup' | 'login' | 'authenticated';
+type AdminAuthMode = 'setup' | 'login' | 'reset' | 'authenticated';
 type AdminAuthStatus = {
   configured: boolean;
   authenticated: boolean;
@@ -468,7 +472,7 @@ export default function AdminScreen() {
       setAuthPassword('');
       setAuthConfirmPassword('');
       await refreshAuthenticatedContent(nextStatus);
-      setStatus(getAdminText(content, ['auth', 'setupComplete']), 'success');
+      setStatus(getAdminAuthText(content, 'setupComplete', 'Admin account created.'), 'success');
     } catch (nextError) {
       setStatus(nextError instanceof Error ? nextError.message : String(nextError), 'error');
     } finally {
@@ -483,7 +487,28 @@ export default function AdminScreen() {
       const nextStatus = await apiClient.loginAdmin({ login: authLogin, password: authPassword });
       setAuthPassword('');
       await refreshAuthenticatedContent(nextStatus);
-      setStatus(getAdminText(content, ['auth', 'loginComplete']), 'success');
+      setStatus(getAdminAuthText(content, 'loginComplete', 'Admin login successful.'), 'success');
+    } catch (nextError) {
+      setStatus(nextError instanceof Error ? nextError.message : String(nextError), 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleResetAdminPassword() {
+    setBusy(true);
+    setStatus('', 'success');
+    try {
+      const nextStatus = await apiClient.resetAdminPassword({
+        login: authLogin,
+        recoveryEmail: authRecoveryEmail,
+        password: authPassword,
+        confirmPassword: authConfirmPassword,
+      });
+      setAuthPassword('');
+      setAuthConfirmPassword('');
+      await refreshAuthenticatedContent(nextStatus);
+      setStatus(getAdminAuthText(content, 'resetComplete', 'Admin password reset successful.'), 'success');
     } catch (nextError) {
       setStatus(nextError instanceof Error ? nextError.message : String(nextError), 'error');
     } finally {
@@ -500,7 +525,7 @@ export default function AdminScreen() {
       setAuthMode(nextStatus.configured ? 'login' : 'setup');
       setAuthPassword('');
       setAuthConfirmPassword('');
-      setStatus(getAdminText(content, ['auth', 'logoutComplete']), 'success');
+      setStatus(getAdminAuthText(content, 'logoutComplete', 'Admin session closed.'), 'success');
     } catch (nextError) {
       setStatus(nextError instanceof Error ? nextError.message : String(nextError), 'error');
     } finally {
@@ -844,6 +869,7 @@ export default function AdminScreen() {
 
   if (authMode !== 'authenticated') {
     const isSetup = authMode === 'setup' || authStatus?.configured === false;
+    const isReset = authMode === 'reset';
 
     return (
       <Screen
@@ -851,33 +877,43 @@ export default function AdminScreen() {
         brandTagline={getNestedString(asRecord(content?.meta?.ui), ['brandTagline'])}
         footerNote={getNestedString(asRecord(content?.meta?.ui), ['footerNote'])}
         watermarkText={getNestedString(asRecord(content?.meta?.ui), ['watermarkText'])}
-        title={getAdminText(content, ['auth', isSetup ? 'setupTitle' : 'loginTitle'])}
-        subtitle={getAdminText(content, ['auth', isSetup ? 'setupHint' : 'loginHint'])}
+        title={isSetup ? getAdminAuthText(content, 'setupTitle', 'Create admin access') : isReset ? getAdminAuthText(content, 'resetTitle', 'Reset admin password') : getAdminAuthText(content, 'loginTitle', 'Admin login')}
+        subtitle={isSetup ? getAdminAuthText(content, 'setupHint', 'Set the first admin login, password, confirmation, and recovery email before editing content.') : isReset ? getAdminAuthText(content, 'resetHint', 'Enter the admin login, recovery email, and a new password.') : getAdminAuthText(content, 'loginHint', 'Enter the admin credentials to manage content and backups.')}
         backHref="/sections"
         backLabel={getAdminText(content, ['openLearnerApp'])}
       >
         <View style={styles.editorCard}>
-          <Field label={getAdminText(content, ['auth', 'loginLabel'])}>
+          <Field label={getAdminAuthText(content, 'loginLabel', 'Login')}>
             <TextInput value={authLogin} onChangeText={setAuthLogin} style={styles.input} autoCapitalize="none" />
           </Field>
-          <Field label={getAdminText(content, ['auth', 'passwordLabel'])}>
+          <Field label={getAdminAuthText(content, 'passwordLabel', 'Password')}>
             <TextInput value={authPassword} onChangeText={setAuthPassword} style={styles.input} secureTextEntry />
           </Field>
-          {isSetup ? (
+          {isSetup || isReset ? (
             <>
-              <Field label={getAdminText(content, ['auth', 'confirmPasswordLabel'])}>
+              <Field label={getAdminAuthText(content, 'confirmPasswordLabel', 'Confirm password')}>
                 <TextInput value={authConfirmPassword} onChangeText={setAuthConfirmPassword} style={styles.input} secureTextEntry />
               </Field>
-              <Field label={getAdminText(content, ['auth', 'recoveryEmailLabel'])}>
+              <Field label={getAdminAuthText(content, 'recoveryEmailLabel', 'Recovery email')}>
                 <TextInput value={authRecoveryEmail} onChangeText={setAuthRecoveryEmail} style={styles.input} autoCapitalize="none" inputMode="email" />
               </Field>
             </>
           ) : null}
 
           <View style={styles.inlineActions}>
-            <Pressable style={[styles.primaryButton, busy ? styles.buttonDisabled : null]} onPress={() => void (isSetup ? handleSetupAdmin() : handleLoginAdmin())} disabled={busy}>
-              <Text style={styles.primaryButtonText}>{getAdminText(content, ['auth', isSetup ? 'setupButton' : 'loginButton'])}</Text>
+            <Pressable style={[styles.primaryButton, busy ? styles.buttonDisabled : null]} onPress={() => void (isSetup ? handleSetupAdmin() : isReset ? handleResetAdminPassword() : handleLoginAdmin())} disabled={busy}>
+              <Text style={styles.primaryButtonText}>{isSetup ? getAdminAuthText(content, 'setupButton', 'Create admin account') : isReset ? getAdminAuthText(content, 'resetButton', 'Reset password') : getAdminAuthText(content, 'loginButton', 'Log in')}</Text>
             </Pressable>
+            {!isSetup ? (
+              <Pressable style={styles.secondaryButton} onPress={() => {
+                setStatus('', 'success');
+                setAuthPassword('');
+                setAuthConfirmPassword('');
+                setAuthMode(isReset ? 'login' : 'reset');
+              }} disabled={busy}>
+                <Text style={styles.secondaryButtonText}>{isReset ? getAdminAuthText(content, 'backToLoginButton', 'Back to login') : getAdminAuthText(content, 'forgotPasswordButton', 'Forgot password?')}</Text>
+              </Pressable>
+            ) : null}
           </View>
 
           <StatusBanner text={error} tone="error" />
@@ -919,7 +955,7 @@ export default function AdminScreen() {
           <Text style={styles.secondaryButtonText}>{getAdminText(content, ['refreshAdmin'])}</Text>
         </Pressable>
         <Pressable style={styles.secondaryButton} onPress={() => void handleLogoutAdmin()} disabled={busy}>
-          <Text style={styles.secondaryButtonText}>{getAdminText(content, ['auth', 'logoutButton'])}</Text>
+          <Text style={styles.secondaryButtonText}>{getAdminAuthText(content, 'logoutButton', 'Log out')}</Text>
         </Pressable>
       </View>
 

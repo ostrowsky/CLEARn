@@ -24,6 +24,11 @@ foreach ($pattern in @(
 }
 foreach ($pattern in @(
     'getAdminText',
+    'function getAdminAuthText',
+    "getAdminAuthText\(content, 'loginButton', 'Log in'\)",
+    "getAdminAuthText\(content, 'forgotPasswordButton', 'Forgot password\?'\)",
+    "getAdminAuthText\(content, 'resetButton', 'Reset password'\)",
+    "getAdminAuthText\(content, 'backToLoginButton', 'Back to login'\)",
     'getTaxonomyValues',
     'pickWebFileAsBase64',
     'moveItem',
@@ -49,6 +54,7 @@ foreach ($pattern in @(
     'apiClient.getAdminAuthStatus',
     'apiClient.setupAdminAuth',
     'apiClient.loginAdmin',
+    'apiClient.resetAdminPassword',
     'apiClient.logoutAdmin',
     'apiClient.saveAdminContent',
     'apiClient.getAdminBackupExportUrl',
@@ -78,6 +84,7 @@ foreach ($pattern in @(
     'getAdminAuthStatus',
     'setupAdminAuth',
     'loginAdmin',
+    'resetAdminPassword',
     'logoutAdmin',
     'saveAdminContent',
     'getAdminBackupExportUrl',
@@ -94,6 +101,7 @@ foreach ($pattern in @(
     'MEDIA_UPLOADS_PATH',
     'CORS_ALLOWED_ORIGINS',
     'ADMIN_SESSION_SECRET must be set',
+    'ADMIN_COOKIE_CROSS_SITE',
     'CORS_ALLOWED_ORIGINS must list at least one production web origin',
     'APP_STORAGE_ROOT or explicit durable DEV_CONTENT_PATH, ADMIN_AUTH_PATH, and MEDIA_UPLOADS_PATH must be configured in production',
     'resolveStoragePath',
@@ -112,6 +120,7 @@ foreach ($pattern in @(
     '/api/admin/auth/status',
     '/api/admin/auth/setup',
     '/api/admin/auth/login',
+    '/api/admin/auth/reset-password',
     '/api/admin/auth/logout',
     '/api/admin/backup/export',
     '/api/admin/backup/import',
@@ -128,13 +137,22 @@ Assert-Match -Actual $routesSource -Pattern "env\.APP_ENV === 'production' && !a
 Assert-Match -Actual $routesSource -Pattern "/api/debug/logs"
 Assert-Match -Actual $routesSource -Pattern "/api/debug/log"
 
+$adminAuthSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\modules\admin\adminAuth.service.ts') -Raw
+Assert-Match -Actual $adminAuthSource -Pattern 'env\.APP_ENV === ''production'' \|\| env\.ADMIN_COOKIE_CROSS_SITE'
+Assert-Match -Actual $adminAuthSource -Pattern 'SameSite=None'
+Assert-Match -Actual $adminAuthSource -Pattern 'Secure'
+
 $clientConfigSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\src\lib\config.ts') -Raw
 Assert-Match -Actual $clientConfigSource -Pattern 'function getLocalWebApiBaseUrl'
+Assert-Match -Actual $clientConfigSource -Pattern 'function getEnvApiBaseUrl'
 Assert-Match -Actual $clientConfigSource -Pattern 'const localWebApiBaseUrl = getLocalWebApiBaseUrl\(\)'
 Assert-Match -Actual $clientConfigSource -Pattern 'if \(localWebApiBaseUrl\) \{\s*return localWebApiBaseUrl;\s*\}'
+Assert-Match -Actual $clientConfigSource -Pattern 'const envApiBaseUrl = getEnvApiBaseUrl\(\)'
+Assert-Match -Actual $clientConfigSource -Pattern 'if \(envApiBaseUrl\) \{\s*return envApiBaseUrl;\s*\}'
 $localApiIndex = $clientConfigSource.IndexOf('const localWebApiBaseUrl = getLocalWebApiBaseUrl()')
-$publicApiEnvIndex = $clientConfigSource.IndexOf('process.env.EXPO_PUBLIC_API_BASE_URL')
-Assert-True -Condition ($localApiIndex -ge 0 -and $publicApiEnvIndex -ge 0 -and $localApiIndex -lt $publicApiEnvIndex) -Message 'Local web admin must prefer localhost API before inherited preview or production API environment URLs.'
+$envApiIndex = $clientConfigSource.IndexOf('const envApiBaseUrl = getEnvApiBaseUrl()')
+$productionApiIndex = $clientConfigSource.IndexOf('return productionApiBaseUrl')
+Assert-True -Condition ($localApiIndex -ge 0 -and $envApiIndex -ge 0 -and $productionApiIndex -ge 0 -and $localApiIndex -lt $envApiIndex -and $envApiIndex -lt $productionApiIndex) -Message 'Local web admin must prefer localhost API, while public previews must prefer EXPO_PUBLIC_API_BASE_URL before production API.'
 Assert-Match -Actual $clientConfigSource -Pattern '\$\{protocol\}//\$\{hostname\}:4000'
 
 Write-TestStep 'Checking share preview exposes learner and admin routes'
@@ -162,6 +180,7 @@ foreach ($pattern in @(
     '\$maxPreviewAttempts = 3',
     'Retrying public preview with fresh tunnels',
     '\$env:LLM_STT_PROVIDER = ''selfhosted''',
+    '\$env:ADMIN_COOKIE_CROSS_SITE=''true''',
     'SELF_HOSTED_SPEECH_BASE_URL=''http://localhost:8010/v1''',
     'Starting local free STT server',
     'Wait-ForLocalSttWarmup',

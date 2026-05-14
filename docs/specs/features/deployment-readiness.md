@@ -41,6 +41,8 @@ The app can be hosted, tested, upgraded, backed up, and rolled back without disc
 - The repository root must keep Vercel-discoverable build metadata for the frontend: root `package.json`, root `vercel.json`, build command, and output directory.
 - Pull requests must include the `pr-description` skill sections: `What`, `Why`, and `Changes`.
 - Static hosting must not assume an API is available on `:4000` for non-local web domains.
+- Public Cloudflare preview builds must honor `EXPO_PUBLIC_API_BASE_URL` so the preview admin talks to the matching public API tunnel rather than production API or browser-local `localhost`.
+- Public Cloudflare preview admin sessions must use cross-site secure cookies because the web preview and API tunnel are different public origins.
 - Interactive AI, STT, TTS, admin save, backup, and upload flows require a separately hosted API; they must not silently fall through to the static SPA route.
 - Development admin sessions must remain usable on local HTTP preview origins even if the developer shell contains production HTTPS URL values.
 

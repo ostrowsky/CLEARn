@@ -98,6 +98,14 @@ function mergeBundledContentDefaults(content: AppContent, bundledContent: AppCon
     }
   }
 
+  const targetAuth = ensureObject(targetAdmin, 'auth');
+  const sourceAuth = asRecord(sourceAdmin.auth);
+  for (const key of Object.keys(sourceAuth)) {
+    if (copyMissingString(targetAuth, sourceAuth, key)) {
+      changed = true;
+    }
+  }
+
   const bundledMaterials = findMaterialsById(bundledContent);
   for (const material of findMaterialsById(content).values()) {
     const id = typeof material.id === 'string' ? material.id : '';

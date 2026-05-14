@@ -440,7 +440,7 @@ if (-not (Wait-ForLocalSttWarmup -Url "http://127.0.0.1:$localSttPort/v1/warmup"
 
 if (-not (Test-PortListening -Port $apiPort)) {
     Write-Host 'Starting API in a new window...'
-    $apiCommand = "Set-Location '$projectRoot'; `$env:APP_PORT='$apiPort'; `$env:APP_BASE_URL='http://127.0.0.1:$apiPort'; `$env:LLM_STT_PROVIDER='selfhosted'; `$env:LLM_STT_MODEL='base.en'; if ([string]::IsNullOrWhiteSpace(`$env:SELF_HOSTED_SPEECH_BASE_URL)) { `$env:SELF_HOSTED_SPEECH_BASE_URL='http://localhost:8010/v1' }; pnpm.cmd dev:api 2>&1 | Tee-Object -FilePath '$apiRuntimeLog'"
+    $apiCommand = "Set-Location '$projectRoot'; `$env:APP_PORT='$apiPort'; `$env:APP_BASE_URL='http://127.0.0.1:$apiPort'; `$env:ADMIN_COOKIE_CROSS_SITE='true'; `$env:LLM_STT_PROVIDER='selfhosted'; `$env:LLM_STT_MODEL='base.en'; if ([string]::IsNullOrWhiteSpace(`$env:SELF_HOSTED_SPEECH_BASE_URL)) { `$env:SELF_HOSTED_SPEECH_BASE_URL='http://localhost:8010/v1' }; pnpm.cmd dev:api 2>&1 | Tee-Object -FilePath '$apiRuntimeLog'"
     Start-Process powershell.exe -ArgumentList @(
         '-NoExit',
         '-ExecutionPolicy', 'Bypass',

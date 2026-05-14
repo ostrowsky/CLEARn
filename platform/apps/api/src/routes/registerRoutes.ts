@@ -596,6 +596,19 @@ export async function registerRoutes(app: FastifyInstance) {
       return reply.code(401).send({ statusCode: 401, error: 'Unauthorized', message });
     }
   });
+  app.post('/api/admin/auth/reset-password', async (request, reply) => {
+    try {
+      const session = await adminAuthService.resetPassword(request.body as never);
+      return reply.header('Set-Cookie', session.cookie).send({
+        configured: true,
+        authenticated: true,
+        login: session.login,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return reply.code(401).send({ statusCode: 401, error: 'Unauthorized', message });
+    }
+  });
   app.post('/api/admin/auth/logout', async (request, reply) => {
     const result = adminAuthService.logout();
     return reply.header('Set-Cookie', result.clearedCookie).send({ loggedOut: true });

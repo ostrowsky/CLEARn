@@ -119,7 +119,7 @@ function buildCookie(value: string, maxAgeSeconds: number) {
     `Max-Age=${maxAgeSeconds}`,
   ];
 
-  if (env.APP_ENV === 'production') {
+  if (env.APP_ENV === 'production' || env.ADMIN_COOKIE_CROSS_SITE) {
     parts.push('SameSite=None', 'Secure');
   } else {
     parts.push('SameSite=Lax');
@@ -187,6 +187,36 @@ export class AdminAuthService {
       throw new Error('Invalid admin login or password.');
     }
 
+    return this.createSession(record.login);
+  }
+
+  async resetPassword(input: { login?: unknown; recoveryEmail?: unknown; password?: unknown; confirmPassword?: unknown }) {
+    const record = await this.readAuthRecord();
+    if (!record) {
+      throw new Error('Admin account is not configured.');
+    }
+
+    const login = cleanText(input.login);
+    const recoveryEmail = cleanText(input.recoveryEmail).toLowerCase();
+    const password = String(input.password || '');
+    const confirmPassword = String(input.confirmPassword || '');
+    assertSetupInput(login, password, confirmPassword, recoveryEmail);
+
+    if (login !== record.login || recoveryEmail !== record.recoveryEmail) {
+      throw new Error('Invalid admin login or recovery email.');
+    }
+
+    const hashed = hashPassword(password);
+    const nextRecord: AdminAuthRecord = {
+      ...record,
+      passwordSalt: hashed.salt,
+      passwordHash: hashed.hash,
+      passwordIterations,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await mkdir(path.dirname(env.ADMIN_AUTH_PATH), { recursive: true });
+    await writeFile(env.ADMIN_AUTH_PATH, JSON.stringify(nextRecord, null, 2), 'utf8');
     return this.createSession(record.login);
   }
 

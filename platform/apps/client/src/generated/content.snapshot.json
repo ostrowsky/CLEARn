@@ -1,9 +1,9 @@
 {
   "meta": {
     "appTitle": "CLEARn",
-    "updatedAt": "2026-05-05T22:00:17.852Z",
+    "updatedAt": "2026-05-14T20:10:32.073Z",
     "ui": {
-      "brandTagline": "Shared web + mobile prototype",
+      "brandTagline": "",
       "footerNote": "",
       "watermarkText": "Developed by ostrowskyi@gmail.com",
       "navigation": {
@@ -167,15 +167,21 @@
           "setupHint": "Set the first admin login, password, confirmation, and recovery email before editing content.",
           "loginTitle": "Admin login",
           "loginHint": "Enter the admin credentials to manage content and backups.",
+          "resetTitle": "Reset admin password",
+          "resetHint": "Enter the admin login, recovery email, and a new password.",
           "loginLabel": "Login",
           "passwordLabel": "Password",
           "confirmPasswordLabel": "Confirm password",
           "recoveryEmailLabel": "Recovery email",
           "setupButton": "Create admin account",
           "loginButton": "Log in",
+          "resetButton": "Reset password",
+          "forgotPasswordButton": "Forgot password?",
+          "backToLoginButton": "Back to login",
           "logoutButton": "Log out",
           "setupComplete": "Admin account created.",
           "loginComplete": "Admin login successful.",
+          "resetComplete": "Admin password reset successful.",
           "logoutComplete": "Admin session closed."
         },
         "fieldLabels": {
@@ -234,7 +240,8 @@
           "moveUp": "Move up",
           "moveDown": "Move down",
           "downloadBackup": "Download full backup",
-          "restoreBackup": "Restore full backup"
+          "restoreBackup": "Restore full backup",
+          "fetchTranscript": "Fetch transcript"
         },
         "messages": {
           "savingContent": "Saving content...",
@@ -251,7 +258,10 @@
           "uploadedPattern": "Uploaded {fileName}.",
           "backupDownloadStarted": "Backup download started.",
           "backupRestored": "Backup restored successfully.",
-          "backupRestartRequired": "Restart the preview to load the restored code and data."
+          "backupRestartRequired": "Restart the preview to load the restored code and data.",
+          "videoTranscriptFetched": "Transcript loaded into the material. Save content to persist it.",
+          "audioTranscriptGenerated": "Audio transcript was added to Statement. Save content to persist it.",
+          "audioTranscriptFailed": "Audio transcript was not generated: {reason}"
         },
         "taxonomies": {
           "sectionTypes": {
@@ -1500,21 +1510,12 @@
       "eyebrow": "Meeting English practice for IT specialists",
       "type": "landing",
       "route": "/",
-      "summary": "This first CLEARn prototype covers question practice for interviews, one-to-ones, agile rituals, Q&A sessions and team meetings.",
+      "summary": "",
       "blocks": [
         {
           "id": "home-asking",
           "description": "Interrupt politely, ask after the talk, and clarify missing details.",
-          "materials": [
-            {
-              "id": "material-we87xi45",
-              "type": "video",
-              "title": "",
-              "body": "",
-              "url": "https://libertexgroup.udemy.com/course/professional-speech-english/learn/lecture/48716855#overview",
-              "alt": ""
-            }
-          ],
+          "materials": [],
           "route": "/asking",
           "kind": "nav-card",
           "title": "Practice asking questions"
@@ -1534,14 +1535,6 @@
           "description": "Hold a short text conversation with the coach and get feedback after every turn.",
           "route": "/learning-chat",
           "materials": []
-        },
-        {
-          "id": "block-pzoxkbf7",
-          "kind": "new",
-          "title": "",
-          "description": "new",
-          "route": "/new",
-          "materials": []
         }
       ],
       "title": "CLEARn"
@@ -1559,7 +1552,7 @@
           "materials": [],
           "route": "/asking/interrupt",
           "kind": "nav-card",
-          "title": "1.1 Interrupt and ask"
+          "title": "Interrupt and ask"
         },
         {
           "id": "after-talk-card",
@@ -1567,7 +1560,7 @@
           "materials": [],
           "route": "/asking/after-talk",
           "kind": "nav-card",
-          "title": "1.2 Ask after the talk"
+          "title": "Ask after the talk"
         },
         {
           "id": "without-context-card",
@@ -1575,14 +1568,14 @@
           "materials": [],
           "route": "/asking/without-context",
           "kind": "nav-card",
-          "title": "1.3 Practice forming grammatically correct questions."
+          "title": "Practice forming grammatically correct questions."
         }
       ],
       "title": "Choose the question skill you want to rehearse."
     },
     {
       "id": "asking-interrupt",
-      "eyebrow": "1.1 Interrupt and ask",
+      "eyebrow": "Interrupt and ask",
       "type": "exercise-answering-unnecessary",
       "route": "/asking/interrupt",
       "summary": "The \"Wait, What?\" Recovery Guide",
@@ -1597,7 +1590,8 @@
               "alt": "See the video",
               "type": "video",
               "title": "",
-              "body": "Sorry, I missed that. Could you say that again, please?"
+              "body": "Sorry, I missed that. Could you say that again, please?",
+              "meta": {}
             },
             {
               "id": "hear-text-2",
@@ -1605,12 +1599,13 @@
               "alt": "didnt catch.mp4",
               "type": "video",
               "title": "",
-              "body": "Sorry, I didn't catch it. Could you repeat that, please?"
+              "body": "Sorry, I didn't catch it. Could you repeat that, please?",
+              "meta": {}
             }
           ],
           "route": "",
           "kind": "panel",
-          "title": "1.1.1 You didn't hear",
+          "title": "You didn't hear",
           "meta": {
             "layoutWidth": "half"
           }
@@ -1625,7 +1620,8 @@
               "alt": "follow.mp4",
               "type": "video",
               "title": "",
-              "body": "Sorry, I don't quite follow you. Could you just run through that again, please?"
+              "body": "Sorry, I don't quite follow you. Could you just run through that again, please?",
+              "meta": {}
             },
             {
               "id": "understand-text-2",
@@ -1633,20 +1629,13 @@
               "alt": "see.mp4",
               "type": "video",
               "title": "",
-              "body": "Sorry, I don't quite see what you mean. Could you just explain that, please?"
-            },
-            {
-              "id": "understand-video",
-              "url": "",
-              "alt": "",
-              "type": "video",
-              "title": "Repeat-after-me video",
-              "body": "Add a training video here when ready."
+              "body": "Sorry, I don't quite see what you mean. Could you just explain that, please?",
+              "meta": {}
             }
           ],
           "route": "",
           "kind": "panel",
-          "title": "1.1.2 You didn't understand",
+          "title": "You didn't understand",
           "meta": {
             "layoutWidth": "half"
           }
@@ -1764,22 +1753,14 @@
           ],
           "route": "",
           "kind": "practice-clarify",
-          "title": "1.1.3 You Want to Clarify the Missed Detail"
-        },
-        {
-          "id": "block-tsed9be7",
-          "kind": "nav-card",
-          "title": "1.1.4 Another block",
-          "description": "",
-          "route": "",
-          "materials": []
+          "title": "You Want to Clarify the Missed Detail"
         }
       ],
       "title": "How to Ask for the Details You Missed"
     },
     {
       "id": "asking-after-talk",
-      "eyebrow": "1.2 Ask after the talk",
+      "eyebrow": "Ask after the talk",
       "type": "practice-ask-after",
       "route": "/asking/after-talk",
       "summary": "Smart Strategies for Post-Talk Q&A",
@@ -1794,7 +1775,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You mentioned ..."
+              "body": "You mentioned ...",
+              "meta": {}
             },
             {
               "id": "context-2",
@@ -1802,7 +1784,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You spoke about ..."
+              "body": "You spoke about ...",
+              "meta": {}
             },
             {
               "id": "context-3",
@@ -1810,7 +1793,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You referred to ..."
+              "body": "You referred to ...",
+              "meta": {}
             },
             {
               "id": "context-4",
@@ -1818,7 +1802,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You highlighted ..."
+              "body": "You highlighted ...",
+              "meta": {}
             },
             {
               "id": "context-5",
@@ -1826,7 +1811,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You gave the example of ..."
+              "body": "You gave the example of ...",
+              "meta": {}
             },
             {
               "id": "context-6",
@@ -1834,7 +1820,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You said that ..."
+              "body": "You said that ...",
+              "meta": {}
             },
             {
               "id": "context-7",
@@ -1842,7 +1829,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "I may have missed the point about ..."
+              "body": "I may have missed the point about ...",
+              "meta": {}
             },
             {
               "id": "context-8",
@@ -1850,7 +1838,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "I'm not sure I fully understood ..."
+              "body": "I'm not sure I fully understood ...",
+              "meta": {}
             },
             {
               "id": "context-9",
@@ -1858,7 +1847,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "There is one point I'm not clear about ..."
+              "body": "There is one point I'm not clear about ...",
+              "meta": {}
             },
             {
               "id": "context-10",
@@ -1866,12 +1856,13 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You did not mention ..."
+              "body": "You did not mention ...",
+              "meta": {}
             }
           ],
           "route": "",
           "kind": "panel",
-          "title": "1.2.1 Context"
+          "title": "Context"
         },
         {
           "id": "follow-up-leads",
@@ -1883,7 +1874,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "explain ... in a bit more detail?"
+              "body": "explain ... in a bit more detail?",
+              "meta": {}
             },
             {
               "id": "follow-2",
@@ -1891,7 +1883,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "talk us through ... ?"
+              "body": "talk us through ... ?",
+              "meta": {}
             },
             {
               "id": "follow-3",
@@ -1899,7 +1892,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "be a little more specific about ...?"
+              "body": "be a little more specific about ...?",
+              "meta": {}
             },
             {
               "id": "follow-4",
@@ -1907,7 +1901,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "tell us how ... works in practice?"
+              "body": "tell us how ... works in practice?",
+              "meta": {}
             },
             {
               "id": "follow-5",
@@ -1915,7 +1910,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "elaborate on that?"
+              "body": "elaborate on that?",
+              "meta": {}
             },
             {
               "id": "follow-6",
@@ -1923,7 +1919,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "say a bit more about ...?"
+              "body": "say a bit more about ...?",
+              "meta": {}
             },
             {
               "id": "follow-7",
@@ -1931,12 +1928,22 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "go over that again for us?"
+              "body": "go over that again for us?",
+              "meta": {}
+            },
+            {
+              "id": "material-441yvear",
+              "type": "video",
+              "title": "TEST",
+              "body": "",
+              "url": "https://www.youtube.com/watch?v=s7aNuultC_E&&start=700&end=720",
+              "alt": "TEST",
+              "meta": {}
             }
           ],
           "route": "",
           "kind": "panel",
-          "title": "1.2.2 Could you ..."
+          "title": "Could you ..."
         },
         {
           "id": "after-talk-practice",
@@ -1961,7 +1968,7 @@
               "url": "https://www.youtube.com/watch?v=s7aNuultC_E&start=211&end=253",
               "alt": "Why Outcomes Matter More Than Code Output",
               "meta": {
-                "transcript": "I think those are still what makes me tick, at least as engineers specifically. But there are different flavors of engineers.\nSome people really like the the hands on part, and they really like and they hold a lot of passion in the craft of creating code\nwhere they say, this is elegant code and we've refactored it and it's not really nice. That's the female part. I think that's impacted the most so far.\nYeah. It's look, if you if you look at software development, at least in my opinion,\nwhat we used to do is we would have a problem with challenge. And we would start figuring out what is the algorithm\nto get to a solution, aka the coding, the, you know,"
+                "transcript": "I think those are still what makes me tick, at least as engineers specifically. But there are different flavors of engineers. Some people really like the the hands on part, and they really like and they hold a lot of passion in the craft of creating code where they say, this is elegant code and we've refactored it and it's not really nice. That's the female part. I think that's impacted the most so far. Yeah. It's look, if you if you look at software development, at least in my opinion, what we used to do is we would have a problem with challenge. And we would start figuring out what is the algorithm to get to a solution, aka the coding, the, you know,"
               }
             },
             {
@@ -1972,7 +1979,7 @@
               "url": "https://www.youtube.com/watch?v=s7aNuultC_E&start=368&end=457",
               "alt": "",
               "meta": {
-                "transcript": "You know, is better at doing one task than another. And, and, you know, keeps the control and,\nand has some, some responsibilities there, but it should be seamless. And with that additional process involved\nin the operations of the, in the outcomes because that is what we're actually doing, that algorithm algorithm that will be solved by AI.\nI will take care of that work for us. And when it doesn't work, we can still dive into the code, into the nitty gritty.\nSome things are maybe way too bleeding edge for an agent to understand what could be.\nBut that is then the more some work, right? Is you asking us to set up the, internal, internal of thing.\nAnd one of the things that came out have to it is that that's actually the work that developers enjoy doing.\nAnd figuring out to the solution, figuring out the outcomes. So, yeah, it is shifting. It is changing.\nI think that for the for the coders that like to code, That's great. We still have people also writing, the Linux kernel, right?"
+                "transcript": "you know, is better at doing one task than another. And, and, you know, keeps the control and, and has some, some responsibilities there, but it should be seamless. And with that additional process involved in the operations of the, in the outcomes because that is what we're actually doing, that algorithm algorithm that will be solved by AI. I will take care of that work for us. And when it doesn't work, we can still dive into the code, into the nitty gritty. Some things are maybe way too bleeding edge for an agent to understand what could be. But that is then the more some work, right? Is you asking us to set up the, internal, internal of thing. And one of the things that came out have to it is that that's actually the work that developers enjoy doing. And figuring out to the solution, figuring out the outcomes. So, yeah, it is shifting. It is changing. I think that for the for the coders that like to code, That's great. We still have people also writing, the Linux kernel, right? We still have people that worry about, you know, that's writing assembly. We have people that write COBOL. That's all fine. That will change. But. Yeah. There's something to do for the room. I think we're in really exciting times, as you mentioned, where teams are kind of navigating this newer way of working. For me, it's probably one of the first times where I've seen this much impact on what I did as a craft."
               }
             },
             {
@@ -1983,17 +1990,30 @@
               "url": "https://www.youtube.com/watch?v=s7aNuultC_E&start=1934&end=1991",
               "alt": "",
               "meta": {
-                "transcript": "But but yes, support,support the support maker, support the contributors and the companies that, need to project allies that have the time and and resources in that sense.\nWell, but yes, you need to add something really special. Yeah.\nOtherwise it's not good enough anymore. I feel like open source is, the value of open source and kind of the monetization model.\nIt was always challenging. So open source projects really nailed it. And they are thriving. And the other ones that added it like an add on that one is the, I think\nimpacted the most in terms of now people being able to kind of copy and and merge things, which means if that incentive is gone,\nI hope we don't get into a cycle where we have less and less things that are open out for people to use.\nBecause I do love a lot of my open source software, and I do think it is."
+                "transcript": "should pay for open source. But but yes, support, support the support maker, support the contributors and the companies that, need to project allies that have the time and and resources in that sense. Well, but yes, you need to add something really special. Yeah. Otherwise it's not good enough anymore. I feel like open source is, the value of open source and kind of the monetization model. It was always challenging. So open source projects really nailed it. And they are thriving. And the other ones that added it like an add on that one is the, I think impacted the most in terms of now people being able to kind of copy and and merge things, which means if that incentive is gone, I hope we don't get into a cycle where we have less and less things that are open out for people to use. Because I do love a lot of my open source software, and I do think it is,"
               }
             },
             {
-              "id": "material-gcy1s9sx",
+              "id": "material-3fzhpqw3",
               "type": "video",
-              "title": "Dealing with Questions",
+              "title": "Why Junior Engineers Are Actually in High Demand?",
               "body": "",
-              "url": "https://libertexgroup.udemy.com/course/professional-speech-english/learn/lecture/48724233",
+              "url": "https://www.youtube.com/watch?v=s7aNuultC_E&&start=600&end=700",
+              "alt": "Why Junior Engineers Are Actually in High Demand?",
+              "meta": {
+                "transcript": "They are more native to the technology. They are more able to go beyond, the like what some view as classic developer work. They're not too opinionated on that yet. They're, you know, willing to use AI to do something beyond what is in their original job description. They're the change agents. So that's also a way to look, to look up, edit. And I think that makes perfect sense. And my expectation is that what we'll see happening is that at some point, this trend will be broken. And we will actually see that junior engineers becoming high demand, because these junior engineers are able to navigate this more perfectly. They can handle so much, the, ambiguity that will, certainly, certainly exist in software engineering. And the senior engineers can be there to as, as a means, to codify, their tribal knowledge, to codify best practices, so that agents and humans can leverage that and also to train these junior engineers because we, we we need, a steady supply of, of people that will be, able to, to become like, you know, senior software engineers at some point in their career. Then then there's also the profile. So instead of, like, only looking at T-shaped, engineers, we will also see and shape the engineers that are, you know,"
+              }
+            },
+            {
+              "id": "material-nfz40ueb",
+              "type": "video",
+              "title": "New material",
+              "body": "",
+              "url": "https://www.youtube.com/watch?v=s7aNuultC_E&start=1800&end=1810",
               "alt": "",
-              "meta": {}
+              "meta": {
+                "transcript": "and his stance was really okay. The if the baseline has moved because the baseline is now you have output with regards to AI, you still have to add value on top because otherwise anyone can do the same."
+              }
             }
           ]
         }
@@ -2031,39 +2051,7 @@
           "materials": [],
           "route": "/answering/mixed",
           "kind": "nav-card",
-          "title": "2.0 Start a 10-question mixed session"
-        },
-        {
-          "id": "answer-good-card",
-          "description": "Practise useful, confident answers that move the conversation forward.",
-          "materials": [],
-          "route": "/answering/good",
-          "kind": "nav-card",
-          "title": "2.1 Somebody asked you a good question"
-        },
-        {
-          "id": "answer-difficult-card",
-          "description": "Practise calm answers for risk, delay and challenge questions.",
-          "materials": [],
-          "route": "/answering/difficult",
-          "kind": "nav-card",
-          "title": "2.2 Somebody asked you a difficult question"
-        },
-        {
-          "id": "answer-unnecessary-card",
-          "description": "Practise brief answers and polite redirection when a question is too detailed.",
-          "materials": [],
-          "route": "/answering/unnecessary",
-          "kind": "nav-card",
-          "title": "2.3 Somebody asked you an unnecessary question"
-        },
-        {
-          "id": "answer-irrelevant-card",
-          "description": "Practise bridging back to the meeting agenda without sounding rude.",
-          "materials": [],
-          "route": "/answering/irrelevant",
-          "kind": "nav-card",
-          "title": "2.4 Somebody asked you an irrelevant question"
+          "title": "Start a 10-question mixed session"
         }
       ],
       "title": "Choose the kind of question you want to answer."
@@ -2192,7 +2180,8 @@
               "title": "Expansion path",
               "body": "Text chat is live now. The same session contract already reserves space for future speech-to-text input and text-to-speech playback.",
               "url": "",
-              "alt": ""
+              "alt": "",
+              "meta": {}
             }
           ]
         },
@@ -2208,7 +2197,8 @@
               "title": "How it works",
               "body": "Each turn has two layers: a realistic reply from the conversation partner and a short coaching note about your English.",
               "url": "",
-              "alt": ""
+              "alt": "",
+              "meta": {}
             }
           ]
         }
@@ -2235,7 +2225,8 @@
               "title": "Session flow",
               "body": "You will answer 10 questions across good, difficult, unnecessary, and irrelevant question types. The app checks your politeness and grammar after every answer.",
               "url": "",
-              "alt": ""
+              "alt": "",
+              "meta": {}
             }
           ]
         },
@@ -2270,7 +2261,8 @@
               "title": "Text material",
               "body": "Text body: hello",
               "url": "",
-              "alt": ""
+              "alt": "",
+              "meta": {}
             },
             {
               "id": "admin-image-9900af68",
@@ -2278,7 +2270,8 @@
               "title": "Image material",
               "body": "Image description",
               "url": "/uploads/diagram-f177830964.png",
-              "alt": "Diagram preview"
+              "alt": "Diagram preview",
+              "meta": {}
             },
             {
               "id": "admin-video-9900af68",
@@ -2286,7 +2279,8 @@
               "title": "Video material",
               "body": "Video description",
               "url": "/uploads/walkthrough-e0761771a3.mp4",
-              "alt": "Walkthrough"
+              "alt": "Walkthrough",
+              "meta": {}
             },
             {
               "id": "admin-audio-9900af68",
@@ -2310,7 +2304,8 @@
               "title": "New material",
               "body": "",
               "url": "",
-              "alt": ""
+              "alt": "",
+              "meta": {}
             }
           ]
         },
@@ -2327,7 +2322,8 @@
               "title": "Secondary text",
               "body": "Secondary body",
               "url": "",
-              "alt": ""
+              "alt": "",
+              "meta": {}
             }
           ]
         }

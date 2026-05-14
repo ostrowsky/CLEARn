@@ -1,7 +1,7 @@
 {
   "meta": {
     "appTitle": "CLEARn",
-    "updatedAt": "2026-05-12T21:01:56.701Z",
+    "updatedAt": "2026-05-14T20:10:32.073Z",
     "ui": {
       "brandTagline": "",
       "footerNote": "",
@@ -167,15 +167,21 @@
           "setupHint": "Set the first admin login, password, confirmation, and recovery email before editing content.",
           "loginTitle": "Admin login",
           "loginHint": "Enter the admin credentials to manage content and backups.",
+          "resetTitle": "Reset admin password",
+          "resetHint": "Enter the admin login, recovery email, and a new password.",
           "loginLabel": "Login",
           "passwordLabel": "Password",
           "confirmPasswordLabel": "Confirm password",
           "recoveryEmailLabel": "Recovery email",
           "setupButton": "Create admin account",
           "loginButton": "Log in",
+          "resetButton": "Reset password",
+          "forgotPasswordButton": "Forgot password?",
+          "backToLoginButton": "Back to login",
           "logoutButton": "Log out",
           "setupComplete": "Admin account created.",
           "loginComplete": "Admin login successful.",
+          "resetComplete": "Admin password reset successful.",
           "logoutComplete": "Admin session closed."
         },
         "fieldLabels": {
@@ -1504,7 +1510,7 @@
       "eyebrow": "Meeting English practice for IT specialists",
       "type": "landing",
       "route": "/",
-      "summary": "This first CLEARn prototype covers question practice for interviews, one-to-ones, agile rituals, Q&A sessions and team meetings.",
+      "summary": "",
       "blocks": [
         {
           "id": "home-asking",
@@ -1528,14 +1534,6 @@
           "title": "Try the AI learning chat",
           "description": "Hold a short text conversation with the coach and get feedback after every turn.",
           "route": "/learning-chat",
-          "materials": []
-        },
-        {
-          "id": "block-pzoxkbf7",
-          "kind": "new",
-          "title": "",
-          "description": "new",
-          "route": "/new",
           "materials": []
         }
       ],
@@ -1592,7 +1590,8 @@
               "alt": "See the video",
               "type": "video",
               "title": "",
-              "body": "Sorry, I missed that. Could you say that again, please?"
+              "body": "Sorry, I missed that. Could you say that again, please?",
+              "meta": {}
             },
             {
               "id": "hear-text-2",
@@ -1600,7 +1599,8 @@
               "alt": "didnt catch.mp4",
               "type": "video",
               "title": "",
-              "body": "Sorry, I didn't catch it. Could you repeat that, please?"
+              "body": "Sorry, I didn't catch it. Could you repeat that, please?",
+              "meta": {}
             }
           ],
           "route": "",
@@ -1620,7 +1620,8 @@
               "alt": "follow.mp4",
               "type": "video",
               "title": "",
-              "body": "Sorry, I don't quite follow you. Could you just run through that again, please?"
+              "body": "Sorry, I don't quite follow you. Could you just run through that again, please?",
+              "meta": {}
             },
             {
               "id": "understand-text-2",
@@ -1628,7 +1629,8 @@
               "alt": "see.mp4",
               "type": "video",
               "title": "",
-              "body": "Sorry, I don't quite see what you mean. Could you just explain that, please?"
+              "body": "Sorry, I don't quite see what you mean. Could you just explain that, please?",
+              "meta": {}
             }
           ],
           "route": "",
@@ -1773,7 +1775,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You mentioned ..."
+              "body": "You mentioned ...",
+              "meta": {}
             },
             {
               "id": "context-2",
@@ -1781,7 +1784,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You spoke about ..."
+              "body": "You spoke about ...",
+              "meta": {}
             },
             {
               "id": "context-3",
@@ -1789,7 +1793,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You referred to ..."
+              "body": "You referred to ...",
+              "meta": {}
             },
             {
               "id": "context-4",
@@ -1797,7 +1802,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You highlighted ..."
+              "body": "You highlighted ...",
+              "meta": {}
             },
             {
               "id": "context-5",
@@ -1805,7 +1811,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You gave the example of ..."
+              "body": "You gave the example of ...",
+              "meta": {}
             },
             {
               "id": "context-6",
@@ -1813,7 +1820,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You said that ..."
+              "body": "You said that ...",
+              "meta": {}
             },
             {
               "id": "context-7",
@@ -1821,7 +1829,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "I may have missed the point about ..."
+              "body": "I may have missed the point about ...",
+              "meta": {}
             },
             {
               "id": "context-8",
@@ -1829,7 +1838,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "I'm not sure I fully understood ..."
+              "body": "I'm not sure I fully understood ...",
+              "meta": {}
             },
             {
               "id": "context-9",
@@ -1837,7 +1847,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "There is one point I'm not clear about ..."
+              "body": "There is one point I'm not clear about ...",
+              "meta": {}
             },
             {
               "id": "context-10",
@@ -1845,7 +1856,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "You did not mention ..."
+              "body": "You did not mention ...",
+              "meta": {}
             }
           ],
           "route": "",
@@ -1862,7 +1874,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "explain ... in a bit more detail?"
+              "body": "explain ... in a bit more detail?",
+              "meta": {}
             },
             {
               "id": "follow-2",
@@ -1870,7 +1883,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "talk us through ... ?"
+              "body": "talk us through ... ?",
+              "meta": {}
             },
             {
               "id": "follow-3",
@@ -1878,7 +1892,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "be a little more specific about ...?"
+              "body": "be a little more specific about ...?",
+              "meta": {}
             },
             {
               "id": "follow-4",
@@ -1886,7 +1901,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "tell us how ... works in practice?"
+              "body": "tell us how ... works in practice?",
+              "meta": {}
             },
             {
               "id": "follow-5",
@@ -1894,7 +1910,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "elaborate on that?"
+              "body": "elaborate on that?",
+              "meta": {}
             },
             {
               "id": "follow-6",
@@ -1902,7 +1919,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "say a bit more about ...?"
+              "body": "say a bit more about ...?",
+              "meta": {}
             },
             {
               "id": "follow-7",
@@ -1910,7 +1928,8 @@
               "alt": "",
               "type": "text",
               "title": "Phrase",
-              "body": "go over that again for us?"
+              "body": "go over that again for us?",
+              "meta": {}
             },
             {
               "id": "material-441yvear",
@@ -2033,38 +2052,6 @@
           "route": "/answering/mixed",
           "kind": "nav-card",
           "title": "Start a 10-question mixed session"
-        },
-        {
-          "id": "answer-good-card",
-          "description": "Practise useful, confident answers that move the conversation forward.",
-          "materials": [],
-          "route": "/answering/good",
-          "kind": "nav-card",
-          "title": "Somebody asked you a good question"
-        },
-        {
-          "id": "answer-difficult-card",
-          "description": "Practise calm answers for risk, delay and challenge questions.",
-          "materials": [],
-          "route": "/answering/difficult",
-          "kind": "nav-card",
-          "title": "Somebody asked you a difficult question"
-        },
-        {
-          "id": "answer-unnecessary-card",
-          "description": "Practise brief answers and polite redirection when a question is too detailed.",
-          "materials": [],
-          "route": "/answering/unnecessary",
-          "kind": "nav-card",
-          "title": "Somebody asked you an unnecessary question"
-        },
-        {
-          "id": "answer-irrelevant-card",
-          "description": "Practise bridging back to the meeting agenda without sounding rude.",
-          "materials": [],
-          "route": "/answering/irrelevant",
-          "kind": "nav-card",
-          "title": "Somebody asked you an irrelevant question"
         }
       ],
       "title": "Choose the kind of question you want to answer."
@@ -2193,7 +2180,8 @@
               "title": "Expansion path",
               "body": "Text chat is live now. The same session contract already reserves space for future speech-to-text input and text-to-speech playback.",
               "url": "",
-              "alt": ""
+              "alt": "",
+              "meta": {}
             }
           ]
         },
@@ -2209,7 +2197,8 @@
               "title": "How it works",
               "body": "Each turn has two layers: a realistic reply from the conversation partner and a short coaching note about your English.",
               "url": "",
-              "alt": ""
+              "alt": "",
+              "meta": {}
             }
           ]
         }
@@ -2236,7 +2225,8 @@
               "title": "Session flow",
               "body": "You will answer 10 questions across good, difficult, unnecessary, and irrelevant question types. The app checks your politeness and grammar after every answer.",
               "url": "",
-              "alt": ""
+              "alt": "",
+              "meta": {}
             }
           ]
         },
@@ -2271,7 +2261,8 @@
               "title": "Text material",
               "body": "Text body: hello",
               "url": "",
-              "alt": ""
+              "alt": "",
+              "meta": {}
             },
             {
               "id": "admin-image-9900af68",
@@ -2279,7 +2270,8 @@
               "title": "Image material",
               "body": "Image description",
               "url": "/uploads/diagram-f177830964.png",
-              "alt": "Diagram preview"
+              "alt": "Diagram preview",
+              "meta": {}
             },
             {
               "id": "admin-video-9900af68",
@@ -2287,7 +2279,8 @@
               "title": "Video material",
               "body": "Video description",
               "url": "/uploads/walkthrough-e0761771a3.mp4",
-              "alt": "Walkthrough"
+              "alt": "Walkthrough",
+              "meta": {}
             },
             {
               "id": "admin-audio-9900af68",
@@ -2311,7 +2304,8 @@
               "title": "New material",
               "body": "",
               "url": "",
-              "alt": ""
+              "alt": "",
+              "meta": {}
             }
           ]
         },
@@ -2328,7 +2322,8 @@
               "title": "Secondary text",
               "body": "Secondary body",
               "url": "",
-              "alt": ""
+              "alt": "",
+              "meta": {}
             }
           ]
         }

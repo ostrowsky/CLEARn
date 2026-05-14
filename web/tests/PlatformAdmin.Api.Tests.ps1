@@ -155,6 +155,7 @@ try {
     $protectedJson = $protectedContent.Content | ConvertFrom-Json
     Assert-Equal -Expected 'Fetch transcript' -Actual ([string]$protectedJson.meta.ui.admin.actions.fetchTranscript) -Message 'Admin content should migrate newly bundled admin action labels into old mutable storage.'
     Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$protectedJson.meta.ui.admin.messages.videoTranscriptFetched)) -Message 'Admin content should migrate newly bundled admin messages into old mutable storage.'
+    Assert-Equal -Expected 'Forgot password?' -Actual ([string]$protectedJson.meta.ui.admin.auth.forgotPasswordButton) -Message 'Admin content should migrate newly bundled admin auth labels into old mutable storage.'
     $migratedVideoLibrary = (($protectedJson.sections | Where-Object { $_.id -eq 'asking-after-talk' } | Select-Object -First 1).blocks | Where-Object { $_.id -eq 'block-ayctl2c6' } | Select-Object -First 1)
     $migratedVideo = @($migratedVideoLibrary.materials | Where-Object { $_.type -eq 'video' } | Select-Object -First 1)[0]
     Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$migratedVideo.meta.transcript)) -Message 'Admin content should migrate bundled video transcripts into old mutable storage when the material ID matches.'
@@ -186,6 +187,36 @@ try {
     }
 
     Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/login" -Method Post -Payload @{ login = 'admin'; password = 'secret-123' } -Session $adminSession | Out-Null
+
+    try {
+        Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/reset-password" -Method Post -Payload @{
+            login = 'admin'
+            recoveryEmail = 'wrong@example.com'
+            password = 'new-secret-123'
+            confirmPassword = 'new-secret-123'
+        } -Session $adminSession | Out-Null
+        throw 'Expected password reset to reject an invalid recovery email.'
+    }
+    catch {
+        Assert-Match -Actual $_.Exception.Message -Pattern '401|Unauthorized'
+    }
+
+    Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/reset-password" -Method Post -Payload @{
+        login = 'admin'
+        recoveryEmail = 'admin@example.com'
+        password = 'new-secret-123'
+        confirmPassword = 'new-secret-123'
+    } -Session $adminSession | Out-Null
+
+    try {
+        Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/login" -Method Post -Payload @{ login = 'admin'; password = 'secret-123' } -Session $adminSession | Out-Null
+        throw 'Expected old password to fail after reset.'
+    }
+    catch {
+        Assert-Match -Actual $_.Exception.Message -Pattern '401|Unauthorized'
+    }
+
+    Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/login" -Method Post -Payload @{ login = 'admin'; password = 'new-secret-123' } -Session $adminSession | Out-Null
 
     Write-TestStep 'Platform API accepts large admin media uploads'
     $bytes = New-Object byte[] (2MB)

@@ -45,6 +45,7 @@ const schema = z.object({
   ADMIN_AUTH_PATH: z.string().default(defaultAdminAuthPath),
   MEDIA_UPLOADS_PATH: z.string().default(defaultMediaUploadsPath),
   ADMIN_SESSION_SECRET: z.string().optional(),
+  ADMIN_COOKIE_CROSS_SITE: z.coerce.boolean().default(false),
   CORS_ALLOWED_ORIGINS: z.string().optional(),
   HTTP_BODY_LIMIT_BYTES: z.coerce.number().default(26214400),
   TRANSCRIPT_FETCH_PROVIDER: z.enum(['auto', 'browserless', 'direct']).default('auto'),
