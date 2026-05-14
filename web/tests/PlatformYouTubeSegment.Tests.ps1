@@ -68,6 +68,7 @@ foreach ($pattern in @(
     'const innerTubeTracks = await fetchInnerTubeCaptionTracks\(apiKey\)',
     'const tracks = innerTubeTracks\.length \? innerTubeTracks : windowTracks\.length \? windowTracks : htmlTracks',
     'fetchTimedTextSegments',
+    'method: ''fetch''',
     'htmlHasPlayerResponse',
     'browserless-timedtext',
     'TRANSCRIPT_FETCH_PROVIDER',
@@ -84,6 +85,7 @@ foreach ($pattern in @(
 }
 
 Assert-True -Condition ($transcriptRouteSource -cnotmatch 'EXPO_PUBLIC.*BROWSERLESS') -Message 'Browserless credentials must never be exposed through frontend public variables.'
+Assert-True -Condition ($transcriptRouteSource -cnotmatch 'page\.goto\(candidate\.url') -Message 'Browserless caption downloads must not navigate the page to caption URLs because that path times out on hosted production.'
 Assert-Match -Actual $transcriptRouteSource -Pattern 'if \(!includeDebug && result\.available\) cache\.set\(url, result\)'
 Assert-True -Condition ($transcriptRouteSource -cnotmatch 'if \(!includeDebug\) cache\.set\(url, result\)') -Message 'YouTube transcript route must not cache failed transcript lookups because Browserless/YouTube availability can recover after provider fixes or retries.'
 

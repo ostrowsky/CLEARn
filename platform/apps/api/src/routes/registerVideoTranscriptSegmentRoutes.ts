@@ -240,27 +240,10 @@ function getBrowserlessFunctionCode() {
 
     const attempts = [];
     for (const candidate of candidates) {
-      let raw = await page.evaluate(async (url) => {
+      const raw = await page.evaluate(async (url) => {
         const response = await fetch(url, { credentials: 'include' });
         return { ok: response.ok, status: response.status, text: await response.text(), method: 'fetch' };
       }, candidate.url);
-
-      if (raw.ok && !String(raw.text || '').trim()) {
-        raw = await page.goto(candidate.url, { waitUntil: 'domcontentloaded', timeout: timeoutMs })
-          .then(async (response) => ({
-            ok: Boolean(response && response.ok()),
-            status: response ? response.status() : 0,
-            text: response && typeof response.text === 'function' ? await response.text() : await page.evaluate(() => document.body ? document.body.innerText : ''),
-            method: 'page-goto',
-          }))
-          .catch((error) => ({
-            ok: false,
-            status: 0,
-            text: '',
-            method: 'page-goto',
-            error: error instanceof Error ? error.message : String(error),
-          }));
-      }
 
       const segments = raw.ok && raw.text ? await parsePayloadToSegments(raw.text) : [];
       attempts.push({

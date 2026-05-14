@@ -28,6 +28,7 @@ Learners see and practice only the configured video clip segment, and transcript
 - Hosted production environments must support configuring a YouTube transcript proxy through environment variables, because YouTube may block datacenter IPs even when the same transcript request works from localhost.
 - Hosted production environments may route transcript fetching through a Browserless provider when `TRANSCRIPT_FETCH_PROVIDER=browserless`; this provider must call Browserless server-side only, keep the API key out of the frontend, extract YouTube caption tracks in a browser context, and return only transcript text for the configured `[start,end)` segment.
 - Hosted Browserless transcript fetching must use residential proxy egress by default, because YouTube may hide caption tracks from datacenter Browserless sessions even when the watch page and InnerTube API key are visible.
+- Browserless caption-track downloads must use in-page `fetch` from the YouTube page context and must not navigate the browser page to the caption URL, because navigation-based downloads can exceed hosted request timeouts.
 - Browserless transcript fetching must not rely only on `window.ytInitialPlayerResponse`; it must also parse the rendered watch-page HTML, retry through the YouTube consent cookie when needed, use the page `INNERTUBE_API_KEY` for Android InnerTube caption discovery, and fall back to `api/timedtext` before returning "not found".
 - On mobile/native clients where inline web embedding is unavailable, the material remains openable through the external media button.
 
