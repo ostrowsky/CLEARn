@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import type { AnsweringMode, AppContent, ContentBlock, ContentMaterial } from '@softskills/domain';
 import { Screen } from '../src/components/Screen';
+import { AdminMediaBackupControls } from '../src/components/AdminMediaBackupControls';
 import {
   type AdminSchemaDrafts,
   applyAdminDrafts,
@@ -831,6 +832,8 @@ export default function AdminScreen() {
       backHref="/sections"
       backLabel={getAdminText(content, ['openLearnerApp'])}
     >
+      <AdminMediaBackupControls authenticated={authMode === 'authenticated'} />
+
       <View style={styles.actionRow}>
         <Pressable style={styles.primaryButton} onPress={() => void saveContent()} disabled={busy}>
           <Text style={styles.primaryButtonText}>{getAdminText(content, ['saveContent'])}</Text>

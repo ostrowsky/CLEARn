@@ -12,6 +12,10 @@ share-admin-link.txt
 tmp-write-test.txt
 tmp.txt
 *.log
+.env
+*/.env
+.env.local
+*/.env.local
 web/data/admin-auth.json
 __pycache__/
 *.pyc

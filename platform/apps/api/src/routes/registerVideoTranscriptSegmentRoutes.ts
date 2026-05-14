@@ -103,6 +103,8 @@ function getBrowserlessFunctionCode() {
   const start = Number(context.start || 0);
   const end = Number(context.end || (start + 45));
   const languages = Array.isArray(context.languages) ? context.languages : ['ru', 'ru-RU', 'en', 'en-US', 'en-GB'];
+  const timeoutMs = Math.min(Number(context.timeoutMs || 90000), 90000);
+  const innertubeClientVersion = '20.10.38';
 
   function cleanText(value) {
     return String(value || '')
@@ -114,6 +116,33 @@ function getBrowserlessFunctionCode() {
       .replace(/&gt;/g, '>')
       .replace(/\\s+/g, ' ')
       .trim();
+  }
+
+  function extractBalancedJson(source, marker) {
+    const markerIndex = String(source || '').indexOf(marker);
+    if (markerIndex < 0) return '';
+    const startIndex = source.indexOf('{', markerIndex + marker.length);
+    if (startIndex < 0) return '';
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let index = startIndex; index < source.length; index += 1) {
+      const char = source[index];
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (char === '\\\\') escaped = true;
+        else if (char === '"') inString = false;
+        continue;
+      }
+      if (char === '"') inString = true;
+      else if (char === '{') depth += 1;
+      else if (char === '}') {
+        depth -= 1;
+        if (depth === 0) return source.slice(startIndex, index + 1);
+      }
+    }
+    return '';
   }
 
   function parseJson3(payload) {
@@ -142,6 +171,15 @@ function getBrowserlessFunctionCode() {
     })).filter((segment) => Number.isFinite(segment.start) && segment.text);
   }
 
+  async function parsePayloadToSegments(rawText) {
+    if (!String(rawText || '').trim()) return [];
+    try {
+      return parseJson3(JSON.parse(rawText));
+    } catch {
+      return parseXml(rawText);
+    }
+  }
+
   function getCaptionTracks(playerResponse) {
     return (((playerResponse || {}).captions || {}).playerCaptionsTracklistRenderer || {}).captionTracks || [];
   }
@@ -158,44 +196,142 @@ function getBrowserlessFunctionCode() {
       || available[0];
   }
 
+  async function fetchTrackSegments(track) {
+    if (!track || !track.baseUrl) return { segments: [], diagnostics: { reason: 'missing-track-url' } };
+    const trackUrl = new URL(String(track.baseUrl).replace(/&amp;/g, '&'));
+    trackUrl.searchParams.set('fmt', 'json3');
+    const raw = await page.evaluate(async (url) => {
+      const response = await fetch(url);
+      return { ok: response.ok, status: response.status, text: await response.text() };
+    }, trackUrl.toString());
+    if (!raw.ok || !raw.text) {
+      return { segments: [], diagnostics: { reason: 'track-download-failed', status: raw.status, languageCode: track.languageCode || '' } };
+    }
+    return {
+      segments: await parsePayloadToSegments(raw.text),
+      diagnostics: { reason: '', status: raw.status, languageCode: track.languageCode || '' },
+    };
+  }
+
+  async function fetchInnerTubeCaptionTracks(apiKey) {
+    if (!apiKey) return [];
+    return page.evaluate(async ({ apiKey, videoId, innertubeClientVersion }) => {
+      const endpoint = new URL('https://www.youtube.com/youtubei/v1/player');
+      endpoint.searchParams.set('prettyPrint', 'false');
+      endpoint.searchParams.set('key', apiKey);
+      const response = await fetch(endpoint.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          context: {
+            client: {
+              clientName: 'ANDROID',
+              clientVersion: innertubeClientVersion,
+              hl: 'en',
+              gl: 'US',
+            },
+          },
+          videoId,
+          contentCheckOk: true,
+          racyCheckOk: true,
+        }),
+      });
+      if (!response.ok) return [];
+      const payload = await response.json();
+      return (((payload || {}).captions || {}).playerCaptionsTracklistRenderer || {}).captionTracks || [];
+    }, { apiKey, videoId, innertubeClientVersion });
+  }
+
+  async function fetchTimedTextSegments() {
+    for (const language of languages) {
+      const transcriptUrl = new URL('https://www.youtube.com/api/timedtext');
+      transcriptUrl.searchParams.set('v', videoId);
+      transcriptUrl.searchParams.set('lang', language);
+      transcriptUrl.searchParams.set('fmt', 'json3');
+      const raw = await page.evaluate(async (url) => {
+        const response = await fetch(url);
+        return { ok: response.ok, status: response.status, text: await response.text() };
+      }, transcriptUrl.toString());
+      if (!raw.ok || !raw.text.trim()) continue;
+      const segments = await parsePayloadToSegments(raw.text);
+      if (segments.length) return { segments, languageCode: language };
+    }
+    return { segments: [], languageCode: '' };
+  }
+
   await page.goto('https://www.youtube.com/watch?v=' + encodeURIComponent(videoId) + '&hl=en', {
     waitUntil: 'domcontentloaded',
-    timeout: Math.min(Number(context.timeoutMs || 90000), 90000),
+    timeout: timeoutMs,
   });
 
-  const result = await page.evaluate(async ({ start, end }) => {
+  let html = await page.content();
+  if (html.includes('consent.youtube.com') || html.includes('Before you continue to YouTube')) {
+    await page.setCookie({ name: 'CONSENT', value: 'YES+cb.20210328-17-p0.en+FX+410', domain: '.youtube.com', path: '/' });
+    await page.goto('https://www.youtube.com/watch?v=' + encodeURIComponent(videoId) + '&hl=en', {
+      waitUntil: 'domcontentloaded',
+      timeout: timeoutMs,
+    });
+    html = await page.content();
+  }
+
+  const windowTracks = await page.evaluate(() => {
     const playerResponse = window.ytInitialPlayerResponse || {};
-    const tracks = (((playerResponse || {}).captions || {}).playerCaptionsTracklistRenderer || {}).captionTracks || [];
-    return { tracks };
-  }, { start, end });
+    return (((playerResponse || {}).captions || {}).playerCaptionsTracklistRenderer || {}).captionTracks || [];
+  });
 
-  const track = chooseTrack(result.tracks);
+  let htmlTracks = [];
+  const rawPlayerResponse = extractBalancedJson(html, 'ytInitialPlayerResponse');
+  if (rawPlayerResponse) {
+    try {
+      htmlTracks = getCaptionTracks(JSON.parse(rawPlayerResponse));
+    } catch {
+      htmlTracks = [];
+    }
+  }
+
+  const apiKey = (html.match(/"INNERTUBE_API_KEY":\\s*"([A-Za-z0-9_-]+)"/) || [])[1] || '';
+  const innerTubeTracks = windowTracks.length || htmlTracks.length ? [] : await fetchInnerTubeCaptionTracks(apiKey);
+  const tracks = windowTracks.length ? windowTracks : htmlTracks.length ? htmlTracks : innerTubeTracks;
+
+  const track = chooseTrack(tracks);
   if (!track || !track.baseUrl) {
-    return { text: '', error: 'Browserless could not find YouTube caption tracks.', diagnostics: { trackCount: Array.isArray(result.tracks) ? result.tracks.length : 0 } };
+    const timedText = await fetchTimedTextSegments();
+    const selectedTimedText = timedText.segments.filter((segment) => segment.start >= start && segment.start < end);
+    if (selectedTimedText.length) {
+      return {
+        text: selectedTimedText.map((segment) => segment.text).join(' ').replace(/\\s+/g, ' ').trim(),
+        diagnostics: {
+          provider: 'browserless-timedtext',
+          languageCode: timedText.languageCode,
+          segmentCount: timedText.segments.length,
+          selectedCount: selectedTimedText.length,
+        },
+      };
+    }
+    return {
+      text: '',
+      error: 'Browserless could not find YouTube caption tracks.',
+      diagnostics: {
+        trackCount: Array.isArray(tracks) ? tracks.length : 0,
+        windowTrackCount: Array.isArray(windowTracks) ? windowTracks.length : 0,
+        htmlTrackCount: Array.isArray(htmlTracks) ? htmlTracks.length : 0,
+        innerTubeTrackCount: Array.isArray(innerTubeTracks) ? innerTubeTracks.length : 0,
+        htmlHasPlayerResponse: Boolean(rawPlayerResponse),
+        hasInnerTubeApiKey: Boolean(apiKey),
+        pageUrl: page.url(),
+      },
+    };
   }
 
-  const trackUrl = new URL(String(track.baseUrl).replace(/&amp;/g, '&'));
-  trackUrl.searchParams.set('fmt', 'json3');
-  const raw = await page.evaluate(async (url) => {
-    const response = await fetch(url);
-    return { ok: response.ok, status: response.status, text: await response.text() };
-  }, trackUrl.toString());
-
-  if (!raw.ok || !raw.text) {
-    return { text: '', error: 'Browserless could not download YouTube caption track.', diagnostics: { status: raw.status, languageCode: track.languageCode || '' } };
+  const trackResult = await fetchTrackSegments(track);
+  if (!trackResult.segments.length) {
+    return { text: '', error: 'Browserless could not download YouTube caption track.', diagnostics: trackResult.diagnostics };
   }
 
-  let segments = [];
-  try {
-    segments = parseJson3(JSON.parse(raw.text));
-  } catch {
-    segments = parseXml(raw.text);
-  }
-
-  const selected = segments.filter((segment) => segment.start >= start && segment.start < end);
+  const selected = trackResult.segments.filter((segment) => segment.start >= start && segment.start < end);
   return {
     text: selected.map((segment) => segment.text).join(' ').replace(/\\s+/g, ' ').trim(),
-    diagnostics: { provider: 'browserless', languageCode: track.languageCode || '', segmentCount: segments.length, selectedCount: selected.length },
+    diagnostics: { provider: 'browserless', languageCode: track.languageCode || '', segmentCount: trackResult.segments.length, selectedCount: selected.length },
   };
 }`;
 }

@@ -79,10 +79,15 @@ async function downloadMediaBackup() {
   URL.revokeObjectURL(objectUrl);
 }
 
-export function AdminMediaBackupControls() {
-  const [canShowControls, setCanShowControls] = useState(false);
+export function AdminMediaBackupControls({ authenticated = false }: { authenticated?: boolean }) {
+  const [canShowControls, setCanShowControls] = useState(authenticated);
 
   useEffect(() => {
+    if (authenticated) {
+      setCanShowControls(true);
+      return;
+    }
+
     if (Platform.OS !== 'web' || typeof window === 'undefined' || window.location.pathname !== '/admin') {
       setCanShowControls(false);
       return;
@@ -110,7 +115,7 @@ export function AdminMediaBackupControls() {
       active = false;
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [authenticated]);
 
   if (Platform.OS !== 'web' || typeof window === 'undefined') {
     return null;

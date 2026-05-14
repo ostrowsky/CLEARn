@@ -1,7 +1,6 @@
 ﻿import type { PropsWithChildren } from 'react';
 import { type Href, useRouter } from 'expo-router';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { AdminMediaBackupControls } from './AdminMediaBackupControls';
 import { tokens } from '../theme/tokens';
 
 type ScreenProps = PropsWithChildren<{
@@ -58,7 +57,6 @@ export function Screen({
             {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
           </View>
 
-          <AdminMediaBackupControls />
           {children}
 
           {footerNote ? <Text style={styles.footerNote}>{footerNote}</Text> : null}
