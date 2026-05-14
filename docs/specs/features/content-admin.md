@@ -28,6 +28,9 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Admins can set block layout width (`auto`, `full`, or `half`) so selected blocks can appear on the same horizontal row on wide screens.
 - Saved content appears in learner routes without code changes.
 - Uploaded media can be opened, replaced, and deleted.
+- When an admin uploads an audio file into a clarify-practice material, the admin app must immediately run the configured STT flow on that uploaded audio and write the recognized editable transcript into that material's Statement field.
+- Clarify audio transcripts must preserve unclear or intentionally noisy words as `___` so learners practise asking for the missed detail instead of seeing a guessed word.
+- The learner clarify-practice inline list must show the recognized transcript saved in Statement under the audio player instead of the generic instruction copy when that Statement is present.
 - Uploaded media referenced by bundled read-only content must be copied into the static web build for Vercel previews so learner videos and audio do not resolve to the SPA fallback.
 - Video materials render inside the learner page when the source is an uploaded playable file or a supported streaming URL such as YouTube or Vimeo.
 - YouTube links may include a timestamp, and the embedded player must start at the linked segment instead of redirecting to YouTube.
@@ -59,6 +62,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Missing media should show a recoverable broken-asset state, not crash the screen.
 - Unsupported video codecs may still fail in the browser, but the API must serve uploaded media with correct content type and range support so compatible MP4/WebM files can play inline.
 - YouTube transcript auto-loading is best-effort because some transcripts are gated by YouTube session, geography, age, rate limits, or anti-bot checks.
+- Audio upload transcription is best-effort. If STT fails or returns an empty transcript, the media upload must still succeed and the admin must be able to enter the Statement manually.
 - Concurrent edits are not guaranteed in the MVP and must be addressed before production.
 
 ## Route / state / data implications
@@ -76,6 +80,8 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - `web/tests/ContentDriven.Tests.ps1`
 - `web/tests/PlatformAdmin.Tests.ps1`
 - `web/tests/PlatformAdmin.Api.Tests.ps1`
+- `web/tests/PlatformClarify.Tests.ps1`
+- `web/tests/PlatformSpeech.Tests.ps1`
 
 ## Unknowns requiring confirmation
 

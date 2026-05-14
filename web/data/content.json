@@ -1,7 +1,7 @@
 {
   "meta": {
     "appTitle": "CLEARn",
-    "updatedAt": "2026-05-12T19:59:15.260Z",
+    "updatedAt": "2026-05-12T21:01:56.701Z",
     "ui": {
       "brandTagline": "",
       "footerNote": "",
@@ -253,7 +253,9 @@
           "backupDownloadStarted": "Backup download started.",
           "backupRestored": "Backup restored successfully.",
           "backupRestartRequired": "Restart the preview to load the restored code and data.",
-          "videoTranscriptFetched": "Transcript loaded into the material. Save content to persist it."
+          "videoTranscriptFetched": "Transcript loaded into the material. Save content to persist it.",
+          "audioTranscriptGenerated": "Audio transcript was added to Statement. Save content to persist it.",
+          "audioTranscriptFailed": "Audio transcript was not generated: {reason}"
         },
         "taxonomies": {
           "sectionTypes": {
@@ -1981,6 +1983,17 @@
               "alt": "Why Junior Engineers Are Actually in High Demand?",
               "meta": {
                 "transcript": "They are more native to the technology. They are more able to go beyond, the like what some view as classic developer work. They're not too opinionated on that yet. They're, you know, willing to use AI to do something beyond what is in their original job description. They're the change agents. So that's also a way to look, to look up, edit. And I think that makes perfect sense. And my expectation is that what we'll see happening is that at some point, this trend will be broken. And we will actually see that junior engineers becoming high demand, because these junior engineers are able to navigate this more perfectly. They can handle so much, the, ambiguity that will, certainly, certainly exist in software engineering. And the senior engineers can be there to as, as a means, to codify, their tribal knowledge, to codify best practices, so that agents and humans can leverage that and also to train these junior engineers because we, we we need, a steady supply of, of people that will be, able to, to become like, you know, senior software engineers at some point in their career. Then then there's also the profile. So instead of, like, only looking at T-shaped, engineers, we will also see and shape the engineers that are, you know,"
+              }
+            },
+            {
+              "id": "material-nfz40ueb",
+              "type": "video",
+              "title": "New material",
+              "body": "",
+              "url": "https://www.youtube.com/watch?v=s7aNuultC_E&start=1800&end=1810",
+              "alt": "",
+              "meta": {
+                "transcript": "and his stance was really okay. The if the baseline has moved because the baseline is now you have output with regards to AI, you still have to add value on top because otherwise anyone can do the same."
               }
             }
           ]

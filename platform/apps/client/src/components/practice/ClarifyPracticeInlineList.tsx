@@ -10,6 +10,7 @@ type ClarifyExample = {
   id: string;
   title: string;
   description: string;
+  statement: string;
   audioUrl: string;
   expectedQuestion: string;
   acceptedAnswers: string[];
@@ -43,6 +44,7 @@ function buildClarifyExamples(block: ContentBlock | null | undefined) {
         id: material.id,
         title: material.title || material.id,
         description: material.body,
+        statement: asString(meta.statement),
         audioUrl: material.url ? resolveApiUrl(material.url) : '',
         expectedQuestion: asString(meta.clarification),
         acceptedAnswers: asStringArray(meta.acceptedAnswers),
@@ -228,7 +230,7 @@ export function ClarifyPracticeInlineList({
                 </View>
               )}
 
-              {example.description ? <Text style={styles.description}>{example.description}</Text> : null}
+              {example.statement || example.description ? <Text style={styles.description}>{example.statement || example.description}</Text> : null}
 
               <View style={styles.inlineActions}>
                 <Pressable

@@ -254,7 +254,9 @@
           "backupDownloadStarted": "Backup download started.",
           "backupRestored": "Backup restored successfully.",
           "backupRestartRequired": "Restart the preview to load the restored code and data.",
-          "videoTranscriptFetched": "Transcript loaded into the material. Save content to persist it."
+          "videoTranscriptFetched": "Transcript loaded into the material. Save content to persist it.",
+          "audioTranscriptGenerated": "Audio transcript was added to Statement. Save content to persist it.",
+          "audioTranscriptFailed": "Audio transcript was not generated: {reason}"
         },
         "taxonomies": {
           "sectionTypes": {

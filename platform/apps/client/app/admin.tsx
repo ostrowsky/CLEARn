@@ -79,6 +79,40 @@ function isClarifyAudioMaterial(block: ContentBlock, material: ContentMaterial) 
   return block.kind === 'practice-clarify' && material.type === 'audio';
 }
 
+function inferMimeTypeFromFileName(fileName: string) {
+  const extension = fileName.toLowerCase().split('.').pop() || '';
+  const mimeTypes: Record<string, string> = {
+    aac: 'audio/aac',
+    flac: 'audio/flac',
+    m4a: 'audio/mp4',
+    mp3: 'audio/mpeg',
+    mp4: 'video/mp4',
+    oga: 'audio/ogg',
+    ogg: 'audio/ogg',
+    wav: 'audio/wav',
+    weba: 'audio/webm',
+    webm: 'audio/webm',
+  };
+  return mimeTypes[extension] || 'application/octet-stream';
+}
+
+function isAudioUpload(fileName: string, mimeType: string) {
+  return mimeType.startsWith('audio/') || /\.(aac|flac|m4a|mp3|oga|ogg|wav|weba|webm)$/i.test(fileName);
+}
+
+function normalizeUploadedAudioTranscript(text: string) {
+  return text
+    .replace(/\[(?:inaudible|unintelligible|unclear|noise|noisy|silence|music|background noise)[^\]]*\]/gi, ' ___ ')
+    .replace(/\((?:inaudible|unintelligible|unclear|noise|noisy|silence|music|background noise)[^)]*\)/gi, ' ___ ')
+    .replace(/<unk>/gi, ' ___ ')
+    .replace(/\b(?:inaudible|unintelligible|unclear)\b/gi, ' ___ ')
+    .replace(/[?]{3,}/g, ' ___ ')
+    .replace(/_{2,}/g, '___')
+    .replace(/\s+([,.!?;:])/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 type StatusTone = 'success' | 'error';
 type AdminAuthMode = 'setup' | 'login' | 'authenticated';
 type AdminAuthStatus = {
@@ -178,7 +212,7 @@ async function pickWebFileAsBase64(accept = '') {
     return null;
   }
 
-  return await new Promise<{ fileName: string; base64: string } | null>((resolve) => {
+  return await new Promise<{ fileName: string; base64: string; mimeType: string } | null>((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
     if (accept) {
@@ -192,7 +226,7 @@ async function pickWebFileAsBase64(accept = '') {
       }
 
       const reader = new FileReader();
-      reader.onload = () => resolve({ fileName: file.name, base64: String(reader.result || '') });
+      reader.onload = () => resolve({ fileName: file.name, base64: String(reader.result || ''), mimeType: file.type || inferMimeTypeFromFileName(file.name) });
       reader.onerror = () => resolve(null);
       reader.readAsDataURL(file);
     };
@@ -708,6 +742,24 @@ export default function AdminScreen() {
     try {
       let previousUrl = '';
       const uploaded = await apiClient.uploadAdminMedia(file.fileName, file.base64);
+      let transcript = '';
+      let transcriptProvider = '';
+      let transcriptModel = '';
+      let transcriptWarning = '';
+
+      const sourceBlock = content?.sections.find((item) => item.id === sectionId)?.blocks.find((item) => item.id === blockId);
+      const sourceMaterial = sourceBlock?.materials.find((item) => item.id === materialId);
+      if (sourceBlock && sourceMaterial && isClarifyAudioMaterial(sourceBlock, sourceMaterial) && isAudioUpload(file.fileName, file.mimeType)) {
+        try {
+          const result = await apiClient.speechToText(file.base64, file.mimeType || inferMimeTypeFromFileName(file.fileName));
+          transcript = normalizeUploadedAudioTranscript(result.text);
+          transcriptProvider = result.provider;
+          transcriptModel = result.model;
+        } catch (transcribeError) {
+          transcriptWarning = transcribeError instanceof Error ? transcribeError.message : String(transcribeError);
+        }
+      }
+
       updateContent((draft) => {
         const targetMaterial = draft.sections.find((item) => item.id === sectionId)?.blocks.find((item) => item.id === blockId)?.materials.find((item) => item.id === materialId);
         if (!targetMaterial) {
@@ -717,9 +769,23 @@ export default function AdminScreen() {
         previousUrl = targetMaterial.url || '';
         targetMaterial.url = uploaded.url;
         targetMaterial.alt = targetMaterial.alt || file.fileName;
+        if (transcript) {
+          const meta = ensureMaterialMeta(targetMaterial);
+          meta.statement = transcript;
+          meta.audioTranscriptGeneratedAt = new Date().toISOString();
+          meta.audioTranscriptProvider = transcriptProvider;
+          meta.audioTranscriptModel = transcriptModel;
+        }
       });
       await deleteUploadedAsset(previousUrl);
-      setStatus(String(messages.uploadedPattern || '').replace('{fileName}', file.fileName), 'success');
+      const uploadedMessage = String(messages.uploadedPattern || '').replace('{fileName}', file.fileName);
+      if (transcript) {
+        setStatus(`${uploadedMessage} ${String(messages.audioTranscriptGenerated || '')}`.trim(), 'success');
+      } else if (transcriptWarning) {
+        setStatus(`${uploadedMessage} ${String(messages.audioTranscriptFailed || '').replace('{reason}', transcriptWarning)}`.trim(), 'error');
+      } else {
+        setStatus(uploadedMessage, 'success');
+      }
     } catch (nextError) {
       setStatus(nextError instanceof Error ? nextError.message : String(nextError), 'error');
     }

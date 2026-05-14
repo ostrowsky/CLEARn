@@ -25,6 +25,8 @@ foreach ($fileName in @('content.template.json', 'content.json')) {
     Assert-True -Condition ($null -ne $content.meta.ui.feedback.speechTranscribing) -Message "$fileName is missing speechTranscribing feedback copy."
     Assert-True -Condition ($null -ne $content.meta.ui.feedback.speechTranscriptEmpty) -Message "$fileName is missing speechTranscriptEmpty feedback copy."
     Assert-True -Condition ($null -ne $content.meta.ui.feedback.clarifyAnswerRequired) -Message "$fileName is missing clarifyAnswerRequired feedback copy."
+    Assert-True -Condition ($null -ne $content.meta.ui.admin.messages.audioTranscriptGenerated) -Message "$fileName is missing audioTranscriptGenerated admin message."
+    Assert-True -Condition ($null -ne $content.meta.ui.admin.messages.audioTranscriptFailed) -Message "$fileName is missing audioTranscriptFailed admin message."
     Assert-True -Condition ($null -ne $content.meta.ui.admin.fieldLabels.statement) -Message "$fileName is missing admin statement field label."
     Assert-True -Condition ($null -ne $content.meta.ui.admin.fieldLabels.clarification) -Message "$fileName is missing admin clarification field label."
     Assert-True -Condition ($null -ne $content.meta.ui.admin.fieldLabels.acceptedAnswers) -Message "$fileName is missing admin acceptedAnswers field label."
@@ -82,18 +84,20 @@ foreach ($pattern in @(
 }
 foreach ($pattern in @(
     'buildClarifyExamples',
+    'statement: asString\(meta\.statement\)',
     'useSpeechDraft',
     'apiClient\.checkClarify',
     'startRecording',
     'stopRecording',
     'showExpectedAnswer',
     'acceptedAnswers',
-    'expectedQuestion'
+    'expectedQuestion',
+    'example\.statement \|\| example\.description'
 )) {
     Assert-Match -Actual $inlineClarifySource -Pattern $pattern
 }
 
-Write-TestStep 'Platform admin exposes editable clarify statement, accepted answers, and exercise templates'
+Write-TestStep 'Platform admin exposes editable clarify statement, accepted answers, audio upload transcription, and exercise templates'
 $adminScreenSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\admin.tsx') -Raw
 foreach ($pattern in @(
     'ensureMaterialMeta',
@@ -106,6 +110,13 @@ foreach ($pattern in @(
     'fieldLabels\.clarification',
     'fieldLabels\.acceptedAnswers',
     'fieldLabels\.placeholder',
+    'normalizeUploadedAudioTranscript',
+    'isAudioUpload',
+    'apiClient\.speechToText',
+    'meta\.audioTranscriptGeneratedAt',
+    'audioTranscriptGenerated',
+    'audioTranscriptFailed',
+    '___',
     'meta\.statement = value',
     'meta\.clarification = value',
     'meta\.placeholder = value',
