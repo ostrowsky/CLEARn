@@ -1002,7 +1002,7 @@ export async function registerVideoTranscriptSegmentRoutes(app: FastifyInstance)
         ...(includeDebug ? { diagnostics: { providers: transcript.diagnostics } } : {}),
       };
 
-      if (!includeDebug) cache.set(url, result);
+      if (!includeDebug && result.available) cache.set(url, result);
       if (cache.size > 100) {
         const firstKey = cache.keys().next().value;
         if (firstKey) cache.delete(firstKey);

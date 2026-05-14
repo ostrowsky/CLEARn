@@ -83,5 +83,7 @@ foreach ($pattern in @(
 }
 
 Assert-True -Condition ($transcriptRouteSource -cnotmatch 'EXPO_PUBLIC.*BROWSERLESS') -Message 'Browserless credentials must never be exposed through frontend public variables.'
+Assert-Match -Actual $transcriptRouteSource -Pattern 'if \(!includeDebug && result\.available\) cache\.set\(url, result\)'
+Assert-True -Condition ($transcriptRouteSource -cnotmatch 'if \(!includeDebug\) cache\.set\(url, result\)') -Message 'YouTube transcript route must not cache failed transcript lookups because Browserless/YouTube availability can recover after provider fixes or retries.'
 
 Write-Host 'Platform YouTube segment tests passed.'
