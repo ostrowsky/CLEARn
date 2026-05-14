@@ -50,7 +50,7 @@ const schema = z.object({
   TRANSCRIPT_FETCH_PROVIDER: z.enum(['auto', 'browserless', 'direct']).default('auto'),
   BROWSERLESS_API_URL: z.string().url().default('https://production-sfo.browserless.io'),
   BROWSERLESS_API_KEY: z.string().optional(),
-  BROWSERLESS_USE_RESIDENTIAL_PROXY: z.coerce.boolean().default(false),
+  BROWSERLESS_USE_RESIDENTIAL_PROXY: z.coerce.boolean().default(true),
   BROWSERLESS_PROXY_COUNTRY: z.string().default('us'),
   TRANSCRIPT_FETCH_TIMEOUT_MS: z.coerce.number().default(90000),
 });

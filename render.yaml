@@ -61,3 +61,13 @@ services:
         sync: false
       - key: SELF_HOSTED_SPEECH_BASE_URL
         sync: false
+      - key: TRANSCRIPT_FETCH_PROVIDER
+        value: browserless
+      - key: BROWSERLESS_API_URL
+        value: https://production-sfo.browserless.io
+      - key: BROWSERLESS_API_KEY
+        sync: false
+      - key: BROWSERLESS_USE_RESIDENTIAL_PROXY
+        value: true
+      - key: BROWSERLESS_PROXY_COUNTRY
+        value: us

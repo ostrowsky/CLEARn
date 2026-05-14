@@ -72,6 +72,7 @@ foreach ($pattern in @(
     'browserless-timedtext',
     'TRANSCRIPT_FETCH_PROVIDER',
     'BROWSERLESS_API_KEY',
+    'BROWSERLESS_USE_RESIDENTIAL_PROXY',
     'fetchTranscriptSegments',
     'fetchTranscriptWithProviders',
     'pickTranscriptSegmentText',
@@ -85,5 +86,24 @@ foreach ($pattern in @(
 Assert-True -Condition ($transcriptRouteSource -cnotmatch 'EXPO_PUBLIC.*BROWSERLESS') -Message 'Browserless credentials must never be exposed through frontend public variables.'
 Assert-Match -Actual $transcriptRouteSource -Pattern 'if \(!includeDebug && result\.available\) cache\.set\(url, result\)'
 Assert-True -Condition ($transcriptRouteSource -cnotmatch 'if \(!includeDebug\) cache\.set\(url, result\)') -Message 'YouTube transcript route must not cache failed transcript lookups because Browserless/YouTube availability can recover after provider fixes or retries.'
+
+$apiEnvSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\config\env.ts') -Raw
+Assert-Match -Actual $apiEnvSource -Pattern 'BROWSERLESS_USE_RESIDENTIAL_PROXY: z\.coerce\.boolean\(\)\.default\(true\)'
+
+$renderBlueprintSource = Get-Content -LiteralPath (Join-Path $workspaceRoot 'render.yaml') -Raw
+foreach ($pattern in @(
+    'TRANSCRIPT_FETCH_PROVIDER',
+    'value: browserless',
+    'BROWSERLESS_API_URL',
+    'production-sfo\.browserless\.io',
+    'BROWSERLESS_API_KEY',
+    'sync: false',
+    'BROWSERLESS_USE_RESIDENTIAL_PROXY',
+    'value: true',
+    'BROWSERLESS_PROXY_COUNTRY',
+    'value: us'
+)) {
+    Assert-Match -Actual $renderBlueprintSource -Pattern $pattern
+}
 
 Write-Host 'Platform YouTube segment tests passed.'
