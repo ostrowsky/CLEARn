@@ -4,15 +4,7 @@ import { Platform } from 'react-native';
 const extra = (Constants.expoConfig?.extra ?? {}) as { apiBaseUrl?: string };
 const productionApiBaseUrl = 'https://clearn-api.onrender.com';
 
-function guessApiBaseUrl() {
-  if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_BASE_URL) {
-    return process.env.EXPO_PUBLIC_API_BASE_URL;
-  }
-
-  if (extra.apiBaseUrl) {
-    return extra.apiBaseUrl;
-  }
-
+function getLocalWebApiBaseUrl() {
   if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location?.hostname) {
     const { hostname, protocol } = window.location;
     const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
@@ -23,6 +15,23 @@ function guessApiBaseUrl() {
     }
 
     return productionApiBaseUrl;
+  }
+
+  return '';
+}
+
+function guessApiBaseUrl() {
+  const localWebApiBaseUrl = getLocalWebApiBaseUrl();
+  if (localWebApiBaseUrl) {
+    return localWebApiBaseUrl;
+  }
+
+  if (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_API_BASE_URL) {
+    return process.env.EXPO_PUBLIC_API_BASE_URL;
+  }
+
+  if (extra.apiBaseUrl) {
+    return extra.apiBaseUrl;
   }
 
   const legacyManifest = (Constants as unknown as { manifest?: { debuggerHost?: string } }).manifest;

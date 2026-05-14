@@ -128,6 +128,15 @@ Assert-Match -Actual $routesSource -Pattern "env\.APP_ENV === 'production' && !a
 Assert-Match -Actual $routesSource -Pattern "/api/debug/logs"
 Assert-Match -Actual $routesSource -Pattern "/api/debug/log"
 
+$clientConfigSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\src\lib\config.ts') -Raw
+Assert-Match -Actual $clientConfigSource -Pattern 'function getLocalWebApiBaseUrl'
+Assert-Match -Actual $clientConfigSource -Pattern 'const localWebApiBaseUrl = getLocalWebApiBaseUrl\(\)'
+Assert-Match -Actual $clientConfigSource -Pattern 'if \(localWebApiBaseUrl\) \{\s*return localWebApiBaseUrl;\s*\}'
+$localApiIndex = $clientConfigSource.IndexOf('const localWebApiBaseUrl = getLocalWebApiBaseUrl()')
+$publicApiEnvIndex = $clientConfigSource.IndexOf('process.env.EXPO_PUBLIC_API_BASE_URL')
+Assert-True -Condition ($localApiIndex -ge 0 -and $publicApiEnvIndex -ge 0 -and $localApiIndex -lt $publicApiEnvIndex) -Message 'Local web admin must prefer localhost API before inherited preview or production API environment URLs.'
+Assert-Match -Actual $clientConfigSource -Pattern '\$\{protocol\}//\$\{hostname\}:4000'
+
 Write-TestStep 'Checking share preview exposes learner and admin routes'
 $sharePreviewSource = Get-Content -LiteralPath (Join-Path $platformRoot 'open-share-preview.ps1') -Raw
 foreach ($pattern in @(
