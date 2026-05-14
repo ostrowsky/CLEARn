@@ -171,12 +171,42 @@ function getBrowserlessFunctionCode() {
     })).filter((segment) => Number.isFinite(segment.start) && segment.text);
   }
 
+  function vttTimeToSeconds(value) {
+    const parts = String(value || '').trim().split(':');
+    if (parts.length === 3) return (Number(parts[0]) * 3600) + (Number(parts[1]) * 60) + Number(parts[2]);
+    if (parts.length === 2) return (Number(parts[0]) * 60) + Number(parts[1]);
+    return Number(value || 0);
+  }
+
+  function parseVtt(payload) {
+    const blocks = String(payload || '').replace(/\\r/g, '').split(/\\n\\s*\\n/);
+    return blocks.map((block) => {
+      const lines = block.split('\\n').map((line) => line.trim()).filter(Boolean);
+      const timingLine = lines.find((line) => line.includes('-->')) || '';
+      if (!timingLine) return null;
+      const timingParts = timingLine.split('-->').map((item) => item.trim());
+      const text = lines
+        .filter((line) => line !== timingLine && line !== 'WEBVTT' && !/^\\d+$/.test(line))
+        .map(cleanText)
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\\s+/g, ' ')
+        .trim();
+      return {
+        start: vttTimeToSeconds(timingParts[0]),
+        duration: Math.max(0, vttTimeToSeconds(timingParts[1]) - vttTimeToSeconds(timingParts[0])),
+        text,
+      };
+    }).filter((segment) => segment && Number.isFinite(segment.start) && segment.text);
+  }
+
   async function parsePayloadToSegments(rawText) {
     if (!String(rawText || '').trim()) return [];
     try {
       return parseJson3(JSON.parse(rawText));
     } catch {
-      return parseXml(rawText);
+      const xmlSegments = parseXml(rawText);
+      return xmlSegments.length ? xmlSegments : parseVtt(rawText);
     }
   }
 
@@ -198,18 +228,89 @@ function getBrowserlessFunctionCode() {
 
   async function fetchTrackSegments(track) {
     if (!track || !track.baseUrl) return { segments: [], diagnostics: { reason: 'missing-track-url' } };
-    const trackUrl = new URL(String(track.baseUrl).replace(/&amp;/g, '&'));
-    trackUrl.searchParams.set('fmt', 'json3');
-    const raw = await page.evaluate(async (url) => {
-      const response = await fetch(url);
-      return { ok: response.ok, status: response.status, text: await response.text() };
-    }, trackUrl.toString());
-    if (!raw.ok || !raw.text) {
-      return { segments: [], diagnostics: { reason: 'track-download-failed', status: raw.status, languageCode: track.languageCode || '' } };
+    const baseUrl = String(track.baseUrl).replace(/&amp;/g, '&');
+    const candidates = [];
+    const jsonUrl = new URL(baseUrl);
+    jsonUrl.searchParams.set('fmt', 'json3');
+    candidates.push({ format: 'json3', url: jsonUrl.toString() });
+    candidates.push({ format: 'original', url: baseUrl });
+    const vttUrl = new URL(baseUrl);
+    vttUrl.searchParams.set('fmt', 'vtt');
+    candidates.push({ format: 'vtt', url: vttUrl.toString() });
+
+    const attempts = [];
+    for (const candidate of candidates) {
+      let raw = await page.evaluate(async (url) => {
+        const response = await fetch(url, { credentials: 'include' });
+        return { ok: response.ok, status: response.status, text: await response.text(), method: 'fetch' };
+      }, candidate.url);
+
+      if (raw.ok && !String(raw.text || '').trim()) {
+        raw = await page.goto(candidate.url, { waitUntil: 'domcontentloaded', timeout: timeoutMs })
+          .then(async (response) => ({
+            ok: Boolean(response && response.ok()),
+            status: response ? response.status() : 0,
+            text: response && typeof response.text === 'function' ? await response.text() : await page.evaluate(() => document.body ? document.body.innerText : ''),
+            method: 'page-goto',
+          }))
+          .catch((error) => ({
+            ok: false,
+            status: 0,
+            text: '',
+            method: 'page-goto',
+            error: error instanceof Error ? error.message : String(error),
+          }));
+      }
+
+      const segments = raw.ok && raw.text ? await parsePayloadToSegments(raw.text) : [];
+      attempts.push({
+        format: candidate.format,
+        status: raw.status,
+        method: raw.method || '',
+        textLength: String(raw.text || '').length,
+        segmentCount: segments.length,
+        textPreview: String(raw.text || '').slice(0, 120),
+        error: raw.error || '',
+      });
+
+      if (segments.length) {
+        return {
+          segments,
+          diagnostics: {
+            reason: '',
+            status: raw.status,
+            languageCode: track.languageCode || '',
+            method: raw.method || '',
+            format: candidate.format,
+            attempts,
+          },
+        };
+      }
     }
+
+    const lastAttempt = attempts[attempts.length - 1] || {};
+    if (!attempts.some((attempt) => attempt.textLength > 0)) {
+      return {
+        segments: [],
+        diagnostics: {
+          reason: 'track-download-failed',
+          status: lastAttempt.status || 0,
+          languageCode: track.languageCode || '',
+          method: lastAttempt.method || '',
+          attempts,
+        },
+      };
+    }
+
     return {
-      segments: await parsePayloadToSegments(raw.text),
-      diagnostics: { reason: '', status: raw.status, languageCode: track.languageCode || '' },
+      segments: [],
+      diagnostics: {
+        reason: 'track-parse-empty',
+        status: lastAttempt.status || 0,
+        languageCode: track.languageCode || '',
+        method: lastAttempt.method || '',
+        attempts,
+      },
     };
   }
 
@@ -290,8 +391,8 @@ function getBrowserlessFunctionCode() {
   }
 
   const apiKey = (html.match(/"INNERTUBE_API_KEY":\\s*"([A-Za-z0-9_-]+)"/) || [])[1] || '';
-  const innerTubeTracks = windowTracks.length || htmlTracks.length ? [] : await fetchInnerTubeCaptionTracks(apiKey);
-  const tracks = windowTracks.length ? windowTracks : htmlTracks.length ? htmlTracks : innerTubeTracks;
+  const innerTubeTracks = await fetchInnerTubeCaptionTracks(apiKey);
+  const tracks = innerTubeTracks.length ? innerTubeTracks : windowTracks.length ? windowTracks : htmlTracks;
 
   const track = chooseTrack(tracks);
   if (!track || !track.baseUrl) {

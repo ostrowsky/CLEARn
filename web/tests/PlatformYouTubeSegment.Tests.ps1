@@ -65,6 +65,8 @@ foreach ($pattern in @(
     'Before you continue to YouTube',
     'page\.setCookie',
     'fetchInnerTubeCaptionTracks',
+    'const innerTubeTracks = await fetchInnerTubeCaptionTracks\(apiKey\)',
+    'const tracks = innerTubeTracks\.length \? innerTubeTracks : windowTracks\.length \? windowTracks : htmlTracks',
     'fetchTimedTextSegments',
     'htmlHasPlayerResponse',
     'browserless-timedtext',
