@@ -1661,7 +1661,7 @@
               "url": "/uploads/the-bug-is-8ebf6d54.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "",
+                "statement": "The bug is only reproducible on ___.",
                 "clarification": "Sorry, the bug is only reproducible on what?",
                 "acceptedAnswers": [
                   "Sorry, the bug is only reproducible on what?"
@@ -1677,7 +1677,7 @@
               "url": "/uploads/regression-3a1d8607.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "",
+                "statement": "We need to complete the regression suite by ___.",
                 "clarification": "Sorry, we need to complete the regression suite by when?",
                 "acceptedAnswers": [
                   "Sorry, we need to complete the regression suite by when?"
@@ -1693,7 +1693,7 @@
               "url": "/uploads/automation-464e223d.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "",
+                "statement": "The automation script failed because of ___.",
                 "clarification": "Sorry, the automation script failed because of what?",
                 "acceptedAnswers": [
                   "Sorry, the automation script failed because of what?"
@@ -1709,7 +1709,7 @@
               "url": "/uploads/critical-16034007.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "",
+                "statement": "I've assigned the critical ticket to ___.",
                 "clarification": "Sorry, you've assigned the critical ticket to who?",
                 "acceptedAnswers": [
                   "Sorry, you've assigned the critical ticket to who?",
@@ -1726,7 +1726,7 @@
               "url": "/uploads/staging-07ba1dbe.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "",
+                "statement": "The staging environment will be down for ___.",
                 "clarification": "Sorry, the staging environment will be down for how long?",
                 "acceptedAnswers": [
                   "Sorry, the staging environment will be down for how long?"
@@ -1742,7 +1742,7 @@
               "url": "/uploads/crash-3f719500.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "",
+                "statement": "The user reported the crash occurring in the ___ module.",
                 "clarification": "Sorry, the crash occurred in which module?",
                 "acceptedAnswers": [
                   "Sorry, the crash occurred in which module?"
