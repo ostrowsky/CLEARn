@@ -38,6 +38,7 @@ const schema = z.object({
   LLM_STT_MODEL: z.string().default('base.en'),
   LLM_TTS_MODEL: z.string().default('hexgrad/Kokoro-82M'),
   LLM_FALLBACK_CHAIN: z.string().default('huggingface,openai,selfhosted'),
+  LLM_SPEECH_FALLBACK_CHAIN: z.string().default('selfhosted,openai,huggingface'),
   SELF_HOSTED_BASE_URL: z.string().default('http://localhost:11434/v1'),
   SELF_HOSTED_SPEECH_BASE_URL: z.string().default('http://localhost:8010/v1'),
   APP_STORAGE_ROOT: z.string().optional(),

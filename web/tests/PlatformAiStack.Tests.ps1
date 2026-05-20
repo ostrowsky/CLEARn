@@ -14,6 +14,8 @@ Assert-Match -Actual $envSource -Pattern "LLM_TTS_PROVIDER: z\.enum\(\['huggingf
 Assert-Match -Actual $envSource -Pattern "LLM_CHAT_MODEL: z\.string\(\)\.default\('gemma3:12b'\)"
 Assert-Match -Actual $envSource -Pattern "LLM_STT_MODEL: z\.string\(\)\.default\('base\.en'\)"
 Assert-Match -Actual $envSource -Pattern "LLM_TTS_MODEL: z\.string\(\)\.default\('hexgrad/Kokoro-82M'\)"
+Assert-Match -Actual $envSource -Pattern "LLM_FALLBACK_CHAIN: z\.string\(\)\.default\('huggingface,openai,selfhosted'\)"
+Assert-Match -Actual $envSource -Pattern "LLM_SPEECH_FALLBACK_CHAIN: z\.string\(\)\.default\('selfhosted,openai,huggingface'\)"
 Assert-Match -Actual $envSource -Pattern "SELF_HOSTED_BASE_URL: z\.string\(\)\.default\('http://localhost:11434/v1'\)"
 Assert-Match -Actual $envSource -Pattern "SELF_HOSTED_SPEECH_BASE_URL: z\.string\(\)\.default\('http://localhost:8010/v1'\)"
 
@@ -42,6 +44,19 @@ $selfHostedSpeechSource = Get-Content -LiteralPath (Join-Path $platformRoot 'app
 Assert-Match -Actual $selfHostedSpeechSource -Pattern 'env\.SELF_HOSTED_SPEECH_BASE_URL'
 Assert-Match -Actual $selfHostedSpeechSource -Pattern '/audio/transcriptions'
 Assert-Match -Actual $selfHostedSpeechSource -Pattern 'new FormData\(\)'
+
+Write-TestStep 'Speech providers use a self-hosted-first fallback chain separate from chat'
+$providerRegistrySource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\providers\providerRegistry.ts') -Raw
+foreach ($pattern in @(
+    'function parseProviderChain',
+    'env\.LLM_FALLBACK_CHAIN',
+    'function speechFallbackChain',
+    'env\.LLM_SPEECH_FALLBACK_CHAIN',
+    'const order = speechFallbackChain\(preferred\);'
+)) {
+    Assert-Match -Actual $providerRegistrySource -Pattern $pattern
+}
+Assert-True -Condition ($providerRegistrySource -cnotmatch 'withSpeechProvider<T>[\s\S]*const order = \[preferred, \.\.\.fallbackChain') -Message 'Speech provider fallback must not reuse the chat fallback order.'
 
 Write-TestStep 'Critical route and provider files keep valid runtime wiring'
 $routesSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\routes\registerRoutes.ts') -Raw

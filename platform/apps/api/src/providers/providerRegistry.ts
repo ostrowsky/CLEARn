@@ -20,8 +20,31 @@ const speechProviders: Record<ProviderKind, SpeechProvider> = {
   selfhosted: selfHostedSpeechProvider,
 };
 
+function parseProviderChain(value: string): ProviderKind[] {
+  const allowed = new Set<ProviderKind>(['huggingface', 'openai', 'selfhosted']);
+  const chain: ProviderKind[] = [];
+
+  for (const item of value.split(',')) {
+    const kind = item.trim() as ProviderKind;
+    if (allowed.has(kind) && !chain.includes(kind)) {
+      chain.push(kind);
+    }
+  }
+
+  return chain;
+}
+
 function fallbackChain(): ProviderKind[] {
-  return env.LLM_FALLBACK_CHAIN.split(',').map((value) => value.trim() as ProviderKind);
+  return parseProviderChain(env.LLM_FALLBACK_CHAIN);
+}
+
+function speechFallbackChain(preferred: ProviderKind): ProviderKind[] {
+  const chain = parseProviderChain(env.LLM_SPEECH_FALLBACK_CHAIN);
+  if (chain.includes(preferred)) {
+    return chain;
+  }
+
+  return [preferred, ...chain.filter((item) => item !== preferred)];
 }
 
 function formatProviderError(kind: ProviderKind, error: unknown) {
@@ -55,7 +78,7 @@ export async function withChatProvider<T>(preferred: ProviderKind, action: (prov
 }
 
 export async function withSpeechProvider<T>(preferred: ProviderKind, action: (provider: SpeechProvider) => Promise<T>): Promise<T> {
-  const order = [preferred, ...fallbackChain().filter((item) => item !== preferred)];
+  const order = speechFallbackChain(preferred);
   let lastError: unknown;
   const failures: string[] = [];
 
