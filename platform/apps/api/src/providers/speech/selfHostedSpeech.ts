@@ -49,7 +49,7 @@ export const selfHostedSpeechProvider: SpeechProvider = {
     const audioBytes = decodeAudioBytes(input.audioBase64);
     const formData = new FormData();
     formData.append('file', new Blob([audioBytes], { type: input.mimeType || 'audio/webm' }), getAudioUploadFileName(input.mimeType));
-    formData.append('model', env.LLM_STT_MODEL);
+    formData.append('model', env.SELF_HOSTED_STT_MODEL);
     if (input.language) {
       formData.append('language', input.language);
     }
@@ -64,7 +64,7 @@ export const selfHostedSpeechProvider: SpeechProvider = {
     }
 
     const json = await response.json();
-    return { text: json.text ?? '', provider: 'selfhosted', model: env.LLM_STT_MODEL };
+    return { text: json.text ?? '', provider: 'selfhosted', model: env.SELF_HOSTED_STT_MODEL };
   },
   async textToSpeech(input) {
     const response = await fetch(`${env.SELF_HOSTED_SPEECH_BASE_URL}/audio/speech`, {

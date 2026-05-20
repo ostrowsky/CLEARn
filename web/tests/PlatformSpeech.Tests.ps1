@@ -14,6 +14,7 @@ foreach ($pattern in @(
     "Buffer\.from\(cleanBase64Audio\(audioBase64\), 'base64'\)",
     "'Content-Type': normalizeMimeType\(input\.mimeType\)",
     'body: audioBytes',
+    'env\.HF_STT_MODEL',
     'Hugging Face STT error:',
     'readErrorDetails',
     'slice\(0, 240\)'
@@ -41,7 +42,7 @@ foreach ($pattern in @(
     'SELF_HOSTED_SPEECH_BASE_URL',
     'new FormData\(\)',
     "formData\.append\('file'",
-    "formData\.append\('model', env\.LLM_STT_MODEL\)",
+    "formData\.append\('model', env\.SELF_HOSTED_STT_MODEL\)",
     'decodeAudioBytes',
     'cleanBase64Audio',
     'getAudioUploadFileName',

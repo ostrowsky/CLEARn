@@ -41,7 +41,7 @@ export const huggingFaceSpeechProvider: SpeechProvider = {
     }
 
     const audioBytes = decodeAudioBytes(input.audioBase64);
-    const response = await fetch(`https://router.huggingface.co/hf-inference/models/${env.LLM_STT_MODEL}`, {
+    const response = await fetch(`https://router.huggingface.co/hf-inference/models/${env.HF_STT_MODEL}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${env.HF_TOKEN}`,
@@ -55,7 +55,7 @@ export const huggingFaceSpeechProvider: SpeechProvider = {
     }
 
     const json = await response.json() as { text?: string };
-    return { text: json.text ?? '', provider: 'huggingface', model: env.LLM_STT_MODEL };
+    return { text: json.text ?? '', provider: 'huggingface', model: env.HF_STT_MODEL };
   },
   async textToSpeech(input) {
     if (!env.HF_TOKEN) {

@@ -13,6 +13,9 @@ Assert-Match -Actual $envSource -Pattern "LLM_STT_PROVIDER: z\.enum\(\['huggingf
 Assert-Match -Actual $envSource -Pattern "LLM_TTS_PROVIDER: z\.enum\(\['huggingface', 'openai', 'selfhosted'\]\)\.default\('huggingface'\)"
 Assert-Match -Actual $envSource -Pattern "LLM_CHAT_MODEL: z\.string\(\)\.default\('gemma3:12b'\)"
 Assert-Match -Actual $envSource -Pattern "LLM_STT_MODEL: z\.string\(\)\.default\('base\.en'\)"
+Assert-Match -Actual $envSource -Pattern "SELF_HOSTED_STT_MODEL: z\.string\(\)\.default\('base\.en'\)"
+Assert-Match -Actual $envSource -Pattern "OPENAI_STT_MODEL: z\.string\(\)\.default\('whisper-1'\)"
+Assert-Match -Actual $envSource -Pattern "HF_STT_MODEL: z\.string\(\)\.default\('openai/whisper-large-v3'\)"
 Assert-Match -Actual $envSource -Pattern "LLM_TTS_MODEL: z\.string\(\)\.default\('hexgrad/Kokoro-82M'\)"
 Assert-Match -Actual $envSource -Pattern "LLM_FALLBACK_CHAIN: z\.string\(\)\.default\('huggingface,openai,selfhosted'\)"
 Assert-Match -Actual $envSource -Pattern "LLM_SPEECH_FALLBACK_CHAIN: z\.string\(\)\.default\('selfhosted,openai,huggingface'\)"
@@ -38,12 +41,17 @@ foreach ($pattern in @(
     Assert-Match -Actual $jsonHelperSource -Pattern $pattern
 }
 $hfSpeechSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\providers\speech\huggingfaceSpeech.ts') -Raw
-Assert-Match -Actual $hfSpeechSource -Pattern 'env\.LLM_STT_MODEL'
+Assert-Match -Actual $hfSpeechSource -Pattern 'env\.HF_STT_MODEL'
 Assert-Match -Actual $hfSpeechSource -Pattern 'env\.LLM_TTS_MODEL'
 $selfHostedSpeechSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\providers\speech\selfHostedSpeech.ts') -Raw
 Assert-Match -Actual $selfHostedSpeechSource -Pattern 'env\.SELF_HOSTED_SPEECH_BASE_URL'
+Assert-Match -Actual $selfHostedSpeechSource -Pattern 'env\.SELF_HOSTED_STT_MODEL'
 Assert-Match -Actual $selfHostedSpeechSource -Pattern '/audio/transcriptions'
 Assert-Match -Actual $selfHostedSpeechSource -Pattern 'new FormData\(\)'
+$openAiSpeechSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\providers\speech\openaiSpeech.ts') -Raw
+Assert-Match -Actual $openAiSpeechSource -Pattern 'env\.OPENAI_STT_MODEL'
+Assert-True -Condition ($openAiSpeechSource -cnotmatch 'env\.LLM_STT_MODEL') -Message 'OpenAI STT should not receive faster-whisper local model names.'
+Assert-True -Condition ($hfSpeechSource -cnotmatch 'env\.LLM_STT_MODEL') -Message 'Hugging Face STT should use a provider-specific model id.'
 
 Write-TestStep 'Speech providers use a self-hosted-first fallback chain separate from chat'
 $providerRegistrySource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\providers\providerRegistry.ts') -Raw

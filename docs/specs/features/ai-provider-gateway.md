@@ -44,6 +44,7 @@ The product can use free AI resources during prototype and early validation, whi
 - Current env variables configure `LLM_TEXT_PROVIDER`, `LLM_STT_PROVIDER`, `LLM_TTS_PROVIDER`, provider models, fallback chains, and self-hosted base URLs.
 - Chat/text generation uses `LLM_FALLBACK_CHAIN`.
 - STT/TTS uses a separate `LLM_SPEECH_FALLBACK_CHAIN`, which must default to `selfhosted,openai,huggingface` so Hugging Face credit exhaustion does not block speech when a self-hosted or paid speech provider is available.
+- STT model names are provider-specific: `SELF_HOSTED_STT_MODEL` for faster-whisper models such as `tiny.en` or `base.en`, `OPENAI_STT_MODEL` for OpenAI models such as `whisper-1`, and `HF_STT_MODEL` for Hugging Face model ids such as `openai/whisper-large-v3`.
 - Production STT should set `LLM_STT_PROVIDER=selfhosted`, `LLM_SPEECH_FALLBACK_CHAIN=selfhosted,openai,huggingface`, and `SELF_HOSTED_SPEECH_BASE_URL=https://<speech-service>/v1`; `localhost` is valid only when the API and local STT service run on the same machine.
 - Production should add per-user quota tables, provider request logs, and plan-based routing.
 - Live provider tests should be opt-in and excluded from default preview startup.

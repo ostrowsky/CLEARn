@@ -37,7 +37,7 @@ export const openAiSpeechProvider: SpeechProvider = {
     const formData = new FormData();
     const binary = Buffer.from(input.audioBase64.replace(/^data:[^;]+;base64,/, ''), 'base64');
     formData.append('file', new Blob([binary], { type: input.mimeType }), getAudioUploadFileName(input.mimeType));
-    formData.append('model', env.LLM_STT_MODEL);
+    formData.append('model', env.OPENAI_STT_MODEL);
     if (input.language) {
       formData.append('language', input.language);
     }
@@ -53,7 +53,7 @@ export const openAiSpeechProvider: SpeechProvider = {
     }
 
     const json = await response.json();
-    return { text: json.text ?? '', provider: 'openai', model: env.LLM_STT_MODEL };
+    return { text: json.text ?? '', provider: 'openai', model: env.OPENAI_STT_MODEL };
   },
   async textToSpeech(input) {
     if (!env.OPENAI_API_KEY) {
