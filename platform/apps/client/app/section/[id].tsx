@@ -564,6 +564,16 @@ export function LearnerSectionScreen({ sectionId, sectionRoute }: { sectionId?: 
     setOpenBlocks(nextState);
   }, [section?.id]);
 
+  useEffect(() => {
+    if (sectionRoute || !section?.route || typeof window === 'undefined') {
+      return;
+    }
+
+    if (window.location.pathname.startsWith('/section/')) {
+      router.replace(section.route as Href);
+    }
+  }, [router, section?.route, sectionRoute]);
+
   if (!section) {
     return (
       <Screen

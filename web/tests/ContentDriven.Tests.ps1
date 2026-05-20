@@ -168,6 +168,8 @@ Assert-Match -Actual $indexSource -Pattern 'SectionsScreen'
 Assert-Match -Actual $contentRouteSource -Pattern 'LearnerSectionScreen'
 Assert-Match -Actual $contentRouteSource -Pattern 'sectionRoute'
 Assert-Match -Actual $sectionSource -Pattern 'findSectionByRoute\(content, sectionRoute\)'
+Assert-Match -Actual $sectionSource -Pattern "window\.location\.pathname\.startsWith\('/section/'\)"
+Assert-Match -Actual $sectionSource -Pattern 'router\.replace\(section\.route as Href\)'
 Assert-Match -Actual $sectionsSource -Pattern 'router\.push\(targetSection\.route as Href\)'
 Assert-Match -Actual $sectionSource -Pattern 'router\.push\(targetSection\.route as Href\)'
 Assert-True -Condition ($sectionsSource -cnotmatch 'router\.push\(`/section/\$\{targetSection\.id\}`\)') -Message 'Home route cards must use editable section.route instead of technical /section/{id} URLs.'

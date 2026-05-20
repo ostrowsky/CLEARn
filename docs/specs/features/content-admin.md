@@ -29,7 +29,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Admins can set block layout width (`auto`, `full`, or `half`) so selected blocks can appear on the same horizontal row on wide screens.
 - Saved content appears in learner routes without code changes.
 - Learner navigation must use the editable `section.route` paths configured in content, for example `/asking`, `/answering`, and `/learning-chat`; technical implementation routes such as `/section/{id}` must not appear as the primary public URL.
-- Legacy technical section URLs may remain as a compatibility fallback, but route cards and back links should prefer the editable content route.
+- Legacy technical section URLs may remain as a compatibility fallback, but they must redirect to the editable content route when the section can be resolved.
 - Uploaded media can be opened, replaced, and deleted.
 - When an admin uploads an audio file into a clarify-practice material, the admin app must immediately run the configured STT flow on that uploaded audio and write the recognized editable transcript into that material's Statement field.
 - Clarify audio transcripts must preserve unclear or intentionally noisy words as `___` so learners practise asking for the missed detail instead of seeing a guessed word.
