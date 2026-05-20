@@ -1,7 +1,7 @@
 {
   "meta": {
     "appTitle": "CLEARn",
-    "updatedAt": "2026-05-14T20:10:32.073Z",
+    "updatedAt": "2026-05-16T10:54:28.392Z",
     "ui": {
       "brandTagline": "",
       "footerNote": "",
@@ -62,7 +62,7 @@
         "conversationLines": "Conversation lines",
         "maxFiveLines": "Max: five lines",
         "yourWorkContext": "What is the talk about?",
-        "yourClarifyingQuestion": "Your clarifying question",
+        "yourClarifyingQuestion": "    SAMPLE",
         "yourQuestion": "Your question",
         "contextLeadIn": "Context lead-in",
         "followUpRequest": "Could you ...",
@@ -239,8 +239,8 @@
           "openAsset": "Open asset",
           "moveUp": "Move up",
           "moveDown": "Move down",
-          "downloadBackup": "Download full backup",
-          "restoreBackup": "Restore full backup",
+          "downloadBackup": "Download content backup",
+          "restoreBackup": "Restore content backup",
           "fetchTranscript": "Fetch transcript"
         },
         "messages": {
@@ -1656,98 +1656,98 @@
             {
               "id": "clarify-audio-bug",
               "type": "audio",
-              "title": "Bug reproducibility",
-              "body": "Listen to the statement and ask the correct clarification question.",
+              "title": "The bug is only reproducible on ___.",
+              "body": "",
               "url": "/uploads/the-bug-is-8ebf6d54.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "The bug is only reproducible on ___.",
+                "statement": "",
                 "clarification": "Sorry, the bug is only reproducible on what?",
                 "acceptedAnswers": [
                   "Sorry, the bug is only reproducible on what?"
                 ],
-                "placeholder": "Sorry, the bug is only reproducible on ___?"
+                "placeholder": "Sorry, the bug is only reproducible on WHAT?"
               }
             },
             {
               "id": "clarify-audio-regression",
               "type": "audio",
-              "title": "Regression deadline",
-              "body": "Listen to the statement and ask the correct clarification question.",
+              "title": "We need to complete the regression suite by ___.",
+              "body": "",
               "url": "/uploads/regression-3a1d8607.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "We need to complete the regression suite by ___.",
+                "statement": "",
                 "clarification": "Sorry, we need to complete the regression suite by when?",
                 "acceptedAnswers": [
                   "Sorry, we need to complete the regression suite by when?"
                 ],
-                "placeholder": "Sorry, we need to complete the regression suite by ___?"
+                "placeholder": "Sorry, we need to complete the regression suite by WHEN?"
               }
             },
             {
               "id": "clarify-audio-automation",
               "type": "audio",
-              "title": "Automation failure",
-              "body": "Listen to the statement and ask the correct clarification question.",
+              "title": "The automation script failed because of ___.",
+              "body": "",
               "url": "/uploads/automation-464e223d.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "The automation script failed because of ___.",
+                "statement": "",
                 "clarification": "Sorry, the automation script failed because of what?",
                 "acceptedAnswers": [
                   "Sorry, the automation script failed because of what?"
                 ],
-                "placeholder": "Sorry, the automation script failed because of ___?"
+                "placeholder": "Sorry, the automation script failed because of WHAT?"
               }
             },
             {
               "id": "clarify-audio-ticket",
               "type": "audio",
-              "title": "Critical ticket owner",
-              "body": "Listen to the statement and ask the correct clarification question.",
+              "title": "I've assigned the critical ticket to ___. ",
+              "body": "",
               "url": "/uploads/critical-16034007.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "I've assigned the critical ticket to ___. ",
+                "statement": "",
                 "clarification": "Sorry, you've assigned the critical ticket to who?",
                 "acceptedAnswers": [
                   "Sorry, you've assigned the critical ticket to who?",
                   "Sorry, you have assigned the critical ticket to who?"
                 ],
-                "placeholder": "Sorry, you've assigned the critical ticket to ___?"
+                "placeholder": "Sorry, you've assigned the critical ticket to WHO?"
               }
             },
             {
               "id": "clarify-audio-staging",
               "type": "audio",
-              "title": "Staging downtime",
-              "body": "Listen to the statement and ask the correct clarification question.",
+              "title": "The staging environment will be down for ___.",
+              "body": "",
               "url": "/uploads/staging-07ba1dbe.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "The staging environment will be down for ___.",
+                "statement": "",
                 "clarification": "Sorry, the staging environment will be down for how long?",
                 "acceptedAnswers": [
                   "Sorry, the staging environment will be down for how long?"
                 ],
-                "placeholder": "Sorry, the staging environment will be down for ___?"
+                "placeholder": "Sorry, the staging environment will be down for HOW LONG?"
               }
             },
             {
               "id": "clarify-audio-module",
               "type": "audio",
-              "title": "Crash module",
-              "body": "Listen to the statement and ask the correct clarification question.",
+              "title": "The user reported the crash occurring in the ___ module.",
+              "body": "",
               "url": "/uploads/crash-3f719500.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "The user reported the crash occurring in the ___ module.",
+                "statement": "",
                 "clarification": "Sorry, the crash occurred in which module?",
                 "acceptedAnswers": [
                   "Sorry, the crash occurred in which module?"
                 ],
-                "placeholder": "Sorry, the crash occurred in ___ module?"
+                "placeholder": "Sorry, the crash occurred in WHICH module?"
               }
             }
           ],

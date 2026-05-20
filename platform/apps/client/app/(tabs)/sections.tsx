@@ -1,4 +1,4 @@
-import { Redirect, useRouter } from 'expo-router';
+import { type Href, Redirect, useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../../src/components/Screen';
 import { useContent } from '../../src/hooks/useContent';
@@ -45,7 +45,7 @@ export default function SectionsScreen() {
             <Pressable
               key={block.id}
               style={[styles.actionCard, index === 0 ? styles.primaryAction : null]}
-              onPress={() => router.push(`/section/${targetSection.id}`)}
+              onPress={() => router.push(targetSection.route as Href)}
             >
               <Text style={styles.actionTitle}>{block.title}</Text>
               <Text style={styles.actionText}>{block.description}</Text>

@@ -184,7 +184,7 @@ export default function CoachChatPracticeScreen() {
       eyebrow={section?.eyebrow}
       title={practiceBlock?.title ?? section?.title ?? ''}
       subtitle={practiceBlock?.description ?? section?.summary ?? ''}
-      backHref={section ? `/section/${section.id}` : '/sections'}
+      backHref={section ? section.route as never : '/'}
       backLabel={section?.title ?? getNestedString(ui, ['navigation', 'backToHome'])}
     >
       <View style={styles.card}>

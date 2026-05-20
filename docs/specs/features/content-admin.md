@@ -28,6 +28,8 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Admin setup must reject mismatched passwords and incomplete credentials.
 - Admins can set block layout width (`auto`, `full`, or `half`) so selected blocks can appear on the same horizontal row on wide screens.
 - Saved content appears in learner routes without code changes.
+- Learner navigation must use the editable `section.route` paths configured in content, for example `/asking`, `/answering`, and `/learning-chat`; technical implementation routes such as `/section/{id}` must not appear as the primary public URL.
+- Legacy technical section URLs may remain as a compatibility fallback, but route cards and back links should prefer the editable content route.
 - Uploaded media can be opened, replaced, and deleted.
 - When an admin uploads an audio file into a clarify-practice material, the admin app must immediately run the configured STT flow on that uploaded audio and write the recognized editable transcript into that material's Statement field.
 - Clarify audio transcripts must preserve unclear or intentionally noisy words as `___` so learners practise asking for the missed detail instead of seeing a guessed word.
@@ -72,6 +74,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 
 - Current routes include `/admin`, `/api/admin/content`, `/api/admin/media/upload`, `/api/admin/media/delete`, `/api/admin/backup/export`, and `/api/admin/backup/import`.
 - Admin auth routes include `/api/admin/auth/status`, `/api/admin/auth/setup`, `/api/admin/auth/login`, and `/api/admin/auth/logout`.
+- Learner section routes are content-driven. The Expo route handler must resolve public paths from `section.route`, while `/section/[id]` is only a backward-compatible technical fallback.
 - Production content should move from local JSON to a versioned database table.
 - Media should move from local uploads to object storage.
 - Production admin credentials should move from local JSON to a managed database or identity provider.

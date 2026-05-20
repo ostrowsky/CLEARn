@@ -18,6 +18,8 @@ $files = @(
     (Join-Path $platformRoot 'apps\api\src\modules\session\answering.service.ts'),
     (Join-Path $platformRoot 'apps\api\src\modules\session\coach.service.ts'),
     (Join-Path $platformRoot 'apps\client\app\admin.tsx'),
+    (Join-Path $platformRoot 'apps\client\app\(tabs)\sections.tsx'),
+    (Join-Path $platformRoot 'apps\client\app\[...route].tsx'),
     (Join-Path $platformRoot 'apps\client\app\section\[id].tsx'),
     (Join-Path $platformRoot 'apps\client\src\lib\api.ts'),
     (Join-Path $platformRoot 'apps\client\app\practice\asking\after-talk.tsx'),

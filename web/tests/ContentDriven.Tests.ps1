@@ -127,6 +127,7 @@ Write-TestStep 'Shared platform client reads visible copy and runtime rules from
 $screenSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\src\components\Screen.tsx') -Raw
 $sectionsSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\(tabs)\sections.tsx') -Raw
 $sectionSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\section\[id].tsx') -Raw
+$contentRouteSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\[...route].tsx') -Raw
 $clarifySource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\practice\asking\clarify.tsx') -Raw
 $answeringSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\practice\answering\[mode].tsx') -Raw
 $contentMetaSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\src\lib\contentMeta.ts') -Raw
@@ -164,6 +165,13 @@ Assert-Match -Actual $screenSource -Pattern 'brandTagline\?'
 Assert-Match -Actual $screenSource -Pattern 'footerNote\?'
 Assert-Match -Actual $screenSource -Pattern 'watermarkText\?'
 Assert-Match -Actual $indexSource -Pattern 'SectionsScreen'
+Assert-Match -Actual $contentRouteSource -Pattern 'LearnerSectionScreen'
+Assert-Match -Actual $contentRouteSource -Pattern 'sectionRoute'
+Assert-Match -Actual $sectionSource -Pattern 'findSectionByRoute\(content, sectionRoute\)'
+Assert-Match -Actual $sectionsSource -Pattern 'router\.push\(targetSection\.route as Href\)'
+Assert-Match -Actual $sectionSource -Pattern 'router\.push\(targetSection\.route as Href\)'
+Assert-True -Condition ($sectionsSource -cnotmatch 'router\.push\(`/section/\$\{targetSection\.id\}`\)') -Message 'Home route cards must use editable section.route instead of technical /section/{id} URLs.'
+Assert-True -Condition ($sectionSource -cnotmatch 'router\.push\(`/section/\$\{targetSection\.id\}`\)') -Message 'Nested route cards must use editable section.route instead of technical /section/{id} URLs.'
 Assert-Match -Actual $contentMetaSource -Pattern 'getSectionViewConfig'
 Assert-Match -Actual $contentMetaSource -Pattern 'getBlockRenderer'
 Assert-Match -Actual $contentMetaSource -Pattern 'findPracticeScreenForSection'

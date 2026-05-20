@@ -99,10 +99,14 @@ $port = Get-FreePort
 $baseUrl = "http://127.0.0.1:$port"
 $serverProcess = $null
 $uploadedUrl = ''
+$fixtureCredentialA = 'example-value-alpha'
+$fixtureCredentialB = 'example-value-beta'
+$fixtureCredentialWrong = 'example-value-wrong'
+$exampleSessionSecret = 'x' * 32
 
 try {
     Write-TestStep 'Platform API protects admin routes with setup and login'
-    $command = "Set-Location '$platformRoot'; `$env:APP_ENV='development'; `$env:APP_PORT='$port'; `$env:APP_BASE_URL='https://api.clearn.me'; `$env:DEV_CONTENT_PATH='$tempContentPath'; `$env:ADMIN_AUTH_PATH='$tempAuthPath'; `$env:ADMIN_SESSION_SECRET='test-admin-session-secret'; & '$($nodeCommand.Source)' '.\node_modules\tsx\dist\cli.mjs' '.\apps\api\src\index.ts' *> '$logPath'"
+    $command = "Set-Location '$platformRoot'; `$env:APP_ENV='development'; `$env:APP_PORT='$port'; `$env:APP_BASE_URL='https://api.clearn.me'; `$env:DEV_CONTENT_PATH='$tempContentPath'; `$env:ADMIN_AUTH_PATH='$tempAuthPath'; `$env:ADMIN_SESSION_SECRET='$exampleSessionSecret'; & '$($nodeCommand.Source)' '.\node_modules\tsx\dist\cli.mjs' '.\apps\api\src\index.ts' *> '$logPath'"
     $serverProcess = Start-Process powershell.exe -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', $command) -PassThru -WindowStyle Hidden
 
     if (-not (Wait-ForUrl -Url "$baseUrl/api/health")) {
@@ -130,8 +134,8 @@ try {
     try {
         Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/setup" -Method Post -Payload @{
             login = 'admin'
-            password = 'secret-123'
-            confirmPassword = 'different-123'
+            password = $fixtureCredentialA
+            confirmPassword = $fixtureCredentialWrong
             recoveryEmail = 'admin@example.com'
         } | Out-Null
         throw 'Expected setup to reject mismatched passwords.'
@@ -143,8 +147,8 @@ try {
     $adminSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     $setup = Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/setup" -Method Post -Payload @{
         login = 'admin'
-        password = 'secret-123'
-        confirmPassword = 'secret-123'
+        password = $fixtureCredentialA
+        confirmPassword = $fixtureCredentialA
         recoveryEmail = 'admin@example.com'
     } -Session $adminSession
     Assert-True -Condition ([bool]$setup.configured)
@@ -179,21 +183,21 @@ try {
 
     $adminSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     try {
-        Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/login" -Method Post -Payload @{ login = 'admin'; password = 'wrong-password' } -Session $adminSession | Out-Null
+        Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/login" -Method Post -Payload @{ login = 'admin'; password = $fixtureCredentialWrong } -Session $adminSession | Out-Null
         throw 'Expected login to reject invalid credentials.'
     }
     catch {
         Assert-Match -Actual $_.Exception.Message -Pattern '401|Unauthorized'
     }
 
-    Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/login" -Method Post -Payload @{ login = 'admin'; password = 'secret-123' } -Session $adminSession | Out-Null
+    Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/login" -Method Post -Payload @{ login = 'admin'; password = $fixtureCredentialA } -Session $adminSession | Out-Null
 
     try {
         Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/reset-password" -Method Post -Payload @{
             login = 'admin'
             recoveryEmail = 'wrong@example.com'
-            password = 'new-secret-123'
-            confirmPassword = 'new-secret-123'
+            password = $fixtureCredentialB
+            confirmPassword = $fixtureCredentialB
         } -Session $adminSession | Out-Null
         throw 'Expected password reset to reject an invalid recovery email.'
     }
@@ -204,19 +208,19 @@ try {
     Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/reset-password" -Method Post -Payload @{
         login = 'admin'
         recoveryEmail = 'admin@example.com'
-        password = 'new-secret-123'
-        confirmPassword = 'new-secret-123'
+        password = $fixtureCredentialB
+        confirmPassword = $fixtureCredentialB
     } -Session $adminSession | Out-Null
 
     try {
-        Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/login" -Method Post -Payload @{ login = 'admin'; password = 'secret-123' } -Session $adminSession | Out-Null
+        Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/login" -Method Post -Payload @{ login = 'admin'; password = $fixtureCredentialA } -Session $adminSession | Out-Null
         throw 'Expected old password to fail after reset.'
     }
     catch {
         Assert-Match -Actual $_.Exception.Message -Pattern '401|Unauthorized'
     }
 
-    Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/login" -Method Post -Payload @{ login = 'admin'; password = 'new-secret-123' } -Session $adminSession | Out-Null
+    Invoke-JsonRequest -Uri "$baseUrl/api/admin/auth/login" -Method Post -Payload @{ login = 'admin'; password = $fixtureCredentialB } -Session $adminSession | Out-Null
 
     Write-TestStep 'Platform API accepts large admin media uploads'
     $bytes = New-Object byte[] (2MB)

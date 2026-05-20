@@ -528,12 +528,13 @@ function BlockPanel({
   );
 }
 
-export default function SectionScreen() {
+export function LearnerSectionScreen({ sectionId, sectionRoute }: { sectionId?: string; sectionRoute?: string }) {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { content, loading, error } = useContent();
   const { width } = useWindowDimensions();
-  const section = findSectionById(content, id);
+  const resolvedSectionId = sectionId ?? id;
+  const section = sectionRoute ? findSectionByRoute(content, sectionRoute) : findSectionById(content, resolvedSectionId);
   const parentSection = getParentSection(content, section);
   const [openBlocks, setOpenBlocks] = useState<Record<string, boolean>>({});
   const isWide = width >= 920;
@@ -572,7 +573,7 @@ export default function SectionScreen() {
         watermarkText={getNestedString(ui, ['watermarkText'])}
         title={loading ? loadingTitle : missingTitle}
         subtitle={loading ? loadingSubtitle : missingSubtitle}
-        backHref="/sections"
+        backHref="/"
         backLabel={backToHome}
       >
         {loading ? <ActivityIndicator color={tokens.colors.accentContrast} /> : null}
@@ -604,7 +605,7 @@ export default function SectionScreen() {
       eyebrow={section.eyebrow}
       title={section.title}
       subtitle={section.summary}
-      backHref={parentSection ? `/section/${parentSection.id}` : '/sections'}
+      backHref={parentSection ? parentSection.route as Href : '/'}
       backLabel={parentSection ? parentSection.title : backToHome}
     >
       {loading && !content ? <ActivityIndicator color={tokens.colors.accentContrast} /> : null}
@@ -627,7 +628,7 @@ export default function SectionScreen() {
               <Pressable
                 key={block.id}
                 style={[styles.routeCard, index < primaryRouteCount ? styles.routeCardPrimary : null]}
-                onPress={() => router.push(`/section/${targetSection.id}`)}
+                onPress={() => router.push(targetSection.route as Href)}
               >
                 <Text style={styles.routeCardTitle}>{block.title}</Text>
                 <Text style={styles.routeCardText}>{block.description}</Text>
@@ -691,6 +692,11 @@ export default function SectionScreen() {
       ) : null}
     </Screen>
   );
+}
+
+export default function SectionScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  return <LearnerSectionScreen sectionId={id} />;
 }
 
 const webFrameStyle = {

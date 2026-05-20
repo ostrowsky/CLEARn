@@ -746,7 +746,7 @@ export default function ClarifyPracticeScreen() {
       eyebrow={section?.eyebrow}
       title={practiceBlock?.title ?? ''}
       subtitle={practiceBlock?.description ?? ''}
-      backHref={section ? `/section/${section.id}` : '/sections'}
+      backHref={section ? section.route as never : '/'}
       backLabel={section?.title ?? getNestedString(ui, ['navigation', 'backToHome'])}
     >
       {!examples.length ? (
