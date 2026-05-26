@@ -12,7 +12,7 @@ $adminScreen = Get-Content -LiteralPath $adminScreenPath -Raw
 $adminContentHelpersPath = Join-Path $platformRoot 'apps\\client\\src\\lib\\adminContent.ts'
 $adminContentHelpers = Get-Content -LiteralPath $adminContentHelpersPath -Raw
 foreach ($pattern in @(
-    'SOFTskills content admin',
+    'CLEARn content admin',
     'Open learner app',
     'Refresh admin',
     'Save content',
@@ -166,15 +166,15 @@ foreach ($pattern in @(
     'Public smoke test failed',
     'Invoke-PreviewPreflight',
     'Running quick preview preflight tests',
-    'SOFTSKILLS_RUN_FULL_TESTS',
+    'CLEARN_RUN_FULL_TESTS',
     '-RunFullTests',
     'Skipping full test suite for fast preview startup',
     'Stop-PreviousPreview',
-    'Stopping previous SOFTskills preview processes if any',
+    'Stopping previous CLEARn preview processes if any',
     'Stop-PreviewProcessesFromSummary',
     'Stop-PreviewProcessesByCommandLine',
     'Stop-ProcessOnPort',
-    'previous SOFTskills process on port',
+    'previous CLEARn process on port',
     'public API health',
     'public API content',
     '\$maxPreviewAttempts = 3',

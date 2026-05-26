@@ -1,11 +1,11 @@
-# SOFTskills Session Bootstrap
+# CLEARn Session Bootstrap
 
 Use this file as the 30-second startup checklist for a new session.
 
 ## Read Order
 
-1. `D:\Projects\SOFTskills\TOKEN_CONTEXT.md`
-2. `D:\Projects\SOFTskills\WORKFLOW_RULES.md`
+1. `D:\Projects\CLEARn\TOKEN_CONTEXT.md`
+2. `D:\Projects\CLEARn\WORKFLOW_RULES.md`
 3. This file
 
 ## First Questions To Answer
@@ -29,59 +29,59 @@ Before doing anything, identify:
 
 ### Clarify
 
-- `D:\Projects\SOFTskills\platform\apps\client\app\practice\asking\clarify.tsx`
-- `D:\Projects\SOFTskills\platform\apps\client\src\components\practice\ClarifyPracticeInlineList.tsx`
-- `D:\Projects\SOFTskills\web\tests\PlatformClarify.Tests.ps1`
+- `D:\Projects\CLEARn\platform\apps\client\app\practice\asking\clarify.tsx`
+- `D:\Projects\CLEARn\platform\apps\client\src\components\practice\ClarifyPracticeInlineList.tsx`
+- `D:\Projects\CLEARn\web\tests\PlatformClarify.Tests.ps1`
 
 ### Ask after the talk
 
-- `D:\Projects\SOFTskills\platform\apps\client\app\practice\asking\after-talk.tsx`
-- `D:\Projects\SOFTskills\platform\apps\client\src\components\practice\AskAfterComposer.tsx`
-- `D:\Projects\SOFTskills\platform\apps\api\src\modules\practice\practice.service.ts`
-- `D:\Projects\SOFTskills\web\tests\Service.Tests.ps1`
+- `D:\Projects\CLEARn\platform\apps\client\app\practice\asking\after-talk.tsx`
+- `D:\Projects\CLEARn\platform\apps\client\src\components\practice\AskAfterComposer.tsx`
+- `D:\Projects\CLEARn\platform\apps\api\src\modules\practice\practice.service.ts`
+- `D:\Projects\CLEARn\web\tests\Service.Tests.ps1`
 
 ### Answering mixed
 
-- `D:\Projects\SOFTskills\platform\apps\client\app\practice\answering\[mode].tsx`
-- `D:\Projects\SOFTskills\platform\apps\api\src\modules\session\answering.service.ts`
-- `D:\Projects\SOFTskills\web\tests\PlatformAnswering.Tests.ps1`
+- `D:\Projects\CLEARn\platform\apps\client\app\practice\answering\[mode].tsx`
+- `D:\Projects\CLEARn\platform\apps\api\src\modules\session\answering.service.ts`
+- `D:\Projects\CLEARn\web\tests\PlatformAnswering.Tests.ps1`
 
 ### AI learning chat
 
-- `D:\Projects\SOFTskills\platform\apps\client\app\practice\chat.tsx`
-- `D:\Projects\SOFTskills\platform\apps\api\src\modules\session\coach.service.ts`
-- `D:\Projects\SOFTskills\web\tests\PlatformCoach.Tests.ps1`
+- `D:\Projects\CLEARn\platform\apps\client\app\practice\chat.tsx`
+- `D:\Projects\CLEARn\platform\apps\api\src\modules\session\coach.service.ts`
+- `D:\Projects\CLEARn\web\tests\PlatformCoach.Tests.ps1`
 
 ### Admin
 
-- `D:\Projects\SOFTskills\platform\apps\client\app\admin.tsx`
-- `D:\Projects\SOFTskills\web\data\content.json`
-- `D:\Projects\SOFTskills\web\tests\PlatformAdmin.Tests.ps1`
-- `D:\Projects\SOFTskills\web\tests\Admin.Tests.ps1`
+- `D:\Projects\CLEARn\platform\apps\client\app\admin.tsx`
+- `D:\Projects\CLEARn\web\data\content.json`
+- `D:\Projects\CLEARn\web\tests\PlatformAdmin.Tests.ps1`
+- `D:\Projects\CLEARn\web\tests\Admin.Tests.ps1`
 
 ## Cheapest Useful Commands
 
 Targeted tests:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\PlatformSyntax.Tests.ps1
-powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\PlatformAnswering.Tests.ps1
-powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\PlatformClarify.Tests.ps1
-powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\PlatformCoach.Tests.ps1
-powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\PlatformAdmin.Tests.ps1
+powershell -ExecutionPolicy Bypass -File D:\Projects\CLEARn\web\tests\PlatformSyntax.Tests.ps1
+powershell -ExecutionPolicy Bypass -File D:\Projects\CLEARn\web\tests\PlatformAnswering.Tests.ps1
+powershell -ExecutionPolicy Bypass -File D:\Projects\CLEARn\web\tests\PlatformClarify.Tests.ps1
+powershell -ExecutionPolicy Bypass -File D:\Projects\CLEARn\web\tests\PlatformCoach.Tests.ps1
+powershell -ExecutionPolicy Bypass -File D:\Projects\CLEARn\web\tests\PlatformAdmin.Tests.ps1
 ```
 
 Full suites only when necessary:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\run-admin-tests.ps1
-powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\run-tests.ps1
+powershell -ExecutionPolicy Bypass -File D:\Projects\CLEARn\web\tests\run-admin-tests.ps1
+powershell -ExecutionPolicy Bypass -File D:\Projects\CLEARn\web\tests\run-tests.ps1
 ```
 
 Public preview:
 
 ```powershell
-cd D:\Projects\SOFTskills
+cd D:\Projects\CLEARn
 .\start-cloudflare-preview.bat
 ```
 
@@ -97,6 +97,6 @@ cd D:\Projects\SOFTskills
 
 If a new lesson will help future sessions start faster, add one short note to:
 
-- `D:\Projects\SOFTskills\TOKEN_CONTEXT.md`
+- `D:\Projects\CLEARn\TOKEN_CONTEXT.md`
 
 Do not store long logs or temporary thinking here.

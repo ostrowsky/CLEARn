@@ -1,10 +1,10 @@
-﻿param([int]$Port = 8080,[switch]$OpenBrowser)
+param([int]$Port = 8080,[switch]$OpenBrowser)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'app\Services.ps1')
 . (Join-Path $PSScriptRoot 'app\ContentStore.ps1')
 $script:ProjectRoot = $PSScriptRoot
-$script:SoftSkillsSessions = @{}
+$script:ClearnSessions = @{}
 $script:StatusTexts = @{200='OK';400='Bad Request';404='Not Found';405='Method Not Allowed';500='Internal Server Error'}
 function Read-AsciiLine {
 param([System.IO.Stream]$Stream)
@@ -129,7 +129,7 @@ $method = $Request.Method
 try { $body = ConvertFrom-JsonBody -Body $Request.Body } catch { return (New-JsonResponse -Payload @{ error = $_.Exception.Message } -StatusCode 400) }
 if ($method -eq 'GET' -and $path -eq '/api/health') {
 $content = Get-AppContent -ProjectRoot $script:ProjectRoot
-return (New-JsonResponse -Payload @{ status = 'ok'; generatorMode = Get-GeneratorMode; model = $env:SOFTSKILLS_LLM_MODEL; contentUpdatedAt = $content.meta.updatedAt })
+return (New-JsonResponse -Payload @{ status = 'ok'; generatorMode = Get-GeneratorMode; model = $env:CLEARN_LLM_MODEL; contentUpdatedAt = $content.meta.updatedAt })
 }
 switch ($path) {
 '/api/content' { if ($method -ne 'GET') { return (New-JsonResponse -Payload @{ error = 'Method not allowed.' } -StatusCode 405) }; return (New-JsonResponse -Payload (Get-AppContent -ProjectRoot $script:ProjectRoot)) }
@@ -152,8 +152,8 @@ try { return (New-JsonResponse -Payload (Remove-UploadedMedia -ProjectRoot $scri
 '/api/asking/without-context' { if ($method -ne 'POST') { break }; return (New-JsonResponse -Payload (Get-AskWithoutContextExercise -Offset ([int](Get-RequestPropertyValue -Body $body -Name 'offset' -Default 0)))) }
 '/api/asking/after-talk' { if ($method -ne 'POST') { break }; return (New-JsonResponse -Payload (Get-AskAfterTalkBrief -Context ([string](Get-RequestPropertyValue -Body $body -Name 'context' -Default '')) -Offset ([int](Get-RequestPropertyValue -Body $body -Name 'offset' -Default 0)))) }
 '/api/asking/after-talk/check' { if ($method -ne 'POST') { break }; return (New-JsonResponse -Payload (Test-AskAfterQuestion -Question ([string](Get-RequestPropertyValue -Body $body -Name 'question' -Default '')))) }
-'/api/answering/session/start' { if ($method -ne 'POST') { break }; $session = New-AnsweringSession -Context ([string](Get-RequestPropertyValue -Body $body -Name 'context' -Default '')) -Mode ([string](Get-RequestPropertyValue -Body $body -Name 'mode' -Default 'good')); $script:SoftSkillsSessions[$session.sessionId] = $session; return (New-JsonResponse -Payload $session) }
-'/api/answering/session/respond' { if ($method -ne 'POST') { break }; return (New-JsonResponse -Payload (Submit-AnsweringReply -SessionStore $script:SoftSkillsSessions -SessionId ([string](Get-RequestPropertyValue -Body $body -Name 'sessionId' -Default '')) -UserReply ([string](Get-RequestPropertyValue -Body $body -Name 'userReply' -Default '')))) }
+'/api/answering/session/start' { if ($method -ne 'POST') { break }; $session = New-AnsweringSession -Context ([string](Get-RequestPropertyValue -Body $body -Name 'context' -Default '')) -Mode ([string](Get-RequestPropertyValue -Body $body -Name 'mode' -Default 'good')); $script:ClearnSessions[$session.sessionId] = $session; return (New-JsonResponse -Payload $session) }
+'/api/answering/session/respond' { if ($method -ne 'POST') { break }; return (New-JsonResponse -Payload (Submit-AnsweringReply -SessionStore $script:ClearnSessions -SessionId ([string](Get-RequestPropertyValue -Body $body -Name 'sessionId' -Default '')) -UserReply ([string](Get-RequestPropertyValue -Body $body -Name 'userReply' -Default '')))) }
 default { return (New-JsonResponse -Payload @{ error = 'Unknown API route.' } -StatusCode 404) }
 }
 }
@@ -181,12 +181,12 @@ $errorResponse = New-JsonResponse -Payload @{ error = $_.Exception.Message } -St
 try { Send-TcpResponse -Client $Client -Response $errorResponse } catch { }
 } finally { $Client.Close() }
 }
-function Start-SoftSkillsServer {
+function Start-ClearnServer {
 param([string]$ProjectRoot,[int]$Port = 8080)
 $staticRoot = Join-Path $ProjectRoot 'static'
 $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, $Port)
 $listener.Start()
-Write-Host "SOFTskills web server is running on http://localhost:$Port/"
+Write-Host "CLEARn web server is running on http://localhost:$Port/"
 try {
 while ($true) {
 $client = $listener.AcceptTcpClient()
@@ -196,7 +196,7 @@ Handle-TcpClient -Client $client -StaticRoot $staticRoot
 }
 Ensure-ContentStore -ProjectRoot $script:ProjectRoot
 if ($OpenBrowser) { Start-Job -ScriptBlock { param($Value) Start-Sleep -Milliseconds 600; explorer.exe $Value } -ArgumentList "http://localhost:$Port/" | Out-Null }
-Start-SoftSkillsServer -ProjectRoot $PSScriptRoot -Port $Port
+Start-ClearnServer -ProjectRoot $PSScriptRoot -Port $Port
 
 
 

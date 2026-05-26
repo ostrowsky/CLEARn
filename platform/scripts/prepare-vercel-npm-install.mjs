@@ -4,8 +4,8 @@ import path from 'node:path';
 const root = process.cwd();
 
 const replacements = new Map([
-  ['@softskills/contracts', 'file:../../packages/contracts'],
-  ['@softskills/domain', 'file:../../packages/domain'],
+  ['@clearn/contracts', 'file:../../packages/contracts'],
+  ['@clearn/domain', 'file:../../packages/domain'],
 ]);
 
 async function patchPackageJson(relativePath) {

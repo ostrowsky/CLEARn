@@ -1,4 +1,4 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $workspaceRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
@@ -164,7 +164,7 @@ try {
     $migratedVideo = @($migratedVideoLibrary.materials | Where-Object { $_.type -eq 'video' } | Select-Object -First 1)[0]
     Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$migratedVideo.meta.transcript)) -Message 'Admin content should migrate bundled video transcripts into old mutable storage when the material ID matches.'
 
-    $sessionCookie = ($adminSession.Cookies.GetCookies($baseUrl) | Where-Object { $_.Name -eq 'softskills_admin_session' } | Select-Object -First 1)
+    $sessionCookie = ($adminSession.Cookies.GetCookies($baseUrl) | Where-Object { $_.Name -eq 'clearn_admin_session' } | Select-Object -First 1)
     Assert-True -Condition ($null -ne $sessionCookie) -Message 'Admin setup should store a signed session cookie.'
     Assert-True -Condition (-not [bool]$sessionCookie.Secure) -Message 'Development admin cookies must not be Secure, otherwise localhost HTTP admin actions lose authentication after login.'
     $browserSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession

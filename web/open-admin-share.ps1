@@ -1,4 +1,4 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 & (Join-Path $projectRoot 'tests\run-admin-tests.ps1')
@@ -78,8 +78,8 @@ function Start-QuickTunnel {
     )
 
     $token = [guid]::NewGuid().ToString('N').Substring(0, 8)
-    $stdoutPath = Join-Path $env:TEMP "softskills-$Label-$token.out.log"
-    $stderrPath = Join-Path $env:TEMP "softskills-$Label-$token.err.log"
+    $stdoutPath = Join-Path $env:TEMP "clearn-$Label-$token.out.log"
+    $stderrPath = Join-Path $env:TEMP "clearn-$Label-$token.err.log"
 
     $process = Start-Process -FilePath $CloudflaredPath -ArgumentList @('tunnel', '--url', "http://127.0.0.1:$Port") -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath -PassThru -WindowStyle Hidden
 

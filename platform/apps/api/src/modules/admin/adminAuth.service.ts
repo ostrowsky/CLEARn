@@ -20,7 +20,7 @@ type SessionRecord = {
 };
 
 const passwordIterations = 210000;
-const sessionCookieName = 'softskills_admin_session';
+const sessionCookieName = 'clearn_admin_session';
 const sessionTtlMs = 1000 * 60 * 60 * 12;
 
 function cleanText(value: unknown) {

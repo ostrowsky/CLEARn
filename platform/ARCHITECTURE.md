@@ -1,4 +1,4 @@
-﻿# SOFTskills Platform Architecture
+# CLEARn Platform Architecture
 
 This folder is the new production-ready foundation for the product.
 

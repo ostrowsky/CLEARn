@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { AppContent, AskAfterBrief, AskAfterSpeechLine, ContentBlock, ContentSection } from '@softskills/domain';
+import type { AppContent, AskAfterBrief, AskAfterSpeechLine, ContentBlock, ContentSection } from '@clearn/domain';
 import { useSpeechDraft } from '../../hooks/useSpeechDraft';
 import { apiClient, resolveApiUrl } from '../../lib/api';
 import {

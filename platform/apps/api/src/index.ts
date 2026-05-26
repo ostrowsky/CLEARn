@@ -29,4 +29,4 @@ await registerVideoTranscriptSegmentRoutes(app);
 await registerMediaBackupRoutes(app);
 
 await app.listen({ port: env.APP_PORT, host: '0.0.0.0' });
-app.log.info(`SOFTskills API listening on ${env.APP_BASE_URL}`);
+app.log.info(`CLEARn API listening on ${env.APP_BASE_URL}`);

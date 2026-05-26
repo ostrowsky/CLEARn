@@ -1,7 +1,7 @@
-﻿import { createElement, useEffect, useRef, useState } from 'react';
+import { createElement, useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { ContentBlock, ContentMaterial } from '@softskills/domain';
+import type { ContentBlock, ContentMaterial } from '@clearn/domain';
 import { Screen } from '../../../src/components/Screen';
 import { useContent } from '../../../src/hooks/useContent';
 import { apiClient, resolveApiUrl } from '../../../src/lib/api';

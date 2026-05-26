@@ -1,6 +1,6 @@
 {
   "meta": {
-    "appTitle": "SOFTskills",
+    "appTitle": "CLEARn",
     "updatedAt": "2026-05-12T19:59:15.271Z",
     "ui": {
       "brandTagline": "Shared web + mobile prototype",
@@ -154,7 +154,7 @@
       "admin": {
         "openLearnerApp": "Open learner app",
         "refreshAdmin": "Refresh admin",
-        "title": "SOFTskills content admin",
+        "title": "CLEARn content admin",
         "hint": "Manage sections, blocks, text materials, practice copy and media assets for the shared prototype.",
         "saveContent": "Save content",
         "reloadFromDisk": "Reload from disk",
@@ -1461,7 +1461,7 @@
       "eyebrow": "Meeting English practice for IT specialists",
       "type": "landing",
       "route": "/",
-      "summary": "This first SOFTskills prototype covers question practice for interviews, one-to-ones, agile rituals, Q&A sessions and team meetings.",
+      "summary": "This first CLEARn prototype covers question practice for interviews, one-to-ones, agile rituals, Q&A sessions and team meetings.",
       "blocks": [
         {
           "id": "home-asking",

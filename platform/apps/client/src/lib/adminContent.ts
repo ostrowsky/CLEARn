@@ -1,4 +1,4 @@
-﻿import type { AppContent, ContentBlock, ContentMaterial, ContentSection } from '@softskills/domain';
+import type { AppContent, ContentBlock, ContentMaterial, ContentSection } from '@clearn/domain';
 import { getNestedString } from './contentMeta';
 
 export type AdminSchemaDrafts = {

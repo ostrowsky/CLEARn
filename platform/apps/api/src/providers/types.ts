@@ -6,7 +6,7 @@ import type {
   QuestionFormationExercise,
   SpeechToTextResult,
   TextToSpeechResult,
-} from '@softskills/domain';
+} from '@clearn/domain';
 
 export type ChatGenerationInput = {
   prompt: string;

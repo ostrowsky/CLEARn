@@ -4,7 +4,7 @@ cd /d "%~dp0"
 
 if exist ".\platform\share-preview-links.txt" del /f /q ".\platform\share-preview-links.txt" >nul 2>nul
 
-echo Starting SOFTskills public Cloudflare preview...
+echo Starting CLEARn public Cloudflare preview...
 echo.
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\platform\open-share-preview.ps1"
 set "EXIT_CODE=%ERRORLEVEL%"

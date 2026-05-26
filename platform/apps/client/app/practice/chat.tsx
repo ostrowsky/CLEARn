@@ -1,6 +1,6 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { CoachChatSession } from '@softskills/domain';
+import type { CoachChatSession } from '@clearn/domain';
 import { Screen } from '../../src/components/Screen';
 import { useContent } from '../../src/hooks/useContent';
 import { useSpeechDraft } from '../../src/hooks/useSpeechDraft';

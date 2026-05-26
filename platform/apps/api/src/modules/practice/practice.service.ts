@@ -5,7 +5,7 @@ import type {
   ClarifyExercise,
   QuestionFormationBlank,
   QuestionFormationExercise,
-} from '@softskills/domain';
+} from '@clearn/domain';
 import type { ContentService } from '../content/content.service';
 import { withChatProvider } from '../../providers/providerRegistry';
 import { detectPracticeProfileKey, inferConversationContext } from '../shared/contextSummary';

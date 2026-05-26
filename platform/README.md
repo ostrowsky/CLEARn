@@ -1,4 +1,4 @@
-﻿# SOFTskills Platform
+# CLEARn Platform
 
 This is the shared learner + admin foundation for the product.
 
@@ -69,8 +69,8 @@ This script creates:
 - a public tunnel for the Expo web preview
 - a learner URL at `/sections`
 - an admin URL at `/admin`
-- a summary file saved to [share-preview-links.txt](D:/Projects/SOFTskills/platform/share-preview-links.txt)
+- a summary file saved to [share-preview-links.txt](D:/Projects/CLEARn/platform/share-preview-links.txt)
 
 ## Infrastructure
 
-Use [docker-compose.yml](D:/Projects/SOFTskills/platform/infra/docker-compose.yml) for local Postgres, Redis, and MinIO.
+Use [docker-compose.yml](D:/Projects/CLEARn/platform/infra/docker-compose.yml) for local Postgres, Redis, and MinIO.

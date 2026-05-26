@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { AppContent, ContentMaterial } from '@softskills/domain';
+import type { AppContent, ContentMaterial } from '@clearn/domain';
 import { apiClient } from '../lib/api';
 
 function parseSeconds(value: unknown) {

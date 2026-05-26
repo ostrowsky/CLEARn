@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from faster_whisper import WhisperModel
 
 
-app = FastAPI(title="SOFTskills local STT", version="1.0.0")
+app = FastAPI(title="CLEARn local STT", version="1.0.0")
 
 DEFAULT_MODEL = os.environ.get("LOCAL_STT_MODEL", "base.en")
 DEVICE = os.environ.get("LOCAL_STT_DEVICE", "cpu")

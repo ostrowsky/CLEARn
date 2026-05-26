@@ -1,4 +1,4 @@
-﻿import Redis from 'ioredis';
+import Redis from 'ioredis';
 import { env } from '../../config/env';
 
 export interface PersistedSession {
@@ -26,11 +26,11 @@ export class RedisSessionStore<TSession extends PersistedSession> implements Ses
   private readonly redis = new Redis(env.REDIS_URL);
 
   async get(sessionId: string): Promise<TSession | null> {
-    const raw = await this.redis.get(`softskills:session:${sessionId}`);
+    const raw = await this.redis.get(`clearn:session:${sessionId}`);
     return raw ? (JSON.parse(raw) as TSession) : null;
   }
 
   async set(session: TSession): Promise<void> {
-    await this.redis.set(`softskills:session:${session.sessionId}`, JSON.stringify(session), 'EX', 3600);
+    await this.redis.set(`clearn:session:${session.sessionId}`, JSON.stringify(session), 'EX', 3600);
   }
 }

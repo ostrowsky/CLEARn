@@ -1,5 +1,5 @@
 {
-  "name": "softskills-platform",
+  "name": "clearn-platform",
   "private": true,
   "packageManager": "pnpm@10.8.0",
   "engines": {
@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "dev:api": "node ./node_modules/tsx/dist/cli.mjs watch ./apps/api/src/index.ts",
-    "dev:client": "npm run --workspace @softskills/client start",
+    "dev:client": "npm run --workspace @clearn/client start",
     "build": "npm run --workspaces --if-present build",
     "lint": "npm run --workspaces --if-present lint",
     "test": "npm run --workspaces --if-present test"

@@ -1,6 +1,6 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 
-$script:SoftSkillsSessions = @{}
+$script:ClearnSessions = @{}
 
 function Read-JsonBody {
     param(
@@ -181,14 +181,14 @@ function Handle-ApiRequest {
             $session = New-AnsweringSession `
                 -Context ([string](Get-RequestPropertyValue -Body $body -Name "context" -Default "")) `
                 -Mode ([string](Get-RequestPropertyValue -Body $body -Name "mode" -Default "good"))
-            $script:SoftSkillsSessions[$session.sessionId] = $session
+            $script:ClearnSessions[$session.sessionId] = $session
             Write-JsonResponse -Response $response -Payload $session
             return
         }
         "/api/answering/session/respond" {
             if ($method -ne "POST") { break }
             $updated = Submit-AnsweringReply `
-                -SessionStore $script:SoftSkillsSessions `
+                -SessionStore $script:ClearnSessions `
                 -SessionId ([string](Get-RequestPropertyValue -Body $body -Name "sessionId" -Default "")) `
                 -UserReply ([string](Get-RequestPropertyValue -Body $body -Name "userReply" -Default ""))
             Write-JsonResponse -Response $response -Payload $updated
@@ -199,7 +199,7 @@ function Handle-ApiRequest {
     Write-JsonResponse -Response $response -Payload @{ error = "Unknown API route." } -StatusCode 404
 }
 
-function Start-SoftSkillsServer {
+function Start-ClearnServer {
     param(
         [string]$ProjectRoot,
         [int]$Port = 8080
@@ -211,7 +211,7 @@ function Start-SoftSkillsServer {
     $listener.Prefixes.Add($prefix)
     $listener.Start()
 
-    Write-Host "SOFTskills web server is running on $prefix"
+    Write-Host "CLEARn web server is running on $prefix"
 
     try {
         while ($listener.IsListening) {

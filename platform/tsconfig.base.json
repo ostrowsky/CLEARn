@@ -10,8 +10,8 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@softskills/contracts": ["packages/contracts/src"],
-      "@softskills/domain": ["packages/domain/src"]
+      "@clearn/contracts": ["packages/contracts/src"],
+      "@clearn/domain": ["packages/domain/src"]
     }
   }
 }

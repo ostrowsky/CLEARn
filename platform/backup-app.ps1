@@ -113,7 +113,7 @@ if ([string]::IsNullOrWhiteSpace($OutputPath)) {
     $backupDirectory = Join-Path $projectRootFull 'platform\backups'
     Ensure-Directory -Path $backupDirectory
     $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-    $OutputPath = Join-Path $backupDirectory ("softskills-backup-$timestamp.zip")
+    $OutputPath = Join-Path $backupDirectory ("clearn-backup-$timestamp.zip")
 }
 
 $outputPathFull = Resolve-FullPath -Path $OutputPath

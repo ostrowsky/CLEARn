@@ -1,5 +1,5 @@
-﻿import crypto from 'node:crypto';
-import type { ChatMessage, CoachChatSession, CoachChatTurn } from '@softskills/domain';
+import crypto from 'node:crypto';
+import type { ChatMessage, CoachChatSession, CoachChatTurn } from '@clearn/domain';
 import { env } from '../../config/env';
 import { withChatProvider } from '../../providers/providerRegistry';
 import { inferConversationContext } from '../shared/contextSummary';

@@ -8,6 +8,6 @@
   "scripts": {
     "build": "cd platform && pnpm run build",
     "test": "powershell -ExecutionPolicy Bypass -File ./web/tests/run-tests.ps1",
-    "vercel-build": "cd platform && pnpm --filter @softskills/client build"
+    "vercel-build": "cd platform && pnpm --filter @clearn/client build"
   }
 }

@@ -1,4 +1,4 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -80,7 +80,7 @@ foreach ($fileName in @('content.template.json', 'content.json')) {
 Write-TestStep 'Legacy admin UI no longer hardcodes user-facing copy or schema constants'
 $adminScript = Get-Content -LiteralPath (Join-Path $projectRoot 'static\admin.js') -Raw
 foreach ($pattern in @(
-    'SOFTskills content admin',
+    'CLEARn content admin',
     'Open learner app',
     'Refresh admin',
     'Save content',
@@ -142,7 +142,7 @@ foreach ($pattern in @(
     'Back to home',
     'Open live practice',
     'Unable to load content',
-    'SOFTskills'
+    'CLEARn'
 )) {
     Assert-True -Condition ($screenSource -cnotmatch $pattern) -Message "Platform screen chrome still hardcodes '$pattern'."
     Assert-True -Condition ($sectionsSource -cnotmatch $pattern) -Message "Sections screen still hardcodes '$pattern'."
@@ -189,7 +189,7 @@ Assert-Match -Actual $domainSource -Pattern 'export type SectionType = string;'
 Write-TestStep 'Platform admin screen reads visible copy from content meta'
 $platformAdminSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\admin.tsx') -Raw
 foreach ($pattern in @(
-    'SOFTskills content admin',
+    'CLEARn content admin',
     'Open learner app',
     'Refresh admin',
     'Save content',

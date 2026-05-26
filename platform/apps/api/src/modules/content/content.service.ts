@@ -1,4 +1,4 @@
-﻿import type { AppContent } from '@softskills/domain';
+import type { AppContent } from '@clearn/domain';
 import type { ContentRepository } from './content.repository';
 import type { MediaStore } from './media.store';
 

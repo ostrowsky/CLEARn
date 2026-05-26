@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 
-echo Starting SOFTskills local free STT server...
+echo Starting CLEARn local free STT server...
 echo.
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\platform\start-local-stt.ps1"
 set "EXIT_CODE=%ERRORLEVEL%"

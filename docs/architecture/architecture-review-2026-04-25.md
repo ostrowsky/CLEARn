@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-SOFTskills has a strong MVP foundation for rapid product discovery: a TypeScript monorepo, Expo client, Fastify API, shared domain/contracts, content-driven runtime, provider abstraction for AI, and broad regression tests. This is a good direction for future web/mobile reuse.
+CLEARn has a strong MVP foundation for rapid product discovery: a TypeScript monorepo, Expo client, Fastify API, shared domain/contracts, content-driven runtime, provider abstraction for AI, and broad regression tests. This is a good direction for future web/mobile reuse.
 
 The main architectural risk is that the project is still halfway between prototype and production. The new `platform/` stack coexists with the legacy `web/` stack, production services are declared but not fully used, persistence is mostly filesystem-based, admin access is public in previews, and deployment is based on local processes plus Cloudflare quick tunnels. That is acceptable for customer validation, but not for a commercial subscription product.
 

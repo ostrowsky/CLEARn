@@ -1,8 +1,8 @@
-# SOFTskills Workflow Rules
+# CLEARn Workflow Rules
 
 This file defines the cheapest practical workflow for future sessions.
 
-Read this after `D:\Projects\SOFTskills\TOKEN_CONTEXT.md`.
+Read this after `D:\Projects\CLEARn\TOKEN_CONTEXT.md`.
 
 ## Main Goal
 
@@ -14,7 +14,7 @@ Read this after `D:\Projects\SOFTskills\TOKEN_CONTEXT.md`.
 
 Use this order unless there is a very strong reason not to:
 
-1. Read `D:\Projects\SOFTskills\TOKEN_CONTEXT.md`
+1. Read `D:\Projects\CLEARn\TOKEN_CONTEXT.md`
 2. Identify the exact screen, service, or content file involved
 3. Read only those exact files
 4. Check the nearest existing targeted test
@@ -44,8 +44,8 @@ Do not start with:
 
 Read first:
 
-- `D:\Projects\SOFTskills\web\data\content.json`
-- `D:\Projects\SOFTskills\web\data\content.template.json`
+- `D:\Projects\CLEARn\web\data\content.json`
+- `D:\Projects\CLEARn\web\data\content.template.json`
 - the nearest screen file that renders the content
 
 Do not start with:
@@ -95,15 +95,15 @@ Use MCP when it replaces broad text reasoning with precise metadata retrieval.
 
 ### Run targeted tests first
 
-Use the smallest relevant test from `D:\Projects\SOFTskills\TOKEN_CONTEXT.md`.
+Use the smallest relevant test from `D:\Projects\CLEARn\TOKEN_CONTEXT.md`.
 
 Examples:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\PlatformAnswering.Tests.ps1
-powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\PlatformClarify.Tests.ps1
-powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\PlatformCoach.Tests.ps1
-powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\PlatformAdmin.Tests.ps1
+powershell -ExecutionPolicy Bypass -File D:\Projects\CLEARn\web\tests\PlatformAnswering.Tests.ps1
+powershell -ExecutionPolicy Bypass -File D:\Projects\CLEARn\web\tests\PlatformClarify.Tests.ps1
+powershell -ExecutionPolicy Bypass -File D:\Projects\CLEARn\web\tests\PlatformCoach.Tests.ps1
+powershell -ExecutionPolicy Bypass -File D:\Projects\CLEARn\web\tests\PlatformAdmin.Tests.ps1
 ```
 
 ### Run full suites only if one of these is true
@@ -117,8 +117,8 @@ powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\Platfo
 Full suites:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\run-admin-tests.ps1
-powershell -ExecutionPolicy Bypass -File D:\Projects\SOFTskills\web\tests\run-tests.ps1
+powershell -ExecutionPolicy Bypass -File D:\Projects\CLEARn\web\tests\run-admin-tests.ps1
+powershell -ExecutionPolicy Bypass -File D:\Projects\CLEARn\web\tests\run-tests.ps1
 ```
 
 ## Search Discipline
@@ -158,7 +158,7 @@ Restart preview after:
 Launcher:
 
 ```powershell
-cd D:\Projects\SOFTskills
+cd D:\Projects\CLEARn
 .\start-cloudflare-preview.bat
 ```
 
@@ -217,8 +217,8 @@ Do not store:
 
 After a meaningful fix, update one of:
 
-- `D:\Projects\SOFTskills\TOKEN_CONTEXT.md`
-- `D:\Projects\SOFTskills\WORKFLOW_RULES.md`
+- `D:\Projects\CLEARn\TOKEN_CONTEXT.md`
+- `D:\Projects\CLEARn\WORKFLOW_RULES.md`
 
 Only if the new information will save future tokens.
 

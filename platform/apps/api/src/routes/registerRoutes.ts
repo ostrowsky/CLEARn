@@ -1,7 +1,7 @@
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import path from 'node:path';
-import type { AnsweringSession, CoachChatSession } from '@softskills/domain';
+import type { AnsweringSession, CoachChatSession } from '@clearn/domain';
 import type { FastifyInstance } from 'fastify';
 import { env } from '../config/env';
 import { AdminAuthService } from '../modules/admin/adminAuth.service';
@@ -354,7 +354,7 @@ async function fetchInnertubePlayerResponse(videoId: string) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'User-Agent': 'Mozilla/5.0 SOFTskills transcript fetcher',
+      'User-Agent': 'Mozilla/5.0 CLEARn transcript fetcher',
     },
     body: JSON.stringify({
       context: {
@@ -444,7 +444,7 @@ async function fetchYouTubeTranscript(url: string): Promise<VideoTranscriptResul
   const watchUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(info.id)}`;
   const watchResponse = await fetch(watchUrl, {
     headers: {
-      'User-Agent': 'Mozilla/5.0 SOFTskills transcript fetcher',
+      'User-Agent': 'Mozilla/5.0 CLEARn transcript fetcher',
       'Accept-Language': 'en-US,en;q=0.9',
     },
   });
@@ -657,7 +657,7 @@ export async function registerRoutes(app: FastifyInstance) {
       return reply;
     }
     const body = request.body as { fileName?: string; base64?: string };
-    return backupService.restoreBackup(String(body.fileName || 'softskills-backup.zip'), String(body.base64 || ''));
+    return backupService.restoreBackup(String(body.fileName || 'clearn-backup.zip'), String(body.base64 || ''));
   });
 
   app.get('/api/media/video-transcript', async (request, reply) => {

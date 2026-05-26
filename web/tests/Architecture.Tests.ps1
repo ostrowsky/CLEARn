@@ -120,13 +120,13 @@ $productionEnvExample = Get-Content -LiteralPath (Join-Path $platformRoot '.env.
 $renderBlueprint = Get-Content -LiteralPath (Join-Path $workspaceRoot 'render.yaml') -Raw
 foreach ($pattern in @(
     'vercel-build',
-    'cd platform && pnpm --filter @softskills/client build'
+    'cd platform && pnpm --filter @clearn/client build'
 )) {
     Assert-Match -Actual $rootPackage -Pattern $pattern
 }
 foreach ($pattern in @(
     '"outputDirectory": "platform/apps/client/dist"',
-    '"buildCommand": "cd platform && npm run --workspace @softskills/client build"',
+    '"buildCommand": "cd platform && npm run --workspace @clearn/client build"',
     '"installCommand": "cd platform && node ./scripts/prepare-vercel-npm-install.mjs && npm install --legacy-peer-deps"',
     '"destination": "/index.html"'
 )) {
@@ -179,8 +179,8 @@ foreach ($pattern in @(
     'buildCommand: cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate',
     'pnpm install --frozen-lockfile',
     'pip install -r apps/api/requirements.txt',
-    'pnpm --filter @softskills/api build',
-    'startCommand: cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm --filter @softskills/api start',
+    'pnpm --filter @clearn/api build',
+    'startCommand: cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm --filter @clearn/api start',
     'healthCheckPath: /api/health',
     'mountPath: /var/lib/clearn',
     'APP_BASE_URL',

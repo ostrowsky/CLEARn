@@ -102,7 +102,7 @@ function Get-ContextSummary {
 }
 
 function Test-RemoteLlmConfigured {
-    return [bool]($env:SOFTSKILLS_LLM_API_KEY -and $env:SOFTSKILLS_LLM_MODEL)
+    return [bool]($env:CLEARN_LLM_API_KEY -and $env:CLEARN_LLM_MODEL)
 }
 
 function Get-GeneratorMode {
@@ -117,14 +117,14 @@ function Invoke-OptionalLlmJson {
         return [PSCustomObject]@{ success = $false; payload = $null; error = $null; source = 'not-configured' }
     }
 
-    $endpoint = $env:SOFTSKILLS_LLM_ENDPOINT
+    $endpoint = $env:CLEARN_LLM_ENDPOINT
     if ([string]::IsNullOrWhiteSpace($endpoint)) {
         $endpoint = 'https://api.openai.com/v1/chat/completions'
     }
 
     try {
         $body = @{
-            model = $env:SOFTSKILLS_LLM_MODEL
+            model = $env:CLEARN_LLM_MODEL
             temperature = 0.8
             response_format = @{ type = 'json_object' }
             messages = @(
@@ -133,7 +133,7 @@ function Invoke-OptionalLlmJson {
             )
         }
 
-        $headers = @{ Authorization = "Bearer $($env:SOFTSKILLS_LLM_API_KEY)"; 'Content-Type' = 'application/json' }
+        $headers = @{ Authorization = "Bearer $($env:CLEARN_LLM_API_KEY)"; 'Content-Type' = 'application/json' }
         $response = Invoke-RestMethod -Method Post -Uri $endpoint -Headers $headers -Body ($body | ConvertTo-Json -Depth 8)
         $content = $response.choices[0].message.content
         if ([string]::IsNullOrWhiteSpace($content)) {

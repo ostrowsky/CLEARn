@@ -1,4 +1,4 @@
-import type { ProviderKind } from '@softskills/domain';
+import type { ProviderKind } from '@clearn/domain';
 import { env } from '../config/env';
 import { huggingFaceChatProvider } from './chat/huggingface';
 import { openAiChatProvider } from './chat/openai';

@@ -35,4 +35,4 @@ foreach ($test in $tests) {
     & $test
 }
 
-Write-Host 'All SOFTskills tests passed.'
+Write-Host 'All CLEARn tests passed.'

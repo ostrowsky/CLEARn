@@ -89,7 +89,7 @@ if (-not $hfToken) {
 }
 
 $nodeExe = Get-NodeExePath
-$tempScriptPath = Join-Path ([System.IO.Path]::GetTempPath()) ('softskills-hf-stt-live-' + [Guid]::NewGuid().ToString('N') + '.mjs')
+$tempScriptPath = Join-Path ([System.IO.Path]::GetTempPath()) ('clearn-hf-stt-live-' + [Guid]::NewGuid().ToString('N') + '.mjs')
 $nodeScriptLines = @(
     "const token = process.env.HF_TOKEN;",
     "const model = 'openai/whisper-large-v3';",

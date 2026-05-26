@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "cd platform && node ./scripts/prepare-vercel-npm-install.mjs && npm install --legacy-peer-deps",
-  "buildCommand": "cd platform && npm run --workspace @softskills/client build",
+  "buildCommand": "cd platform && npm run --workspace @clearn/client build",
   "outputDirectory": "platform/apps/client/dist",
   "rewrites": [
     {

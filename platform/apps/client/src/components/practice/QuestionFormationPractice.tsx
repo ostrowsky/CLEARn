@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { AppContent, ContentBlock, ContentSection, QuestionFormationBlank, QuestionFormationExercise } from '@softskills/domain';
+import type { AppContent, ContentBlock, ContentSection, QuestionFormationBlank, QuestionFormationExercise } from '@clearn/domain';
 import { useSpeechDraft } from '../../hooks/useSpeechDraft';
 import { apiClient } from '../../lib/api';
 import { getNestedNumber, getNestedString, getPracticeConfig, getUiConfig } from '../../lib/contentMeta';

@@ -42,9 +42,9 @@ Assert-Match -Actual $mediaBackupControlsSource -Pattern 'Download media backup'
 Assert-Match -Actual $mediaBackupControlsSource -Pattern 'Restore media backup' -Message 'Admin UI should expose a media backup restore button.'
 Assert-Match -Actual $mediaBackupControlsSource -Pattern "credentials: 'include'" -Message 'Media backup actions must send admin session cookies.'
 
-$tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('softskills-backup-test-' + [Guid]::NewGuid().ToString('N'))
-$extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('softskills-backup-extract-' + [Guid]::NewGuid().ToString('N'))
-$backupZip = Join-Path ([System.IO.Path]::GetTempPath()) ('softskills-backup-' + [Guid]::NewGuid().ToString('N') + '.zip')
+$tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('clearn-backup-test-' + [Guid]::NewGuid().ToString('N'))
+$extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('clearn-backup-extract-' + [Guid]::NewGuid().ToString('N'))
+$backupZip = Join-Path ([System.IO.Path]::GetTempPath()) ('clearn-backup-' + [Guid]::NewGuid().ToString('N') + '.zip')
 
 try {
     New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null

@@ -52,7 +52,7 @@ if (-not (Test-Path -LiteralPath $backupFileFull -PathType Leaf)) {
     throw "Backup file was not found: $backupFileFull"
 }
 
-$extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('softskills-restore-' + [Guid]::NewGuid().ToString('N'))
+$extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('clearn-restore-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $extractRoot -Force | Out-Null
 
 try {

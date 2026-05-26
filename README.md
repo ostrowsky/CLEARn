@@ -39,14 +39,14 @@ Run the API:
 
 ```powershell
 cd platform
-pnpm --filter @softskills/api start
+pnpm --filter @clearn/api start
 ```
 
 Run the client:
 
 ```powershell
 cd platform
-pnpm --filter @softskills/client start
+pnpm --filter @clearn/client start
 ```
 
 For public customer previews, use the existing Cloudflare preview script from `platform`.
@@ -120,7 +120,7 @@ Recommended Vercel settings:
 
 - Framework preset: `Other`. Do not set a framework override in `vercel.json`; keep the repository config as a static output deployment.
 - Install command: `corepack enable && corepack prepare pnpm@10.8.0 --activate && cd platform && pnpm install --frozen-lockfile`.
-- Build command: `cd platform && pnpm --filter @softskills/client build`.
+- Build command: `cd platform && pnpm --filter @clearn/client build`.
 - Output directory: `platform/apps/client/dist`.
 - Environment variable: `EXPO_PUBLIC_API_BASE_URL=https://your-api-host.example.com`.
 

@@ -6,7 +6,7 @@ import type {
   AnsweringSessionMode,
   AnsweringSessionSummary,
   AnsweringTurnEvaluation,
-} from '@softskills/domain';
+} from '@clearn/domain';
 import { env } from '../../config/env';
 import { withChatProvider } from '../../providers/providerRegistry';
 import { inferConversationContext } from '../shared/contextSummary';

@@ -1,7 +1,7 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { AnsweringMode, AnsweringQuestionTurn, AnsweringReactionCategory, AnsweringReactionOption, AnsweringSession, AnsweringSessionMode } from '@softskills/domain';
+import type { AnsweringMode, AnsweringQuestionTurn, AnsweringReactionCategory, AnsweringReactionOption, AnsweringSession, AnsweringSessionMode } from '@clearn/domain';
 import { Screen } from '../../../src/components/Screen';
 import { useContent } from '../../../src/hooks/useContent';
 import { apiClient } from '../../../src/lib/api';

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import type { AppContent, ContentBlock, ContentMaterial, ContentSection } from '@softskills/domain';
+import type { AppContent, ContentBlock, ContentMaterial, ContentSection } from '@clearn/domain';
 import { Screen } from '../../src/components/Screen';
 import { AskAfterComposer } from '../../src/components/practice/AskAfterComposer';
 import { ClarifyPracticeInlineList } from '../../src/components/practice/ClarifyPracticeInlineList';

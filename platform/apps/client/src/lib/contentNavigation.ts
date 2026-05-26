@@ -1,4 +1,4 @@
-import type { AppContent, ContentSection } from '@softskills/domain';
+import type { AppContent, ContentSection } from '@clearn/domain';
 
 export function findSectionById(content: AppContent | null | undefined, id: string | undefined) {
   if (!content || !id) {

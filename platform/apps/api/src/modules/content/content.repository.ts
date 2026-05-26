@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { copyFile, cp, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { AppContent } from '@softskills/domain';
+import type { AppContent } from '@clearn/domain';
 import { env } from '../../config/env';
 
 export interface ContentRepository {

@@ -1,6 +1,6 @@
-# SOFTskills Feature Specs
+# CLEARn Feature Specs
 
-This directory is the product behavior layer for SOFTskills.
+This directory is the product behavior layer for CLEARn.
 
 Specs describe what the product must do from the learner, admin, customer, or operator point of view. They should stay short, explicit, and product-level. Implementation notes are allowed only when they preserve an important contract.
 

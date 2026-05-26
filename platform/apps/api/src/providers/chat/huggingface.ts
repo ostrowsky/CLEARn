@@ -1,4 +1,4 @@
-import type { AskAfterBrief, ClarifyExercise, CoachChatTurn, QuestionFormationExercise } from '@softskills/domain';
+import type { AskAfterBrief, ClarifyExercise, CoachChatTurn, QuestionFormationExercise } from '@clearn/domain';
 import { env } from '../../config/env';
 import { parseModelJsonContent } from './jsonResponse';
 import type { AnsweringEvaluationDraft, AnsweringQuestionDraft, ChatGenerationInput, ChatProvider } from '../types';

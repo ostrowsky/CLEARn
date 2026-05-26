@@ -4,7 +4,7 @@ setlocal
 set "PROJECT_ROOT=%~dp0"
 if "%PROJECT_ROOT:~-1%"=="\" set "PROJECT_ROOT=%PROJECT_ROOT:~0,-1%"
 
-echo This will save Browserless settings for local SOFTskills development.
+echo This will save Browserless settings for local CLEARn development.
 echo The key will be stored in your Windows user environment and in platform\.env.
 echo.
 set /p BROWSERLESS_API_KEY=Paste BROWSERLESS_API_KEY and press Enter: 

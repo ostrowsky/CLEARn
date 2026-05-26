@@ -71,7 +71,7 @@ function Resolve-WorkspaceRoot {
         }
     }
 
-    throw 'Could not resolve the SOFTskills workspace root.'
+    throw 'Could not resolve the CLEARn workspace root.'
 }
 
 $workspaceRoot = Resolve-WorkspaceRoot
@@ -99,14 +99,14 @@ function Invoke-PreviewPreflight {
     }
 }
 
-$runFullTestsFromEnv = [string]::Equals($env:SOFTSKILLS_RUN_FULL_TESTS, '1', [System.StringComparison]::OrdinalIgnoreCase)
+$runFullTestsFromEnv = [string]::Equals($env:CLEARN_RUN_FULL_TESTS, '1', [System.StringComparison]::OrdinalIgnoreCase)
 if ($RunFullTests -or $runFullTestsFromEnv) {
     Write-Host 'Running full tests before preview...'
     & $testsScript
 }
 else {
     Invoke-PreviewPreflight
-    Write-Host 'Skipping full test suite for fast preview startup. Run with -RunFullTests or set SOFTSKILLS_RUN_FULL_TESTS=1 for full validation.'
+    Write-Host 'Skipping full test suite for fast preview startup. Run with -RunFullTests or set CLEARN_RUN_FULL_TESTS=1 for full validation.'
 }
 
 function Get-PersistedEnvValue {
@@ -307,7 +307,7 @@ function Stop-PreviewProcessesByCommandLine {
             $isPreviewClient = $isWorkspaceProcess -and $commandLine -match 'expo\s+start'
             $isPreviewStt = $isWorkspaceProcess -and $commandLine -match 'local-stt.*uvicorn\s+server:app|start-local-stt\.ps1'
             $isPreviewTunnel = $commandLine -match 'cloudflared.*tunnel\s+--url\s+http://127\.0\.0\.1:(4000|80\d\d)'
-            $isPreviewWindow = $isWorkspaceProcess -and $commandLine -match 'softskills-(api|client|local-stt)-runtime'
+            $isPreviewWindow = $isWorkspaceProcess -and $commandLine -match 'clearn-(api|client|local-stt)-runtime'
 
             $isPreviewApi -or $isPreviewApiShell -or $isPreviewClient -or $isPreviewStt -or $isPreviewTunnel -or $isPreviewWindow
         }
@@ -317,7 +317,7 @@ function Stop-PreviewProcessesByCommandLine {
     }
 
     foreach ($process in $processes) {
-        Stop-PreviewProcess -ProcessId $process.ProcessId -Label 'previous SOFTskills preview'
+        Stop-PreviewProcess -ProcessId $process.ProcessId -Label 'previous CLEARn preview'
     }
 }
 
@@ -327,12 +327,12 @@ function Stop-PreviousPreview {
         [string]$WorkspacePath
     )
 
-    Write-Host 'Stopping previous SOFTskills preview processes if any...'
+    Write-Host 'Stopping previous CLEARn preview processes if any...'
     Stop-PreviewProcessesFromSummary -Lines $SummaryLines
     Stop-PreviewProcessesByCommandLine -WorkspacePath $WorkspacePath
 
     foreach ($port in @(4000, 8010, 8081, 8082, 8083, 8084, 8085)) {
-        Stop-ProcessOnPort -Port $port -Label "previous SOFTskills process on port $port"
+        Stop-ProcessOnPort -Port $port -Label "previous CLEARn process on port $port"
     }
 }
 
@@ -367,8 +367,8 @@ function Start-QuickTunnel {
     )
 
     $suffix = [Guid]::NewGuid().ToString('n')
-    $stdoutPath = Join-Path $env:TEMP "softskills-$Label-$suffix.out.log"
-    $stderrPath = Join-Path $env:TEMP "softskills-$Label-$suffix.err.log"
+    $stdoutPath = Join-Path $env:TEMP "clearn-$Label-$suffix.out.log"
+    $stderrPath = Join-Path $env:TEMP "clearn-$Label-$suffix.err.log"
 
     $process = Start-Process -FilePath $CloudflaredPath -ArgumentList @('tunnel', '--url', "http://127.0.0.1:$Port") -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath -PassThru -WindowStyle Hidden
 
@@ -411,8 +411,8 @@ $apiPort = 4000
 $localSttPort = 8010
 Stop-PreviousPreview -SummaryLines $previousSummaryLines -WorkspacePath $projectRoot
 
-$apiRuntimeLog = Join-Path $env:TEMP ('softskills-api-runtime-' + [Guid]::NewGuid().ToString('n') + '.log')
-$localSttRuntimeLog = Join-Path $env:TEMP ('softskills-local-stt-runtime-' + [Guid]::NewGuid().ToString('n') + '.log')
+$apiRuntimeLog = Join-Path $env:TEMP ('clearn-api-runtime-' + [Guid]::NewGuid().ToString('n') + '.log')
+$localSttRuntimeLog = Join-Path $env:TEMP ('clearn-local-stt-runtime-' + [Guid]::NewGuid().ToString('n') + '.log')
 
 if (-not (Test-PortListening -Port $localSttPort)) {
     Write-Host 'Starting local free STT server in a new window...'
@@ -474,7 +474,7 @@ for ($attempt = 1; $attempt -le $maxPreviewAttempts; $attempt++) {
     $clientTunnel = $null
     $clientProcess = $null
     $clientPort = Get-FreePort -StartPort 8081
-    $clientRuntimeLog = Join-Path $env:TEMP ('softskills-client-runtime-' + [Guid]::NewGuid().ToString('n') + '.log')
+    $clientRuntimeLog = Join-Path $env:TEMP ('clearn-client-runtime-' + [Guid]::NewGuid().ToString('n') + '.log')
 
     try {
         if (-not (Wait-ForHttpReady -Url "http://127.0.0.1:$apiPort/api/health" -TimeoutSeconds 30)) {
@@ -485,7 +485,7 @@ for ($attempt = 1; $attempt -le $maxPreviewAttempts; $attempt++) {
         $apiTunnel = Start-QuickTunnel -CloudflaredPath $cloudflared.Source -Port $apiPort -Label 'api'
 
         Write-Host "Starting Expo web preview on port $clientPort in a new window..."
-        $clientCommand = "Set-Location '$projectRoot'; `$env:EXPO_PUBLIC_API_BASE_URL='$($apiTunnel.Url)'; pnpm.cmd --filter @softskills/client exec expo start --clear --web --port $clientPort 2>&1 | Tee-Object -FilePath '$clientRuntimeLog'"
+        $clientCommand = "Set-Location '$projectRoot'; `$env:EXPO_PUBLIC_API_BASE_URL='$($apiTunnel.Url)'; pnpm.cmd --filter @clearn/client exec expo start --clear --web --port $clientPort 2>&1 | Tee-Object -FilePath '$clientRuntimeLog'"
         $clientProcess = Start-Process powershell.exe -ArgumentList @(
             '-NoExit',
             '-ExecutionPolicy', 'Bypass',

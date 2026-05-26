@@ -7,7 +7,7 @@ $venvRoot = Join-Path $serviceRoot '.venv'
 $pythonExe = Join-Path $venvRoot 'Scripts\python.exe'
 $requirementsPath = Join-Path $serviceRoot 'requirements.txt'
 $serverPath = Join-Path $serviceRoot 'server.py'
-$depsMarkerPath = Join-Path $venvRoot '.softskills-deps-installed'
+$depsMarkerPath = Join-Path $venvRoot '.clearn-deps-installed'
 
 if (-not (Test-Path -LiteralPath $pythonExe)) {
     Write-Host 'Creating local STT Python virtual environment...'
@@ -44,7 +44,7 @@ if ([string]::IsNullOrWhiteSpace($env:LOCAL_STT_COMPUTE_TYPE)) {
 }
 
 Write-Host ''
-Write-Host 'Starting SOFTskills local STT server...'
+Write-Host 'Starting CLEARn local STT server...'
 Write-Host 'OpenAI-compatible endpoint: http://localhost:8010/v1/audio/transcriptions'
 Write-Host "Model: $env:LOCAL_STT_MODEL"
 Write-Host "Device: $env:LOCAL_STT_DEVICE"

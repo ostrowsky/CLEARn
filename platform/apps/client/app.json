@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "SOFTskills",
-    "slug": "softskills",
-    "scheme": "softskills",
+    "name": "CLEARn",
+    "slug": "clearn",
+    "scheme": "clearn",
     "orientation": "portrait",
     "web": {
       "bundler": "metro"

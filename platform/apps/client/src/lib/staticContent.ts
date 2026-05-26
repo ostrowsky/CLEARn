@@ -1,4 +1,4 @@
-import type { AppContent } from '@softskills/domain';
+import type { AppContent } from '@clearn/domain';
 import bundledContent from '../generated/content.snapshot.json';
 
 export const staticContent = bundledContent as AppContent;

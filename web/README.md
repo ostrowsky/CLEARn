@@ -1,4 +1,4 @@
-﻿# SOFTskills Web Prototype
+# CLEARn Web Prototype
 
 This folder contains the learner-facing prototype and a separate web admin panel for managing structured content.
 
@@ -43,15 +43,15 @@ powershell -ExecutionPolicy Bypass -File .\web\open-admin.ps1
 ## Run with the real LLM
 
 ```powershell
-$env:SOFTSKILLS_LLM_API_KEY = 'sk-your-key-here'
-$env:SOFTSKILLS_LLM_MODEL = 'gpt-4o-mini'
+$env:CLEARN_LLM_API_KEY = 'sk-your-key-here'
+$env:CLEARN_LLM_MODEL = 'gpt-4o-mini'
 powershell -ExecutionPolicy Bypass -File .\web\open-local.ps1
 ```
 
 Optional for OpenAI-compatible gateways:
 
 ```powershell
-$env:SOFTSKILLS_LLM_ENDPOINT = 'https://api.openai.com/v1/chat/completions'
+$env:CLEARN_LLM_ENDPOINT = 'https://api.openai.com/v1/chat/completions'
 ```
 
 ## Run tests
@@ -71,4 +71,4 @@ Run:
 powershell -ExecutionPolicy Bypass -File .\web\open-admin-share.ps1
 ```
 
-The public admin link is saved to [share-admin-link.txt](D:/Projects/SOFTskills/web/share-admin-link.txt).`r`n`r`nThe share script now prints a friendly `/admin` URL.
+The public admin link is saved to [share-admin-link.txt](D:/Projects/CLEARn/web/share-admin-link.txt).`r`n`r`nThe share script now prints a friendly `/admin` URL.

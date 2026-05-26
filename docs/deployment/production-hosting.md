@@ -16,7 +16,7 @@ Project settings:
 
 - Framework preset: `Other`.
 - Install command: `cd platform && npm install --legacy-peer-deps`.
-- Build command: `cd platform && npm run --workspace @softskills/client build`.
+- Build command: `cd platform && npm run --workspace @clearn/client build`.
 - Output directory: `platform/apps/client/dist`.
 - Required environment variable: `EXPO_PUBLIC_API_BASE_URL=https://api.clearn.example`.
 
@@ -46,7 +46,7 @@ Service type:
 - Web Service.
 - Runtime: Node 22.
 - Root directory: repository root.
-- Build command: `cd platform && npm install --legacy-peer-deps && npm run --workspace @softskills/api build`.
+- Build command: `cd platform && npm install --legacy-peer-deps && npm run --workspace @clearn/api build`.
 - Start command: `cd platform/apps/api && node ../../node_modules/tsx/dist/cli.mjs src/index.ts`.
 - Health check path: `/api/health`.
 

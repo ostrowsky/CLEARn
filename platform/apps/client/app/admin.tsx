@@ -12,7 +12,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import type { AnsweringMode, AppContent, ContentBlock, ContentMaterial } from '@softskills/domain';
+import type { AnsweringMode, AppContent, ContentBlock, ContentMaterial } from '@clearn/domain';
 import { Screen } from '../src/components/Screen';
 import { AdminMediaBackupControls } from '../src/components/AdminMediaBackupControls';
 import {

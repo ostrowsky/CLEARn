@@ -2,7 +2,7 @@
 
 ## Goal
 
-SOFTskills must support a commercial product with a free preview area and subscription-gated main content while preserving the current fast prototype workflow.
+CLEARn must support a commercial product with a free preview area and subscription-gated main content while preserving the current fast prototype workflow.
 
 ## Scope
 
