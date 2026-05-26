@@ -44,10 +44,10 @@ Use the root `render.yaml` Blueprint to create:
 Service type:
 
 - Web Service.
-- Runtime: Node 22.
+- Runtime: Node 20.
 - Root directory: repository root.
-- Build command: `cd platform && npm install --legacy-peer-deps && npm run --workspace @clearn/api build`.
-- Start command: `cd platform/apps/api && node ../../node_modules/tsx/dist/cli.mjs src/index.ts`.
+- Build command: `cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm install --frozen-lockfile && (python3 -m pip install -r apps/api/requirements.txt || python -m pip install -r apps/api/requirements.txt) && pnpm --filter @clearn/api build`.
+- Start command: `cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm --filter @clearn/api start`.
 - Health check path: `/api/health`.
 
 Persistent disk:
@@ -73,6 +73,8 @@ After Render creates the service:
 2. Add the DNS record Render shows for `api.clearn.me`.
 3. Set Vercel frontend env `EXPO_PUBLIC_API_BASE_URL=https://api.clearn.me` for Production and Preview.
 4. Redeploy Vercel from the latest `main`.
+
+If Render logs `No projects matched the filters`, the service is using a stale dashboard command rather than the Git-tracked `render.yaml` command. The API package is named `@clearn/api`; any Render build or start command that still references a removed legacy package name must be replaced with the commands above or the Blueprint must be re-synced.
 
 Production smoke checks:
 

@@ -197,6 +197,10 @@ foreach ($pattern in @(
 )) {
     Assert-Match -Actual $renderBlueprint -Pattern ([regex]::Escape($pattern))
 }
+$legacyDeploymentIdentifierPattern = '@' + 'soft' + 'skills|SOFT' + 'skills|soft' + 'skills'
+foreach ($source in @($rootPackage, $vercelConfig, $hostingPlan, $renderBlueprint)) {
+    Assert-True -Condition ($source -cnotmatch $legacyDeploymentIdentifierPattern) -Message 'Deployment metadata must not reference removed legacy app identifiers.'
+}
 foreach ($pattern in @(
     'APP_ENV=production',
     'APP_STORAGE_ROOT=/var/lib/clearn',
