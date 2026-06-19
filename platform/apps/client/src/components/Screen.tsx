@@ -64,7 +64,7 @@ const fallbackSkillMenu: MenuItem[] = [
 ];
 
 const fallbackAboutMenu: MenuItem[] = [
-  { label: 'How CLEARn works', route: '/' },
+  { label: 'How it works', route: '/' },
   { label: 'For teams', route: '/' },
   { label: 'Contact', route: '/' },
 ];
