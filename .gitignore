@@ -7,6 +7,7 @@ build/
 coverage/
 brainstorming/
 tmp-platform-*/
+tmp-visual-regression/
 share-preview-links.txt
 share-admin-link.txt
 tmp-write-test.txt
@@ -17,5 +18,6 @@ tmp.txt
 .env.local
 */.env.local
 web/data/admin-auth.json
+platform/apps/client/public/uploads/
 __pycache__/
 *.pyc

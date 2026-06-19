@@ -45,7 +45,7 @@ function buildClarifyExamples(block: ContentBlock | null | undefined) {
         title: material.title || material.id,
         description: material.body,
         statement: asString(meta.statement),
-        audioUrl: material.url ? resolveApiUrl(material.url) : '',
+        audioUrl: material.url ? (material.url.startsWith('/uploads/') ? material.url : resolveApiUrl(material.url)) : '',
         expectedQuestion: asString(meta.clarification),
         acceptedAnswers: asStringArray(meta.acceptedAnswers),
         placeholder: asString(meta.placeholder),
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: tokens.colors.accent,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     paddingVertical: tokens.spacing.md,
     paddingHorizontal: tokens.spacing.lg,
     alignItems: 'center',
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: tokens.colors.surfaceMuted,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     paddingVertical: tokens.spacing.md,
     paddingHorizontal: tokens.spacing.lg,
     alignItems: 'center',
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   noticeCard: {
     borderRadius: tokens.radius.md,
     padding: tokens.spacing.md,
-    backgroundColor: '#fff6ea',
+    backgroundColor: tokens.colors.backgroundDeep,
     borderWidth: 1,
     borderColor: tokens.colors.cardLine,
   },
@@ -416,13 +416,13 @@ const styles = StyleSheet.create({
   feedbackCard: {
     borderRadius: tokens.radius.md,
     padding: tokens.spacing.md,
-    backgroundColor: '#fff1ed',
+    backgroundColor: tokens.colors.backgroundDeep,
     borderWidth: 1,
-    borderColor: '#f2c5b5',
+    borderColor: tokens.colors.line,
   },
   feedbackCardSuccess: {
-    backgroundColor: 'rgba(232,255,240,0.86)',
-    borderColor: 'rgba(32,101,58,0.2)',
+    backgroundColor: 'rgba(74, 222, 128, 0.12)',
+    borderColor: 'rgba(74, 222, 128, 0.28)',
   },
   feedbackText: {
     color: tokens.colors.danger,

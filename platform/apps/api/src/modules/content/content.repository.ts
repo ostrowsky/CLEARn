@@ -78,6 +78,46 @@ function findMaterialsById(content: AppContent): Map<string, Record<string, unkn
   return materials;
 }
 
+function findSectionsById(content: AppContent): Map<string, Record<string, unknown>> {
+  const sections = new Map<string, Record<string, unknown>>();
+  for (const section of content.sections || []) {
+    if (section.id) {
+      sections.set(section.id, section as unknown as Record<string, unknown>);
+    }
+  }
+  return sections;
+}
+
+function migrateKnownStaleSectionDefaults(content: AppContent, bundledContent: AppContent): boolean {
+  let changed = false;
+  const targetSections = findSectionsById(content);
+  const sourceSections = findSectionsById(bundledContent);
+  const knownStaleDefaults: Record<string, Record<string, string>> = {
+    home: {
+      title: 'CLEARn',
+    },
+  };
+
+  for (const [sectionId, fields] of Object.entries(knownStaleDefaults)) {
+    const targetSection = targetSections.get(sectionId);
+    const sourceSection = sourceSections.get(sectionId);
+    if (!targetSection || !sourceSection) {
+      continue;
+    }
+
+    for (const [fieldName, staleValue] of Object.entries(fields)) {
+      const targetValue = typeof targetSection[fieldName] === 'string' ? String(targetSection[fieldName]).trim() : '';
+      const sourceValue = typeof sourceSection[fieldName] === 'string' ? String(sourceSection[fieldName]).trim() : '';
+      if (targetValue === staleValue && sourceValue && sourceValue !== staleValue) {
+        targetSection[fieldName] = sourceValue;
+        changed = true;
+      }
+    }
+  }
+
+  return changed;
+}
+
 function mergeBundledContentDefaults(content: AppContent, bundledContent: AppContent): { content: AppContent; changed: boolean } {
   let changed = false;
 
@@ -104,6 +144,10 @@ function mergeBundledContentDefaults(content: AppContent, bundledContent: AppCon
     if (copyMissingString(targetAuth, sourceAuth, key)) {
       changed = true;
     }
+  }
+
+  if (migrateKnownStaleSectionDefaults(content, bundledContent)) {
+    changed = true;
   }
 
   const bundledMaterials = findMaterialsById(bundledContent);

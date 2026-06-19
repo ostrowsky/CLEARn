@@ -6,6 +6,12 @@ $platformRoot = Join-Path $workspaceRoot 'platform'
 $webRoot = Join-Path $workspaceRoot 'web'
 . (Join-Path $PSScriptRoot 'Assertions.ps1')
 
+$clientApiSource = Get-Content -LiteralPath (Join-Path $workspaceRoot 'platform\apps\client\src\lib\api.ts') -Raw
+Assert-Match -Actual $clientApiSource -Pattern "/api/admin/auth/" -Message 'Client API should give admin auth requests their own timeout budget.'
+Assert-Match -Actual $clientApiSource -Pattern "/api/admin/content" -Message 'Client API should give admin content requests their own timeout budget.'
+Assert-Match -Actual $clientApiSource -Pattern "Cannot reach the CLEARn API" -Message 'Admin login failures should explain API availability instead of surfacing raw Failed to fetch.'
+Assert-Match -Actual $clientApiSource -Pattern "Request timed out while calling" -Message 'Admin login failures should explain client-side timeouts instead of surfacing raw abort messages.'
+
 function Get-FreePort {
     $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
     $listener.Start()
@@ -87,6 +93,10 @@ Copy-Item -LiteralPath (Join-Path $webRoot 'data\content.json') -Destination $te
 $seedContent = Get-Content -LiteralPath $tempContentPath -Raw | ConvertFrom-Json
 $seedContent.meta.ui.admin.actions.PSObject.Properties.Remove('fetchTranscript')
 $seedContent.meta.ui.admin.messages.PSObject.Properties.Remove('videoTranscriptFetched')
+$seedHome = $seedContent.sections | Where-Object { $_.id -eq 'home' } | Select-Object -First 1
+if ($seedHome) {
+    $seedHome.title = 'CLEARn'
+}
 $seedVideoLibrary = (($seedContent.sections | Where-Object { $_.id -eq 'asking-after-talk' } | Select-Object -First 1).blocks | Where-Object { $_.id -eq 'block-ayctl2c6' } | Select-Object -First 1)
 $seedVideo = @($seedVideoLibrary.materials | Where-Object { $_.type -eq 'video' } | Select-Object -First 1)[0]
 if ($seedVideo -and $seedVideo.meta) {
@@ -160,6 +170,8 @@ try {
     Assert-Equal -Expected 'Fetch transcript' -Actual ([string]$protectedJson.meta.ui.admin.actions.fetchTranscript) -Message 'Admin content should migrate newly bundled admin action labels into old mutable storage.'
     Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$protectedJson.meta.ui.admin.messages.videoTranscriptFetched)) -Message 'Admin content should migrate newly bundled admin messages into old mutable storage.'
     Assert-Equal -Expected 'Forgot password?' -Actual ([string]$protectedJson.meta.ui.admin.auth.forgotPasswordButton) -Message 'Admin content should migrate newly bundled admin auth labels into old mutable storage.'
+    $migratedHome = $protectedJson.sections | Where-Object { $_.id -eq 'home' } | Select-Object -First 1
+    Assert-Equal -Expected 'ASK ANSWER chat' -Actual ([string]$migratedHome.title) -Message 'Admin content should migrate known stale bundled home title defaults into old mutable storage.'
     $migratedVideoLibrary = (($protectedJson.sections | Where-Object { $_.id -eq 'asking-after-talk' } | Select-Object -First 1).blocks | Where-Object { $_.id -eq 'block-ayctl2c6' } | Select-Object -First 1)
     $migratedVideo = @($migratedVideoLibrary.materials | Where-Object { $_.type -eq 'video' } | Select-Object -First 1)[0]
     Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$migratedVideo.meta.transcript)) -Message 'Admin content should migrate bundled video transcripts into old mutable storage when the material ID matches.'

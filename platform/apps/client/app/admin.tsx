@@ -879,7 +879,7 @@ export default function AdminScreen() {
         watermarkText={getNestedString(asRecord(content?.meta?.ui), ['watermarkText'])}
         title={isSetup ? getAdminAuthText(content, 'setupTitle', 'Create admin access') : isReset ? getAdminAuthText(content, 'resetTitle', 'Reset admin password') : getAdminAuthText(content, 'loginTitle', 'Admin login')}
         subtitle={isSetup ? getAdminAuthText(content, 'setupHint', 'Set the first admin login, password, confirmation, and recovery email before editing content.') : isReset ? getAdminAuthText(content, 'resetHint', 'Enter the admin login, recovery email, and a new password.') : getAdminAuthText(content, 'loginHint', 'Enter the admin credentials to manage content and backups.')}
-        backHref="/sections"
+        backHref="/"
         backLabel={getAdminText(content, ['openLearnerApp'])}
       >
         <View style={styles.editorCard}>
@@ -931,7 +931,7 @@ export default function AdminScreen() {
       watermarkText={getNestedString(asRecord(content?.meta?.ui), ['watermarkText'])}
       title={getAdminText(content, ['title'])}
       subtitle={getAdminText(content, ['hint'])}
-      backHref="/sections"
+      backHref="/"
       backLabel={getAdminText(content, ['openLearnerApp'])}
     >
       <AdminMediaBackupControls authenticated={authMode === 'authenticated'} />
@@ -1500,7 +1500,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     backgroundColor: tokens.colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1516,7 +1516,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     backgroundColor: tokens.colors.surfaceStrong,
     borderWidth: 1,
     borderColor: tokens.colors.cardLine,
@@ -1531,7 +1531,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     backgroundColor: '#fff0ec',
     borderWidth: 1,
     borderColor: 'rgba(141,38,0,0.22)',

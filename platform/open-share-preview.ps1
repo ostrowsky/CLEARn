@@ -497,7 +497,7 @@ for ($attempt = 1; $attempt -le $maxPreviewAttempts; $attempt++) {
             throw "Expo web preview did not become ready on port $clientPort. Check $clientRuntimeLog"
         }
 
-        if (-not (Wait-ForHttpReady -Url "http://127.0.0.1:$clientPort/sections")) {
+        if (-not (Wait-ForHttpReady -Url "http://127.0.0.1:$clientPort/")) {
             throw "Expo learner route did not become ready on port $clientPort. Check $clientRuntimeLog"
         }
 
@@ -509,7 +509,7 @@ for ($attempt = 1; $attempt -le $maxPreviewAttempts; $attempt++) {
         $clientTunnel = Start-QuickTunnel -CloudflaredPath $cloudflared.Source -Port $clientPort -Label 'client'
 
         $clientBaseUrl = $clientTunnel.Url
-        $learnerUrl = "$clientBaseUrl/sections"
+        $learnerUrl = "$clientBaseUrl/"
         $adminUrl = "$clientBaseUrl/admin"
 
         Invoke-PublicPreviewSmoke -ApiBaseUrl $apiTunnel.Url -LearnerUrl $learnerUrl -AdminUrl $adminUrl
@@ -556,7 +556,7 @@ if (-not $previewReady) {
     "Public admin preview: $adminUrl",
     "Public API tunnel: $($apiTunnel.Url)",
     "Local web base: http://127.0.0.1:$clientPort",
-    "Local learner preview: http://127.0.0.1:$clientPort/sections",
+    "Local learner preview: http://127.0.0.1:$clientPort/",
     "Local admin preview: http://127.0.0.1:$clientPort/admin",
     "Local web port: $clientPort",
     "API tunnel PID: $($apiTunnel.ProcessId)",

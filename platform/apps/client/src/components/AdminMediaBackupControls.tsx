@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   button: {
     paddingHorizontal: 18,
     paddingVertical: 12,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     backgroundColor: tokens.colors.surfaceStrong,
     borderWidth: 1,
     borderColor: tokens.colors.cardLine,

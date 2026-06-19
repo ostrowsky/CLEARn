@@ -75,6 +75,8 @@ foreach ($pattern in @(
 )) {
     Assert-Match -Actual $adminScreen -Pattern $pattern
 }
+Assert-True -Condition ($adminScreen -notmatch 'backHref="/sections"') -Message 'Admin Open learner app must not navigate to the legacy /sections route.'
+Assert-Match -Actual $adminScreen -Pattern 'backHref="/"' -Message 'Admin Open learner app should navigate to the canonical home route.'
 Assert-Match -Actual $adminContentHelpers -Pattern "title: 'New material'"
 
 Write-TestStep 'Checking shared platform admin API surface'
@@ -188,7 +190,8 @@ foreach ($pattern in @(
     'http://127.0.0.1:\$localSttPort/v1/warmup',
     'http://127.0.0.1:\$localSttPort/v1/health',
     'Local STT runtime log:',
-    '/sections',
+    'Local learner preview: http://127\.0\.0\.1:\$clientPort/',
+    'learnerUrl = "\$clientBaseUrl/"',
     '/admin',
     'Expo admin route did not become ready'
 )) {

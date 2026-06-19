@@ -46,6 +46,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Admin actions should report clear success or failure messages.
 - When the codebase adds new editable admin labels or messages, old mutable production content must be backfilled from bundled content defaults without deleting existing admin edits.
 - Admin auth controls must keep non-empty fallback labels during content migration so login, setup, reset, and logout buttons remain visible even when old mutable content lacks newly introduced auth copy.
+- The browser admin login flow must be covered end-to-end enough to detect client-side API timeouts, missing cookies, and hidden auth buttons. A passing API-only auth test is not sufficient if `/admin` cannot log in from the web client.
 
 ## Invariants
 
@@ -68,6 +69,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Unsupported video codecs may still fail in the browser, but the API must serve uploaded media with correct content type and range support so compatible MP4/WebM files can play inline.
 - YouTube transcript auto-loading is best-effort because some transcripts are gated by YouTube session, geography, age, rate limits, or anti-bot checks.
 - Audio upload transcription is best-effort. If STT fails or returns an empty transcript, the media upload must still succeed and the admin must be able to enter the Statement manually.
+- If the API is unavailable or slow during admin login/save/media actions, the web client must not abort after the short learner fallback timeout. Admin auth/content requests use a longer timeout and report a clear API availability or timeout message.
 - Concurrent edits are not guaranteed in the MVP and must be addressed before production.
 
 ## Route / state / data implications

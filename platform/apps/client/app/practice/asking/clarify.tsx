@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
   },
   selectorChipActive: {
     borderColor: tokens.colors.accent,
-    backgroundColor: '#ffe5ca',
+    backgroundColor: tokens.colors.accentSoft,
   },
   selectorText: {
     color: tokens.colors.ink,
@@ -929,7 +929,7 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: tokens.colors.accent,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     paddingVertical: tokens.spacing.md,
     paddingHorizontal: tokens.spacing.lg,
     alignItems: 'center',
@@ -942,7 +942,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: tokens.colors.surfaceMuted,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     paddingVertical: tokens.spacing.md,
     paddingHorizontal: tokens.spacing.lg,
     alignItems: 'center',
@@ -964,7 +964,7 @@ const styles = StyleSheet.create({
   noticeCard: {
     borderRadius: tokens.radius.md,
     padding: tokens.spacing.md,
-    backgroundColor: '#fff6ea',
+    backgroundColor: tokens.colors.backgroundDeep,
     borderWidth: 1,
     borderColor: tokens.colors.cardLine,
   },
@@ -975,13 +975,13 @@ const styles = StyleSheet.create({
   feedbackCard: {
     borderRadius: tokens.radius.md,
     padding: tokens.spacing.md,
-    backgroundColor: '#fff1ed',
+    backgroundColor: tokens.colors.backgroundDeep,
     borderWidth: 1,
-    borderColor: '#f2c5b5',
+    borderColor: tokens.colors.line,
   },
   feedbackCardSuccess: {
-    backgroundColor: 'rgba(232,255,240,0.86)',
-    borderColor: 'rgba(32,101,58,0.2)',
+    backgroundColor: 'rgba(74, 222, 128, 0.12)',
+    borderColor: 'rgba(74, 222, 128, 0.28)',
   },
   feedbackText: {
     color: tokens.colors.danger,

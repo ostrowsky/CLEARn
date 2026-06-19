@@ -53,7 +53,15 @@ function getPracticeHref(content: AppContent | null | undefined, section: Conten
 }
 
 function getMaterialUrl(material: ContentMaterial) {
-  return material.url ? resolveApiUrl(material.url) : '';
+  if (!material.url) {
+    return '';
+  }
+
+  if (material.url.startsWith('/uploads/')) {
+    return material.url;
+  }
+
+  return resolveApiUrl(material.url);
 }
 
 function isDirectAsset(url: string, pattern: RegExp) {
@@ -230,9 +238,9 @@ function VideoTranscript({ mediaUrl, initialText, startTime = 0, endTime = 0 }: 
         setText(String(result.text || '').trim());
         setStatus(result.text ? '' : String(result.message || ''));
       })
-      .catch((error: Error) => {
+      .catch(() => {
         if (!cancelled) {
-          setStatus(error.message);
+          setStatus('Transcript is temporarily unavailable. Try fetching it again or add it manually in admin.');
         }
       });
 
@@ -729,30 +737,37 @@ const webAudioStyle = {
 
 const styles = StyleSheet.create({
   routeGrid: {
-    gap: tokens.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: tokens.colors.line,
   },
   routeCard: {
-    backgroundColor: tokens.colors.surfaceMuted,
-    borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.lg,
-    minHeight: 110,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    paddingVertical: 30,
+    paddingHorizontal: 0,
+    minHeight: 126,
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: tokens.colors.cardLine,
+    borderBottomWidth: 1,
+    borderBottomColor: tokens.colors.line,
   },
   routeCardPrimary: {
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: 'transparent',
   },
   routeCardTitle: {
-    fontSize: 22,
-    lineHeight: 26,
-    fontWeight: '900',
+    fontFamily: tokens.typography.sans,
+    fontSize: 36,
+    lineHeight: 40,
+    fontWeight: '500',
+    letterSpacing: -0.9,
     color: tokens.colors.ink,
   },
   routeCardText: {
-    marginTop: tokens.spacing.sm,
-    color: tokens.colors.inkSoft,
-    lineHeight: 22,
+    marginTop: 12,
+    maxWidth: 760,
+    color: tokens.colors.ink,
+    fontFamily: tokens.typography.sans,
+    fontSize: 18,
+    lineHeight: 27,
   },
   blockGrid: {
     flexDirection: 'row',
@@ -769,11 +784,11 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   blockCard: {
-    backgroundColor: tokens.colors.surfaceMuted,
-    borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.lg,
+    backgroundColor: tokens.colors.backgroundDeep,
+    borderRadius: tokens.radius.xl,
+    padding: 32,
     borderWidth: 1,
-    borderColor: tokens.colors.cardLine,
+    borderColor: tokens.colors.line,
   },
   blockCardOpen: {
     backgroundColor: tokens.colors.surfaceMuted,
@@ -788,15 +803,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   blockTitle: {
-    fontSize: 22,
-    lineHeight: 26,
-    fontWeight: '900',
+    fontFamily: tokens.typography.sans,
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '500',
+    letterSpacing: -0.45,
     color: tokens.colors.ink,
   },
   blockDescription: {
-    marginTop: tokens.spacing.sm,
+    marginTop: 10,
     color: tokens.colors.inkSoft,
-    lineHeight: 22,
+    fontFamily: tokens.typography.sans,
+    fontSize: 16,
+    lineHeight: 24,
   },
   toggleBadge: {
     width: 38,
@@ -821,10 +840,10 @@ const styles = StyleSheet.create({
   materialCard: {
     backgroundColor: tokens.colors.surface,
     borderRadius: tokens.radius.md,
-    padding: tokens.spacing.md,
+    padding: 24,
     borderWidth: 1,
-    borderColor: tokens.colors.cardLine,
-    gap: tokens.spacing.sm,
+    borderColor: tokens.colors.line,
+    gap: 16,
   },
   placeholderCard: {
     backgroundColor: tokens.colors.surfaceMuted,
@@ -832,13 +851,16 @@ const styles = StyleSheet.create({
   materialLabel: {
     fontSize: 12,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    color: tokens.colors.accentDeep,
+    letterSpacing: 1.6,
+    color: tokens.colors.accent,
+    fontFamily: tokens.typography.sans,
     fontWeight: '800',
   },
   materialBody: {
-    color: tokens.colors.inkSoft,
-    lineHeight: 22,
+    color: tokens.colors.ink,
+    fontFamily: tokens.typography.sans,
+    fontSize: 16,
+    lineHeight: 25,
   },
   inlineNotice: {
     color: tokens.colors.inkSoft,
@@ -862,14 +884,16 @@ const styles = StyleSheet.create({
   transcriptBox: {
     maxHeight: 220,
     borderRadius: tokens.radius.md,
-    padding: tokens.spacing.md,
-    backgroundColor: tokens.colors.surfaceMuted,
+    padding: 18,
+    backgroundColor: tokens.colors.backgroundDeep,
     borderWidth: 1,
-    borderColor: tokens.colors.cardLine,
+    borderColor: tokens.colors.line,
   },
   transcriptText: {
     color: tokens.colors.inkSoft,
-    lineHeight: 22,
+    fontFamily: tokens.typography.sans,
+    fontSize: 15,
+    lineHeight: 24,
   },
   webAudioShell: {
     width: '100%',
@@ -877,27 +901,29 @@ const styles = StyleSheet.create({
   mediaButton: {
     alignSelf: 'flex-start',
     minHeight: 42,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: tokens.radius.md,
-    backgroundColor: tokens.colors.surfaceMuted,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: tokens.radius.pill,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: tokens.colors.cardLine,
+    borderColor: tokens.colors.line,
     justifyContent: 'center',
   },
   mediaButtonText: {
-    color: tokens.colors.accentDeep,
+    color: tokens.colors.ink,
+    fontFamily: tokens.typography.sans,
     fontWeight: '800',
   },
   practiceButton: {
-    backgroundColor: tokens.colors.surface,
-    borderRadius: tokens.radius.md,
+    backgroundColor: tokens.colors.accent,
+    borderRadius: tokens.radius.pill,
     paddingVertical: tokens.spacing.md,
     paddingHorizontal: tokens.spacing.lg,
     alignItems: 'center',
   },
   practiceButtonText: {
-    color: tokens.colors.accentDeep,
+    color: tokens.colors.accentContrast,
+    fontFamily: tokens.typography.sans,
     fontWeight: '800',
   },
   feedbackCard: {

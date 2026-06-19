@@ -228,7 +228,15 @@ function getVideoThumbnailUrl(url: string, fallback = '') {
 }
 
 function getMaterialUrl(material: { url?: string }) {
-  return material.url ? resolveApiUrl(material.url) : '';
+  if (!material.url) {
+    return '';
+  }
+
+  if (material.url.startsWith('/uploads/')) {
+    return material.url;
+  }
+
+  return resolveApiUrl(material.url);
 }
 
 function getMaterialTranscript(material: { body?: string; meta?: Record<string, unknown> }) {
@@ -434,9 +442,9 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
         setVideoTranscript(String(result.text || '').trim());
         setVideoTranscriptStatus(result.text ? '' : String(result.message || ''));
       })
-      .catch((error: Error) => {
+      .catch(() => {
         if (!cancelled) {
-          setVideoTranscriptStatus(error.message);
+          setVideoTranscriptStatus('Transcript is temporarily unavailable. Try fetching it again or add it manually in admin.');
         }
       });
 
@@ -959,7 +967,7 @@ const styles = StyleSheet.create({
     gap: tokens.spacing.sm,
   },
   bankItem: {
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     borderWidth: 1,
     borderColor: tokens.colors.cardLine,
     backgroundColor: tokens.colors.surface,
@@ -1038,13 +1046,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   previewHeroCard: {
-    backgroundColor: '#fffaf3',
+    backgroundColor: tokens.colors.backgroundDeep,
     borderRadius: tokens.radius.xl,
     padding: tokens.spacing.lg,
     borderWidth: 2,
     borderColor: tokens.colors.accent,
     gap: tokens.spacing.md,
-    shadowColor: 'rgba(141,38,0,0.18)',
+    shadowColor: tokens.colors.shadow,
     shadowOpacity: 1,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 10 },
@@ -1065,7 +1073,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
     borderRadius: tokens.radius.lg,
-    borderColor: 'rgba(141,38,0,0.12)',
+    borderColor: tokens.colors.line,
     backgroundColor: tokens.colors.surface,
   },
   label: {
@@ -1117,7 +1125,7 @@ const styles = StyleSheet.create({
   },
   button: {
     minHeight: 48,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     backgroundColor: tokens.colors.accent,
     paddingHorizontal: 18,
     paddingVertical: 12,
@@ -1133,7 +1141,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     minHeight: 48,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     backgroundColor: tokens.colors.surface,
     borderWidth: 1,
     borderColor: tokens.colors.cardLine,
@@ -1171,15 +1179,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   feedbackCard: {
-    backgroundColor: '#fff2ec',
+    backgroundColor: tokens.colors.backgroundDeep,
     borderRadius: tokens.radius.lg,
     padding: tokens.spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(141,38,0,0.18)',
+    borderColor: tokens.colors.line,
   },
   feedbackCardSuccess: {
-    backgroundColor: '#eefcf3',
-    borderColor: 'rgba(22,115,60,0.2)',
+    backgroundColor: 'rgba(74, 222, 128, 0.12)',
+    borderColor: 'rgba(74, 222, 128, 0.28)',
   },
   feedbackText: {
     color: tokens.colors.danger,

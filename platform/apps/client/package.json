@@ -10,14 +10,15 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "node ../../node_modules/typescript/bin/tsc --noEmit -p tsconfig.json",
+    "visual:regression": "node ./scripts/visual-regression.mjs",
     "build": "expo export --platform web"
   },
   "dependencies": {
     "@babel/runtime": "^7.26.0",
-    "@expo/vector-icons": "~14.0.4",
-    "@react-navigation/bottom-tabs": "^7.2.0",
     "@clearn/contracts": "workspace:*",
     "@clearn/domain": "workspace:*",
+    "@expo/vector-icons": "~14.0.4",
+    "@react-navigation/bottom-tabs": "^7.2.0",
     "expo": "^52.0.11",
     "expo-constants": "~17.0.8",
     "expo-router": "^4.0.22",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@types/react": "~18.3.12",
+    "playwright": "^1.49.1",
     "typescript": "^5.6.3"
   }
 }

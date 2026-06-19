@@ -175,6 +175,10 @@ export default function CoachChatPracticeScreen() {
     }
   }
 
+  const chatTitle = practiceBlock?.title || section?.title || 'Talk to the coach.';
+  const displayedTitle = chatTitle.toLowerCase().includes('coach') ? 'Talk to the coach.' : chatTitle;
+  const canSend = Boolean(session?.completed === false && draft.trim());
+
   return (
     <Screen
       appTitle={content?.meta.appTitle}
@@ -182,63 +186,46 @@ export default function CoachChatPracticeScreen() {
       footerNote={getNestedString(ui, ['footerNote'])}
       watermarkText={getNestedString(ui, ['watermarkText'])}
       eyebrow={section?.eyebrow}
-      title={practiceBlock?.title ?? section?.title ?? ''}
+      title={displayedTitle}
       subtitle={practiceBlock?.description ?? section?.summary ?? ''}
       backHref={section ? section.route as never : '/'}
       backLabel={section?.title ?? getNestedString(ui, ['navigation', 'backToHome'])}
     >
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>{coachCapabilitiesLabel}</Text>
-        <View style={styles.capabilityRow}>
-          <CapabilityPill title={coachTextCapabilityLabel} status={capabilitySource.text ? coachAvailableNowLabel : coachPlannedLabel} />
-          <CapabilityPill title={coachSpeechCapabilityLabel} status={capabilitySource.speechToText ? coachAvailableNowLabel : coachPlannedLabel} />
-          <CapabilityPill title={coachVoiceCapabilityLabel} status={capabilitySource.textToSpeech ? coachAvailableNowLabel : coachPlannedLabel} />
-        </View>
-        <Text style={styles.metaLine}>{coachTranscriptModeLabel}: {transcriptModeTextLabel}</Text>
-        <Text style={styles.metaLine}>{coachMessageLimitLabel}: {activeMessageLimit}</Text>
-      </View>
+      <View style={styles.chatShell}>
+        {!session ? (
+          <View style={styles.setupStrip}>
+            <View style={styles.chipRow}>
+              {scenarioKeys.map((key) => {
+                const scenarioConfig = asRecord(scenarios[key]);
+                const label = asString(scenarioConfig.label, key);
+                const isActive = (scenario || fallbackScenario) === key;
+                return (
+                  <Pressable key={key} style={[styles.chip, isActive ? styles.chipActive : null]} onPress={() => setScenario(key)}>
+                    <Text style={[styles.chipText, isActive ? styles.chipTextActive : null]}>{label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <TextInput
+              value={context}
+              onChangeText={setContext}
+              placeholder={getNestedString(ui, ['placeholders', 'coachChatContext'])}
+              style={[styles.input, styles.inputLarge]}
+              multiline
+            />
+            <TextInput
+              value={goal}
+              onChangeText={setGoal}
+              placeholder={getNestedString(ui, ['placeholders', 'coachChatGoal'])}
+              style={styles.input}
+              multiline
+            />
+            <Pressable style={[styles.primaryButton, busy ? styles.buttonDisabled : null]} onPress={handleStart} disabled={busy}>
+              <Text style={styles.primaryButtonText}>{startCoachChatLabel}</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>{coachScenarioLabel}</Text>
-        <View style={styles.chipRow}>
-          {scenarioKeys.map((key) => {
-            const scenarioConfig = asRecord(scenarios[key]);
-            const label = asString(scenarioConfig.label, key);
-            const isActive = (session?.scenario || scenario) === key;
-            return (
-              <Pressable key={key} style={[styles.chip, isActive ? styles.chipActive : null]} onPress={() => setScenario(key)}>
-                <Text style={[styles.chipText, isActive ? styles.chipTextActive : null]}>{label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <Text style={styles.fieldLabel}>{coachContextLabel}</Text>
-        <TextInput
-          value={context}
-          onChangeText={setContext}
-          placeholder={getNestedString(ui, ['placeholders', 'coachChatContext'])}
-          style={[styles.input, styles.inputLarge]}
-          multiline
-        />
-
-        <Text style={styles.fieldLabel}>{coachGoalLabel}</Text>
-        <TextInput
-          value={goal}
-          onChangeText={setGoal}
-          placeholder={getNestedString(ui, ['placeholders', 'coachChatGoal'])}
-          style={styles.input}
-          multiline
-        />
-
-        <Pressable style={[styles.primaryButton, busy ? styles.buttonDisabled : null]} onPress={handleStart} disabled={busy}>
-          <Text style={styles.primaryButtonText}>{startCoachChatLabel}</Text>
-        </Pressable>
-        <Text style={styles.helperText}>{coachChatReadyLabel}</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>{coachConversationLabel}</Text>
         {session ? (
           <View style={styles.messageStack}>
             {session.messages.map((item) => (
@@ -251,20 +238,13 @@ export default function CoachChatPracticeScreen() {
         ) : (
           <Text style={styles.helperText}>{coachChatEmptyLabel}</Text>
         )}
-      </View>
+        {session?.completed ? <Text style={styles.noticeText}>{coachChatCompletedLabel}</Text> : null}
 
-      {session ? (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{coachFeedbackLabel}</Text>
+        {session ? (
           <Text style={styles.feedbackText}>{session.feedback}</Text>
-          {session.providerError ? <Text style={styles.noticeText}>{providerFallbackNotice}</Text> : null}
-          {session.completed ? <Text style={styles.noticeText}>{coachChatCompletedLabel}</Text> : null}
-        </View>
-      ) : null}
+        ) : null}
 
-      {session ? (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{coachSuggestionsLabel}</Text>
+        {session ? (
           <View style={styles.chipRow}>
             {currentSuggestions.map((suggestion) => (
               <Pressable key={suggestion} style={styles.chip} onPress={() => setDraft(suggestion)}>
@@ -272,40 +252,42 @@ export default function CoachChatPracticeScreen() {
               </Pressable>
             ))}
           </View>
+        ) : null}
 
-          {!session.completed ? (
-            <>
-              <View style={styles.actionsRow}>
-                <Pressable style={[styles.primaryButton, recording || transcribing ? styles.buttonDisabled : null]} onPress={() => void startRecording()} disabled={recording || transcribing || busy}>
-                  <Text style={styles.primaryButtonText}>{startRecordingLabel}</Text>
-                </Pressable>
-                <Pressable style={[styles.secondaryButton, !recording ? styles.buttonDisabled : null]} onPress={stopRecording} disabled={!recording}>
-                  <Text style={styles.secondaryButtonText}>{stopRecordingLabel}</Text>
-                </Pressable>
-              </View>
+        {session?.completed === false ? (
+          <View style={styles.composerRow}>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              placeholder={getNestedString(ui, ['placeholders', 'coachChatReply'])}
+              style={[styles.input, styles.replyInput]}
+              multiline
+            />
+            <Pressable style={[styles.primaryButton, (!canSend || busy) ? styles.buttonDisabled : null]} onPress={handleSend} disabled={!canSend || busy}>
+              <Text style={styles.primaryButtonText}>{sendCoachReplyLabel}</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
-              {transcribing ? <Text style={styles.noticeText}>{transcribingText}</Text> : null}
-              {speechStatus ? <Text style={styles.noticeText}>{speechStatus}</Text> : null}
+        {session ? (
+          <View style={styles.actionsRow}>
+            <Pressable style={[styles.secondaryButton, recording || transcribing ? styles.buttonDisabled : null]} onPress={() => void startRecording()} disabled={recording || transcribing || busy}>
+              <Text style={styles.secondaryButtonText}>{startRecordingLabel}</Text>
+            </Pressable>
+            <Pressable style={[styles.secondaryButton, !recording ? styles.buttonDisabled : null]} onPress={stopRecording} disabled={!recording}>
+              <Text style={styles.secondaryButtonText}>{stopRecordingLabel}</Text>
+            </Pressable>
+            <Pressable style={styles.ghostButton} onPress={() => { setSession(null); setDraft(''); setErrorMessage(''); clearSpeechStatus(); }}>
+              <Text style={styles.ghostButtonText}>{restartCoachChatLabel}</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
-              <TextInput
-                value={draft}
-                onChangeText={setDraft}
-                placeholder={getNestedString(ui, ['placeholders', 'coachChatReply'])}
-                style={[styles.input, styles.inputLarge]}
-                multiline
-              />
-              <Pressable style={[styles.secondaryButton, busy ? styles.buttonDisabled : null]} onPress={handleSend} disabled={busy}>
-                <Text style={styles.secondaryButtonText}>{sendCoachReplyLabel}</Text>
-              </Pressable>
-            </>
-          ) : null}
-
-          <Pressable style={styles.ghostButton} onPress={() => { setSession(null); setDraft(''); setErrorMessage(''); clearSpeechStatus(); }}>
-            <Text style={styles.ghostButtonText}>{restartCoachChatLabel}</Text>
-          </Pressable>
-          <Text style={styles.helperText}>{coachMessageLimitLabel}: {userTurns}/{activeMessageLimit}</Text>
-        </View>
-      ) : null}
+        {transcribing ? <Text style={styles.noticeText}>{transcribingText}</Text> : null}
+        {speechStatus ? <Text style={styles.noticeText}>{speechStatus}</Text> : null}
+        {session?.providerError ? <Text style={styles.noticeText}>{providerFallbackNotice}</Text> : null}
+        {session ? <Text style={styles.helperText}>{coachMessageLimitLabel}: {userTurns}/{activeMessageLimit}</Text> : null}
+      </View>
 
       {error || errorMessage ? (
         <View style={styles.errorCard}>
@@ -317,6 +299,20 @@ export default function CoachChatPracticeScreen() {
 }
 
 const styles = StyleSheet.create({
+  chatShell: {
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+    backgroundColor: tokens.colors.surfaceMuted,
+    borderRadius: tokens.radius.lg,
+    padding: tokens.spacing.lg,
+    borderWidth: 1,
+    borderColor: tokens.colors.cardLine,
+    gap: tokens.spacing.md,
+  },
+  setupStrip: {
+    gap: tokens.spacing.md,
+  },
   card: {
     backgroundColor: tokens.colors.surfaceMuted,
     borderRadius: tokens.radius.lg,
@@ -339,7 +335,7 @@ const styles = StyleSheet.create({
   capabilityPill: {
     minWidth: 170,
     backgroundColor: tokens.colors.surface,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     paddingVertical: tokens.spacing.sm,
     paddingHorizontal: tokens.spacing.md,
     borderWidth: 1,
@@ -383,7 +379,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     backgroundColor: tokens.colors.accent,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     paddingVertical: tokens.spacing.md,
     paddingHorizontal: tokens.spacing.lg,
     alignItems: 'center',
@@ -394,7 +390,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     backgroundColor: tokens.colors.surface,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     paddingVertical: tokens.spacing.md,
     paddingHorizontal: tokens.spacing.lg,
     alignItems: 'center',
@@ -406,7 +402,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   ghostButton: {
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     paddingVertical: tokens.spacing.md,
     paddingHorizontal: tokens.spacing.lg,
     alignItems: 'center',
@@ -439,7 +435,7 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.cardLine,
   },
   chipActive: {
-    backgroundColor: '#fce1cc',
+    backgroundColor: tokens.colors.accentSoft,
   },
   chipText: {
     color: tokens.colors.ink,
@@ -452,7 +448,7 @@ const styles = StyleSheet.create({
     gap: tokens.spacing.sm,
   },
   messageBubble: {
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.lg,
     padding: tokens.spacing.md,
     gap: 6,
     borderWidth: 1,
@@ -463,7 +459,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   userBubble: {
-    backgroundColor: '#f8ead8',
+    backgroundColor: tokens.colors.accentSoft,
     alignSelf: 'stretch',
   },
   messageRole: {
@@ -491,11 +487,21 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   errorCard: {
-    backgroundColor: '#fff1ed',
+    backgroundColor: tokens.colors.backgroundDeep,
     borderRadius: tokens.radius.lg,
     padding: tokens.spacing.lg,
     borderWidth: 1,
-    borderColor: '#f2c5b5',
+    borderColor: tokens.colors.line,
+  },
+  composerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: tokens.spacing.sm,
+  },
+  replyInput: {
+    flex: 1,
+    minHeight: 48,
+    maxHeight: 120,
   },
   errorText: {
     color: tokens.colors.danger,

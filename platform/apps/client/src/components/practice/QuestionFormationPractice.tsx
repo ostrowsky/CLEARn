@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
   },
   countdownPill: {
     backgroundColor: tokens.colors.accent,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.sm,
   },
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
   },
   button: {
     minHeight: 44,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     paddingHorizontal: tokens.spacing.lg,
     paddingVertical: tokens.spacing.sm,
     backgroundColor: tokens.colors.accent,
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     minHeight: 44,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     paddingHorizontal: tokens.spacing.lg,
     paddingVertical: tokens.spacing.sm,
     backgroundColor: tokens.colors.accent,
@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
   },
   secondaryButtonWide: {
     minHeight: 48,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     paddingHorizontal: tokens.spacing.lg,
     paddingVertical: tokens.spacing.sm,
     backgroundColor: tokens.colors.accent,
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
   hintCard: {
     alignSelf: 'flex-start',
     backgroundColor: tokens.colors.surfaceMuted,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.pill,
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.sm,
     borderWidth: 1,
@@ -595,19 +595,19 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.cardLine,
   },
   feedbackCardSuccess: {
-    backgroundColor: '#ecf8f0',
-    borderColor: '#bfe6cc',
+    backgroundColor: 'rgba(74, 222, 128, 0.12)',
+    borderColor: 'rgba(74, 222, 128, 0.28)',
   },
   feedbackCardWarning: {
-    backgroundColor: '#fff1ec',
-    borderColor: '#f0c7bb',
+    backgroundColor: tokens.colors.accentSoft,
+    borderColor: 'rgba(224, 122, 74, 0.28)',
   },
   feedbackText: {
     color: tokens.colors.inkSoft,
     lineHeight: 22,
   },
   feedbackTextSuccess: {
-    color: '#236b42',
+    color: tokens.colors.success,
   },
   feedbackTextWarning: {
     color: tokens.colors.danger,

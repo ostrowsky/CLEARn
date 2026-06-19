@@ -6,6 +6,71 @@
       "brandTagline": "",
       "footerNote": "",
       "watermarkText": "Developed by ostrowskyi@gmail.com",
+      "homeMenu": {
+        "closeLabel": "x",
+        "moduleWords": [
+          "ASK",
+          "ANSWER",
+          "CHAT"
+        ],
+        "leadText": "A practice studio for engineers who need to interrupt, clarify, and answer in English meetings without freezing.",
+        "startPracticingLabel": "start practicing",
+        "menuTriggerLabel": "ASK ANSWER chat",
+        "primaryCtaLabel": "Start with asking",
+        "secondaryCtaLabel": "Practice answering",
+        "pathsTitle": "Pick a path. Drill the gap.",
+        "moduleCards": [
+          {
+            "label": "Practice asking questions",
+            "route": "/asking",
+            "description": "Interrupt politely, ask after the talk, and clarify missing details in dialogues built around your engineering context."
+          },
+          {
+            "label": "Practice answering questions",
+            "route": "/answering",
+            "description": "Handle good, difficult, unnecessary and irrelevant questions in short dialogues with reaction coaching."
+          },
+          {
+            "label": "Try the AI learning chat",
+            "route": "/learning-chat",
+            "description": "Hold a short text conversation with the coach and get focused feedback after every turn."
+          }
+        ],
+        "skillsHeading": "SKILLS",
+        "skills": [
+          {
+            "label": "Interrupt and ask",
+            "route": "/asking/interrupt"
+          },
+          {
+            "label": "Ask after the talk",
+            "route": "/asking/after-talk"
+          },
+          {
+            "label": "Question formation drill",
+            "route": "/asking/without-context"
+          },
+          {
+            "label": "10-question mixed session",
+            "route": "/answering/mixed"
+          }
+        ],
+        "aboutHeading": "ABOUT",
+        "about": [
+          {
+            "label": "How CLEARn works",
+            "route": "/"
+          },
+          {
+            "label": "For teams",
+            "route": "/"
+          },
+          {
+            "label": "Contact",
+            "route": "/"
+          }
+        ]
+      },
       "navigation": {
         "back": "Back",
         "home": "home",
@@ -1510,6 +1575,7 @@
       "eyebrow": "Meeting English practice for IT specialists",
       "type": "landing",
       "route": "/",
+      "title": "ASK ANSWER chat",
       "summary": "",
       "blocks": [
         {
@@ -1536,8 +1602,7 @@
           "route": "/learning-chat",
           "materials": []
         }
-      ],
-      "title": "CLEARn"
+      ]
     },
     {
       "id": "asking-hub",
