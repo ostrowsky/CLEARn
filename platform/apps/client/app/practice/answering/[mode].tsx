@@ -61,6 +61,36 @@ function defaultReactionCategoryLabel(type: AnsweringMode) {
   }
 }
 
+function getReactionCategoryPalette(type: AnsweringMode) {
+  switch (type) {
+    case 'good':
+      return {
+        color: tokens.colors.accentGreen,
+        backgroundColor: 'rgba(74, 222, 128, 0.10)',
+      };
+    case 'difficult':
+      return {
+        color: tokens.colors.accentGold,
+        backgroundColor: 'rgba(245, 217, 107, 0.10)',
+      };
+    case 'unnecessary':
+      return {
+        color: tokens.colors.accentBlue,
+        backgroundColor: 'rgba(93, 123, 255, 0.10)',
+      };
+    case 'irrelevant':
+      return {
+        color: tokens.colors.accent,
+        backgroundColor: tokens.colors.accentSoft,
+      };
+    default:
+      return {
+        color: tokens.colors.accent,
+        backgroundColor: tokens.colors.accentSoft,
+      };
+  }
+}
+
 function toConfiguredReactionOptions(value: unknown, categoryType: AnsweringMode): AnsweringReactionOption[] {
   if (!Array.isArray(value)) {
     return [];
@@ -572,17 +602,24 @@ export default function AnsweringPracticeScreen() {
             {resolvedReactionCategories.map((category) => {
               const categorySelected = selectedReactionCategory === category.type;
               const hasSelectedOption = category.options.some((option) => option.id === selectedReactionId);
+              const categoryPalette = getReactionCategoryPalette(category.type);
               return (
                 <View key={category.type} style={styles.reactionCategoryCard}>
                   <Pressable
-                    style={[styles.reactionCategoryButton, categorySelected || hasSelectedOption ? styles.reactionCategoryButtonActive : null]}
+                    style={[
+                      styles.reactionCategoryButton,
+                      { borderColor: categoryPalette.color },
+                      categorySelected || hasSelectedOption
+                        ? { backgroundColor: categoryPalette.backgroundColor, boxShadow: `inset 0 0 0 1px ${categoryPalette.color}` }
+                        : null,
+                    ]}
                     onPress={() => handleSelectReactionCategory(category.type)}
                   >
                     <View style={styles.reactionCategoryButtonRow}>
-                      <Text style={[styles.reactionCategoryButtonText, categorySelected || hasSelectedOption ? styles.reactionCategoryButtonTextActive : null]}>{category.label}</Text>
-                      <Text style={[styles.reactionCategoryChevron, categorySelected || hasSelectedOption ? styles.reactionCategoryChevronActive : null]}>{categorySelected ? '^' : 'v'}</Text>
+                      <Text style={[styles.reactionCategoryButtonText, { color: categoryPalette.color }]}>{category.label}</Text>
+                      <Text style={[styles.reactionCategoryChevron, { color: categoryPalette.color }]}>{categorySelected ? '^' : 'v'}</Text>
                     </View>
-                    <Text style={[styles.reactionCategoryHint, categorySelected || hasSelectedOption ? styles.reactionCategoryHintActive : null]}>{reactionDropdownHintLabel}</Text>
+                    <Text style={[styles.reactionCategoryHint, categorySelected || hasSelectedOption ? { color: tokens.colors.ink } : null]}>{reactionDropdownHintLabel}</Text>
                   </Pressable>
                   {categorySelected ? (
                     <View style={styles.reactionDropdown}>

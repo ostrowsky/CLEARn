@@ -108,6 +108,12 @@ function useHomeMenuHoverStyles() {
         cursor: pointer;
       }
 
+      [aria-label^="home-module-"]:hover {
+        border-color: transparent !important;
+        box-shadow: none !important;
+        filter: none !important;
+      }
+
       [aria-label^="home-module-"]:hover [data-clearn-role="word"] {
         color: ${tokens.colors.ink} !important;
       }

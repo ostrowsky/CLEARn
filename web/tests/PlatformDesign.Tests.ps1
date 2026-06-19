@@ -60,6 +60,8 @@ Assert-Match -Actual $screen -Pattern 'menuWordHovered' -Message 'Learner menu l
 Assert-Match -Actual $screen -Pattern 'menuWordIndexHovered' -Message 'Learner menu index labels should move to accent on hover.'
 Assert-Match -Actual $screen -Pattern 'useLearnerMenuHoverStyles' -Message 'Learner shell should inject browser-native hover CSS for internal menu overlays.'
 Assert-Match -Actual $screen -Pattern '\[aria-label\^="learner-menu-word-"\]:hover' -Message 'Learner menu word hover should be backed by DOM hover CSS.'
+Assert-Match -Actual $screen -Pattern '\[aria-label\^="learner-menu-word-"\]:hover\s*\{[\s\S]*?box-shadow:\s*none !important' -Message 'Learner menu word hover should not draw an orange outline around ASK / ANSWER / CHAT.'
+Assert-Match -Actual $screen -Pattern '\[role="link"\]:not\(\[aria-label\^="learner-menu-word-"\]\):hover' -Message 'Generic link hover must exclude large ASK / ANSWER / CHAT menu words.'
 Assert-Match -Actual $screen -Pattern '\[aria-label\^="learner-menu-skill-"\]:hover' -Message 'Learner menu skill hover should be backed by DOM hover CSS.'
 Assert-Match -Actual $screen -Pattern '\[aria-label\^="learner-menu-about-"\]:hover' -Message 'Learner menu about hover should be backed by DOM hover CSS.'
 Assert-Match -Actual $screen -Pattern '\[aria-label="learner-menu-button"\]:hover' -Message 'Learner menu trigger hover should be backed by DOM hover CSS.'
@@ -110,6 +112,7 @@ Assert-Match -Actual $homeScreen -Pattern 'setHoveredItem' -Message 'Home menu s
 Assert-Match -Actual $homeScreen -Pattern 'useHomeMenuHoverStyles' -Message 'Home menu should inject browser-native hover CSS for React Native Web.'
 Assert-True -Condition ($homeScreen -notmatch 'Redirect href="/"') -Message 'Home screen must not use a render-time /sections -> / redirect because it can loop when opened from admin.'
 Assert-Match -Actual $homeScreen -Pattern '\[aria-label\^="home-module-"\]:hover' -Message 'ASK/ANSWER/CHAT hover should be backed by DOM hover CSS.'
+Assert-Match -Actual $homeScreen -Pattern '\[aria-label\^="home-module-"\]:hover\s*\{[\s\S]*?box-shadow:\s*none !important' -Message 'Home overlay ASK / ANSWER / CHAT hover should not draw an orange outline.'
 Assert-Match -Actual $homeScreen -Pattern '\[aria-label\^="home-skill-"\]:hover' -Message 'Skill links should be backed by DOM hover CSS.'
 Assert-Match -Actual $homeScreen -Pattern '\[aria-label\^="home-about-"\]:hover' -Message 'About links should be backed by DOM hover CSS.'
 Assert-Match -Actual $homeScreen -Pattern '\[aria-label="home-menu-button"\]:hover' -Message 'Menu toggle should be backed by DOM hover CSS.'
@@ -151,6 +154,12 @@ foreach ($relativePath in $learnerFiles) {
 }
 
 Write-TestStep 'Interactive controls use the pixel-perfect pill radius'
+$answeringSource = Read-RepoFile 'platform\apps\client\app\practice\answering\[mode].tsx'
+Assert-Match -Actual $answeringSource -Pattern 'getReactionCategoryPalette' -Message 'Answering reaction cards should use per-type colors from the redesign.'
+foreach ($expectedColor in @('accentGreen', 'accentGold', 'accentBlue')) {
+    Assert-Match -Actual $answeringSource -Pattern $expectedColor -Message "Answering reaction cards should include the $expectedColor redesign color."
+}
+
 $pillStyleExpectations = @{
     'platform\apps\client\app\practice\answering\[mode].tsx' = @('button', 'secondaryButton', 'reactionCategoryButton', 'choiceChip')
     'platform\apps\client\app\practice\chat.tsx' = @('capabilityPill', 'primaryButton', 'secondaryButton', 'ghostButton', 'chip')

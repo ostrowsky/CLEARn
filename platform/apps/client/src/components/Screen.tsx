@@ -127,15 +127,15 @@ function useLearnerMenuHoverStyles() {
       }
 
       [role="button"]:hover,
-      [role="link"]:hover,
-      [tabindex="0"]:not(input):not(textarea):hover {
+      [role="link"]:not([aria-label^="learner-menu-word-"]):hover,
+      [tabindex="0"]:not(input):not(textarea):not([aria-label^="learner-menu-word-"]):hover {
         border-color: ${tokens.colors.accent} !important;
         box-shadow: inset 0 0 0 1px ${tokens.colors.accent} !important;
         filter: brightness(1.08);
       }
 
       [role="button"]:hover [dir="auto"],
-      [role="link"]:hover [dir="auto"] {
+      [role="link"]:not([aria-label^="learner-menu-word-"]):hover [dir="auto"] {
         color: ${tokens.colors.accent} !important;
       }
 
@@ -146,6 +146,12 @@ function useLearnerMenuHoverStyles() {
 
       [aria-label^="learner-menu-word-"] {
         cursor: pointer;
+      }
+
+      [aria-label^="learner-menu-word-"]:hover {
+        border-color: transparent !important;
+        box-shadow: none !important;
+        filter: none !important;
       }
 
       [aria-label^="learner-menu-word-"]:hover [dir="auto"] {
