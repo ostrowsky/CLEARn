@@ -8,13 +8,15 @@ $platformRoot = Join-Path $workspaceRoot 'platform'
 Write-TestStep 'Checking Vercel Analytics frontend wiring'
 $clientPackage = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\package.json') -Raw
 $clientLayout = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\_layout.tsx') -Raw
+$clientHtml = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\+html.tsx') -Raw
 $deploymentSpec = Get-Content -LiteralPath (Join-Path $workspaceRoot 'docs\specs\features\deployment-readiness.md') -Raw
 
-Assert-Match -Actual $clientPackage -Pattern '"@vercel/analytics"'
-Assert-Match -Actual $clientLayout -Pattern "import \{ Analytics \} from '@vercel/analytics/react'"
-Assert-Match -Actual $clientLayout -Pattern '<Analytics\s*/>'
-Assert-True -Condition ($clientLayout -notmatch '@vercel/analytics/next') -Message 'Expo Router static web must use the React analytics entrypoint, not the Next.js-only entrypoint.'
+Assert-True -Condition ($clientPackage -notmatch '"@vercel/analytics"') -Message 'Expo Router static export should not make Vercel Analytics part of the Metro dependency graph.'
+Assert-True -Condition ($clientLayout -notmatch '@vercel/analytics') -Message 'Root layout should not import Vercel Analytics through Metro.'
+Assert-Match -Actual $clientHtml -Pattern 'expo-router/html'
+Assert-Match -Actual $clientHtml -Pattern '/_vercel/insights/script\.js'
+Assert-True -Condition ($clientHtml -notmatch '@vercel/analytics/next') -Message 'Expo Router static web must not use the Next.js-only analytics entrypoint.'
 Assert-Match -Actual $deploymentSpec -Pattern 'Vercel Analytics'
-Assert-Match -Actual $deploymentSpec -Pattern 'Expo/React client shell'
+Assert-Match -Actual $deploymentSpec -Pattern 'Expo HTML shell'
 
 Write-Host 'Vercel Analytics tests passed.'
