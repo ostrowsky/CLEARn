@@ -31,6 +31,7 @@ $tests = @(
     (Join-Path $PSScriptRoot 'PlatformClarify.Api.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformCoach.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformCoach.Api.Tests.ps1'),
+    (Join-Path $PSScriptRoot 'VercelAnalytics.Tests.ps1'),
     (Join-Path $PSScriptRoot 'Architecture.Tests.ps1')
 )
 
