@@ -19,7 +19,6 @@
     "@clearn/domain": "workspace:*",
     "@expo/vector-icons": "~14.0.4",
     "@react-navigation/bottom-tabs": "^7.2.0",
-    "@vercel/analytics": "^1.5.0",
     "expo": "^52.0.11",
     "expo-constants": "~17.0.8",
     "expo-router": "^4.0.22",
