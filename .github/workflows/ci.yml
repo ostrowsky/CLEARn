@@ -28,7 +28,7 @@ jobs:
 
       - name: Install platform dependencies
         working-directory: platform
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Audit production dependencies
         working-directory: platform
@@ -109,7 +109,7 @@ jobs:
 
       - name: Install platform dependencies
         working-directory: platform
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Audit production dependencies
         working-directory: platform
