@@ -3,4 +3,4 @@ packages:
   - packages/*
 
 overrides:
-  undici: '>=6.27.0'
+  undici: '6.27.0'
