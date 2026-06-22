@@ -178,7 +178,7 @@ foreach ($pattern in @(
     'type: keyvalue',
     'name: clearn-redis',
     'buildCommand: cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate',
-    'pnpm install --frozen-lockfile',
+    'pnpm install --no-frozen-lockfile',
     'pip install -r apps/api/requirements.txt',
     'pnpm --filter @clearn/api build',
     'startCommand: cd platform && corepack enable && corepack prepare pnpm@10.8.0 --activate && pnpm --filter @clearn/api start',
