@@ -31,6 +31,10 @@ function asString(value: unknown, fallback = ''): string {
 }
 
 function asStringArray(value: unknown): string[] {
+  if (typeof value === 'string') {
+    return value.trim().length > 0 ? [value] : [];
+  }
+
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : [];
 }
 
@@ -390,6 +394,27 @@ function looksMeaningfulDetail(value: string) {
   return looksMeaningfulUserInput(value);
 }
 
+function normalizeAskAfterPhraseForMatch(value: string) {
+  return normalizeAskAfterText(value)
+    .replace(/\bthat\b$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function askAfterPhraseMatchesQuestion(question: string, phrase: string, fallback: RegExp) {
+  const normalizedQuestion = normalizeAskAfterText(question);
+  if (!phrase.trim()) {
+    return fallback.test(normalizedQuestion);
+  }
+
+  const normalizedPhrase = normalizeAskAfterPhraseForMatch(phrase.replace(/\.\.\./g, ''));
+  if (!normalizedPhrase) {
+    return fallback.test(normalizedQuestion);
+  }
+
+  return normalizedQuestion.includes(normalizedPhrase);
+}
+
 function normalizeAskAfterSpeechLines(value: unknown): AskAfterSpeechLine[] {
   if (typeof value === 'string') {
     const text = limitWords(normalizeWhitespace(value), 100);
@@ -448,7 +473,7 @@ function normalizeAskAfterBrief(value: unknown, fallback: AskAfterBrief): AskAft
   };
 }
 
-const defaultQuestionFormationDeck: QuestionFormationExercise[] = [
+export const defaultQuestionFormationDeck: QuestionFormationExercise[] = [
   {
     sentence: 'Stakeholders will review return on investment at the end of the year.',
     blanks: [
@@ -591,7 +616,7 @@ const defaultQuestionFormationDeck: QuestionFormationExercise[] = [
   },
 ];
 
-const proceduralQuestionFormationCatalog: QuestionFormationExercise[] = [
+export const proceduralQuestionFormationCatalog: QuestionFormationExercise[] = [
   {
     sentence: 'Nina will send the incident summary to Omar before noon.',
     blanks: [
@@ -623,12 +648,12 @@ const proceduralQuestionFormationCatalog: QuestionFormationExercise[] = [
     generatorMode: 'procedural-fallback',
   },
   {
-    sentence: 'Whose runbook will Maya update in the release meeting today?',
+    sentence: 'Maya will update Jordan\'s runbook in the release meeting today.',
     blanks: [
       {
-        id: 'whose-runbook',
+        id: 'jordan-runbook',
         index: 1,
-        answer: 'Whose',
+        answer: 'Jordan\'s',
         whWord: 'Whose',
         expectedQuestion: 'Whose runbook will Maya update in the release meeting today?',
         acceptedQuestions: ['Whose runbook will Maya update today?'],
@@ -638,7 +663,7 @@ const proceduralQuestionFormationCatalog: QuestionFormationExercise[] = [
         index: 2,
         answer: 'release meeting',
         whWord: 'Where',
-        expectedQuestion: 'Where will Maya update whose runbook today?',
+        expectedQuestion: 'Where will Maya update Jordan\'s runbook today?',
         acceptedQuestions: ['Where will Maya update the runbook today?'],
       },
       {
@@ -646,7 +671,7 @@ const proceduralQuestionFormationCatalog: QuestionFormationExercise[] = [
         index: 3,
         answer: 'today',
         whWord: 'When',
-        expectedQuestion: 'When will Maya update whose runbook in the release meeting?',
+        expectedQuestion: 'When will Maya update Jordan\'s runbook in the release meeting?',
       },
     ],
     coachingTip: 'Use whose to ask about ownership, even when the noun stays in the question.',
@@ -682,29 +707,30 @@ const proceduralQuestionFormationCatalog: QuestionFormationExercise[] = [
     generatorMode: 'procedural-fallback',
   },
   {
-    sentence: 'Which dashboard will Priya present to stakeholders in Thursday\'s roadmap review?',
+    sentence: 'Priya will present the reliability dashboard to stakeholders in Thursday\'s roadmap review.',
     blanks: [
       {
-        id: 'which-dashboard',
+        id: 'reliability-dashboard',
         index: 1,
-        answer: 'Which dashboard',
+        answer: 'reliability dashboard',
         whWord: 'Which',
         expectedQuestion: 'Which dashboard will Priya present to stakeholders in Thursday\'s roadmap review?',
+        acceptedQuestions: ['Which dashboard will Priya present to stakeholders?'],
       },
       {
         id: 'stakeholders',
         index: 2,
         answer: 'stakeholders',
         whWord: 'Whom',
-        expectedQuestion: 'Whom will Priya present which dashboard to in Thursday\'s roadmap review?',
-        acceptedQuestions: ['Who will Priya present which dashboard to in Thursday\'s roadmap review?'],
+        expectedQuestion: 'Whom will Priya present the reliability dashboard to in Thursday\'s roadmap review?',
+        acceptedQuestions: ['Who will Priya present the reliability dashboard to in Thursday\'s roadmap review?'],
       },
       {
         id: 'roadmap-review',
         index: 3,
         answer: 'Thursday\'s roadmap review',
         whWord: 'When',
-        expectedQuestion: 'When will Priya present which dashboard to stakeholders?',
+        expectedQuestion: 'When will Priya present the reliability dashboard to stakeholders?',
       },
     ],
     coachingTip: 'Which asks the learner to choose from a known set, not from any possible option.',
@@ -829,6 +855,62 @@ function countWords(value: string) {
   return normalizeWhitespace(value).split(/\s+/).filter(Boolean).length;
 }
 
+function isQuestionFormationStatement(value: string) {
+  const raw = normalizeWhitespace(value);
+  if (!raw || /\?\s*$/.test(raw)) {
+    return false;
+  }
+
+  const tokens = normalizeLooseText(raw).split(' ').filter(Boolean);
+  const first = tokens[0] || '';
+  if (
+    [
+      'who',
+      'whom',
+      'whose',
+      'what',
+      'which',
+      'where',
+      'when',
+      'why',
+      'how',
+      'do',
+      'does',
+      'did',
+      'is',
+      'are',
+      'was',
+      'were',
+      'will',
+      'would',
+      'can',
+      'could',
+      'should',
+      'may',
+      'might',
+      'must',
+      'have',
+      'has',
+      'had',
+    ].includes(first)
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function startsWithAcceptedQuestionLead(userQuestion: string, acceptedQuestion: string) {
+  const acceptedTokens = normalizeLooseText(acceptedQuestion).split(' ').filter(Boolean);
+  const first = acceptedTokens[0] || '';
+  const second = acceptedTokens[1] || '';
+  const lead = first === 'how' && ['long', 'often', 'far', 'much', 'many', 'soon', 'fast'].includes(second)
+    ? `${first} ${second}`
+    : first;
+
+  return startsWithWhWord(userQuestion, lead);
+}
+
 function normalizeQuestionFormationBlank(value: unknown, fallback: QuestionFormationBlank, index: number): QuestionFormationBlank {
   const record = asRecord(value);
   const answer = normalizeWhitespace(asString(record.answer, fallback.answer));
@@ -843,22 +925,26 @@ function normalizeQuestionFormationBlank(value: unknown, fallback: QuestionForma
     index,
     answer: answer || fallback.answer,
     whWord: whWord || fallback.whWord,
-    expectedQuestion: expectedQuestion || fallback.expectedQuestion,
+    expectedQuestion: expectedQuestion && hasQuestionFormationGrammar(expectedQuestion) ? expectedQuestion : fallback.expectedQuestion,
     ...(acceptedQuestions.length ? { acceptedQuestions } : fallback.acceptedQuestions?.length ? { acceptedQuestions: fallback.acceptedQuestions } : {}),
   };
 }
 
 function normalizeQuestionFormationExercise(value: unknown, fallback: QuestionFormationExercise): QuestionFormationExercise {
   const record = asRecord(value);
-  const sentence = normalizeWhitespace(asString(record.sentence, fallback.sentence)).replace(/[!?]+$/g, '.');
+  const rawSentence = normalizeWhitespace(asString(record.sentence, fallback.sentence));
+  const sentence = rawSentence.replace(/[!?]+$/g, '.');
   const rawBlanks = Array.isArray(record.blanks) ? record.blanks : [];
   const blanks = fallback.blanks.map((fallbackBlank, index) => normalizeQuestionFormationBlank(rawBlanks[index], fallbackBlank, index + 1));
-  const allAnswersExist = blanks.every((blank) => normalizeAskAfterText(sentence).includes(normalizeAskAfterText(blank.answer)));
-  const safeSentence = sentence && countWords(sentence) <= 15 && allAnswersExist ? sentence : fallback.sentence;
+  const normalizedSentence = normalizeAskAfterText(sentence);
+  const answerMatches = blanks.filter((blank) => normalizeAskAfterText(blank.answer) && normalizedSentence.includes(normalizeAskAfterText(blank.answer)));
+  const hasExactlyThreeTargets = blanks.length === 3 && answerMatches.length === 3;
+  const sentenceIsValid = sentence && countWords(sentence) <= 15 && hasExactlyThreeTargets && isQuestionFormationStatement(rawSentence);
+  const safeSentence = sentenceIsValid ? sentence : fallback.sentence;
 
   return {
     sentence: safeSentence,
-    blanks: safeSentence === sentence ? blanks : fallback.blanks,
+    blanks: sentenceIsValid ? blanks : fallback.blanks,
     coachingTip: normalizeWhitespace(asString(record.coachingTip, fallback.coachingTip)) || fallback.coachingTip,
     generatorMode: normalizeWhitespace(asString(record.generatorMode, fallback.generatorMode)) || fallback.generatorMode,
     providerError: normalizeWhitespace(asString(record.providerError, fallback.providerError || '')) || fallback.providerError,
@@ -1053,15 +1139,18 @@ export class PracticeService {
     try {
       const generated = await withChatProvider(env.LLM_TEXT_PROVIDER, (provider) =>
         provider.generateQuestionFormation({
-          systemPrompt: 'Generate one workplace IT English question-formation exercise. Return valid JSON with keys sentence, blanks, coachingTip, generatorMode. The sentence must be one short professional statement with no more than 15 words. It must contain exactly three meaningful answer spans suitable for question words such as who, whom, whose, what, which, where, when, why, how, how long, how often, how far, how much, how many, how soon, and how fast. Each blank must include id, index, answer, whWord, expectedQuestion, and optional acceptedQuestions.',
+          systemPrompt: 'Generate one workplace IT English question-formation exercise. Return valid JSON with keys sentence, blanks, coachingTip, generatorMode. The sentence field must be one short declarative professional statement, not a question, with no more than 15 words. It must not start with a WH word or question auxiliary and must not end with a question mark. Put questions only in expectedQuestion or acceptedQuestions. The sentence must contain exactly three meaningful answer spans suitable for question words such as who, whom, whose, what, which, where, when, why, how, how long, how often, how far, how much, how many, how soon, and how fast. Each blank must include id, index, answer, whWord, expectedQuestion, and optional acceptedQuestions.',
           prompt: [
             `Learner context: ${context || 'General IT workplace practice'}`,
             `Conversation scenario: ${contextInfo.scenario}`,
             `Primary focus: ${contextInfo.subject}`,
             'Create one sentence only, not a dialogue.',
+            'The sentence must be a declarative statement. Never generate a question in the sentence field.',
+            'Do not put question words such as who, whose, what, which, when, where, why, or how at the beginning of the sentence.',
+            'Put all learner questions only in the blank expectedQuestion fields.',
             'Use professional IT work context: sprint reviews, APIs, metrics, releases, defects, stakeholders, data, security, demos, or planning.',
             'The three blanks should cover different question types when possible: who, whom, whose, what, which, where, when, why, how, how long, how often, how far, how much, how many, how soon, or how fast.',
-            'Choose answer spans that are visible meaningful words or phrases, never tiny function words.',
+            'Choose exactly three answer spans that are visible meaningful words or phrases in the sentence, never tiny function words.',
             'Expected questions may be short and may use "it" or other visible reference words when some details are hidden.',
             'Do not include more than 15 words in the sentence.',
             `Offset: ${offset}.`,
@@ -1089,8 +1178,10 @@ export class PracticeService {
     const userQuestion = normalizeWhitespace(input.userQuestion);
     const expectedQuestion = normalizeWhitespace(input.expectedQuestion);
     const acceptedQuestions = [expectedQuestion, ...asStringArray(input.acceptedQuestions)].filter(Boolean);
-    const startsCorrectly = startsWithWhWord(userQuestion, input.whWord);
-    const grammarAccepted = hasQuestionFormationGrammar(userQuestion);
+    const exactAccepted = acceptedQuestions.some((candidate) => normalizeLooseText(candidate) === normalizeLooseText(userQuestion));
+    const startsCorrectly = startsWithWhWord(userQuestion, input.whWord)
+      || acceptedQuestions.some((candidate) => startsWithAcceptedQuestionLead(userQuestion, candidate));
+    const grammarAccepted = exactAccepted || hasQuestionFormationGrammar(userQuestion);
     const leaksAnswer = containsAnswerLeak(userQuestion, input.answer);
     const overlap = acceptedQuestions.reduce((best, candidate) => Math.max(best, getTokenOverlapRatio(userQuestion, candidate)), 0);
     const pronounReferenceAccepted = acceptedQuestions.some((candidate) => hasQuestionFormationPronounReference(userQuestion, candidate));
@@ -1133,13 +1224,26 @@ export class PracticeService {
 
     const hasQuestionMark = /\?/.test(question);
     const hasQuestionLead = /could you|can you|would you|what|when|why|who|which|how/i.test(question);
-    const hasContext = /(you commented|you spoke about|you referred to|you quoted a figure of|you made the point that|you said something about|i think i misunderstood you|there is one thing i m not clear about|you didn t mention|you mentioned|you highlighted|i may have missed the point about|i wasn't fully clear on)/i.test(question);
-    const hasFollow = /(explain|run us through|specific|tell us how|elaborate|say a bit more|go over|talk us through)/i.test(question);
+    const contextPhrase = normalizeWhitespace(asString(payload.contextPhrase));
+    const followUpPhrase = normalizeWhitespace(asString(payload.followUpPhrase));
+    const hasContext = askAfterPhraseMatchesQuestion(
+      question,
+      contextPhrase,
+      /(you commented|you spoke about|you referred to|you quoted a figure of|you made the point that|you said something about|i think i misunderstood you|there is one thing i m not clear about|there is one point i m not clear about|you didn t mention|you mentioned|you highlighted|i may have missed the point about|i wasn't fully clear on)/i,
+    );
+    const hasFollow = askAfterPhraseMatchesQuestion(
+      question,
+      followUpPhrase,
+      /(explain|run us through|specific|tell us how|elaborate|say a bit more|go over|talk us through)/i,
+    );
     const meaningfulQuestion = looksMeaningfulUserInput(question);
     const detailAccepted = !detail || looksMeaningfulDetail(detail);
     const overlap = expectedQuestion ? getTokenOverlapRatio(question, expectedQuestion) : 1;
     const onTrack = !expectedQuestion || overlap >= 0.45;
-    const accepted = meaningfulQuestion && hasQuestionMark && hasQuestionLead && hasContext && hasFollow && detailAccepted && onTrack;
+    const usesPhraseBankStructure = Boolean(contextPhrase || followUpPhrase);
+    const selectedPhraseStructureAccepted = usesPhraseBankStructure && hasQuestionMark && hasQuestionLead;
+    const freeformStructureAccepted = hasQuestionMark && hasQuestionLead && hasContext && hasFollow && onTrack;
+    const accepted = meaningfulQuestion && detailAccepted && (selectedPhraseStructureAccepted || freeformStructureAccepted);
 
     return {
       accepted,
@@ -1149,11 +1253,11 @@ export class PracticeService {
           ? getNestedString(feedback, ['missingQuestion'])
           : !detailAccepted
           ? getNestedString(feedback, ['unclearDetail']) || 'Use one real detail from the talk instead of filler or repeated letters.'
-          : !hasContext
+          : !usesPhraseBankStructure && !hasContext
             ? getNestedString(feedback, ['missingContext'])
-            : !hasFollow
+            : !usesPhraseBankStructure && !hasFollow
               ? getNestedString(feedback, ['missingFollow'])
-              : !onTrack
+              : !usesPhraseBankStructure && !onTrack
                 ? getNestedString(feedback, ['offTrack']) || 'Keep the question closer to the selected lead-in and follow-up phrase so it stays clear and natural.'
                 : getNestedString(feedback, ['missingQuestion']),
     };

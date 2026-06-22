@@ -43,6 +43,25 @@ async function readSelfHostedSpeechError(response: Response) {
   return details ? ` - ${details.slice(0, 300)}` : '';
 }
 
+async function fetchSelfHostedSpeech(path: string, init: RequestInit, timeoutMs: number, operation: 'STT' | 'TTS') {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(`${env.SELF_HOSTED_SPEECH_BASE_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Self-hosted ${operation} timed out after ${timeoutMs}ms`);
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export const selfHostedSpeechProvider: SpeechProvider = {
   kind: 'selfhosted',
   async speechToText(input) {
@@ -54,10 +73,15 @@ export const selfHostedSpeechProvider: SpeechProvider = {
       formData.append('language', input.language);
     }
 
-    const response = await fetch(`${env.SELF_HOSTED_SPEECH_BASE_URL}/audio/transcriptions`, {
-      method: 'POST',
-      body: formData,
-    });
+    const response = await fetchSelfHostedSpeech(
+      '/audio/transcriptions',
+      {
+        method: 'POST',
+        body: formData,
+      },
+      env.SELF_HOSTED_STT_TIMEOUT_MS,
+      'STT',
+    );
 
     if (!response.ok) {
       throw new Error(`Self-hosted STT error: ${response.status}${await readSelfHostedSpeechError(response)}`);
@@ -67,11 +91,16 @@ export const selfHostedSpeechProvider: SpeechProvider = {
     return { text: json.text ?? '', provider: 'selfhosted', model: env.SELF_HOSTED_STT_MODEL };
   },
   async textToSpeech(input) {
-    const response = await fetch(`${env.SELF_HOSTED_SPEECH_BASE_URL}/audio/speech`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    });
+    const response = await fetchSelfHostedSpeech(
+      '/audio/speech',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      },
+      env.SELF_HOSTED_TTS_TIMEOUT_MS,
+      'TTS',
+    );
 
     if (!response.ok) {
       throw new Error(`Self-hosted TTS error: ${response.status}${await readSelfHostedSpeechError(response)}`);

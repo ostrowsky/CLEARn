@@ -35,6 +35,10 @@ if ([string]::IsNullOrWhiteSpace($env:LOCAL_STT_MODEL)) {
     $env:LOCAL_STT_MODEL = 'base.en'
 }
 
+if ([string]::IsNullOrWhiteSpace($env:LOCAL_STT_WARMUP_ON_STARTUP)) {
+    $env:LOCAL_STT_WARMUP_ON_STARTUP = '1'
+}
+
 if ([string]::IsNullOrWhiteSpace($env:LOCAL_STT_DEVICE)) {
     $env:LOCAL_STT_DEVICE = 'cpu'
 }
@@ -43,12 +47,17 @@ if ([string]::IsNullOrWhiteSpace($env:LOCAL_STT_COMPUTE_TYPE)) {
     $env:LOCAL_STT_COMPUTE_TYPE = 'int8'
 }
 
+if ([string]::IsNullOrWhiteSpace($env:LOCAL_STT_BEAM_SIZE)) {
+    $env:LOCAL_STT_BEAM_SIZE = '5'
+}
+
 Write-Host ''
 Write-Host 'Starting CLEARn local STT server...'
 Write-Host 'OpenAI-compatible endpoint: http://localhost:8010/v1/audio/transcriptions'
 Write-Host "Model: $env:LOCAL_STT_MODEL"
 Write-Host "Device: $env:LOCAL_STT_DEVICE"
 Write-Host "Compute type: $env:LOCAL_STT_COMPUTE_TYPE"
+Write-Host "Beam size: $env:LOCAL_STT_BEAM_SIZE"
 Write-Host ''
 
 & $pythonExe -m uvicorn server:app --host 127.0.0.1 --port 8010 --app-dir $serviceRoot

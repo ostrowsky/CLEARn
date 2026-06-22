@@ -12,6 +12,7 @@ import type {
   TextToSpeechResult,
 } from '@clearn/domain';
 import { apiBaseUrl } from './config';
+import { checkQuestionFormationFallback } from './questionFormationFallback';
 import { isAppContent, staticContent } from './staticContent';
 
 type AnsweringMode = Exclude<AnsweringSessionMode, 'mixed'>;
@@ -32,7 +33,15 @@ type VideoTranscriptResponse = {
 };
 
 function getRequestTimeoutMs(path: string) {
-  if (path.includes('/api/speech/') || path.includes('/api/admin/media/') || path.includes('/api/admin/backup/')) {
+  if (path.includes('/api/speech/stt')) {
+    return 15000;
+  }
+
+  if (path.includes('/api/speech/tts')) {
+    return 15000;
+  }
+
+  if (path.includes('/api/admin/media/') || path.includes('/api/admin/backup/')) {
     return 120000;
   }
 
@@ -290,35 +299,6 @@ function buildQuestionFormationFallback(offset = 0, error?: Error): QuestionForm
     ...base,
     blanks: base.blanks.map((blank) => ({ ...blank })),
     providerError: error?.message,
-  };
-}
-
-function normalizeQuestion(value: string) {
-  return normalizeText(value).toLowerCase().replace(/[?.!]+$/g, '');
-}
-
-function checkQuestionFormationFallback(input: {
-  userQuestion: string;
-  whWord: string;
-  expectedQuestion: string;
-  acceptedQuestions?: string[];
-}) {
-  const user = normalizeQuestion(input.userQuestion);
-  const expected = normalizeQuestion(input.expectedQuestion);
-  const accepted = [expected, ...(input.acceptedQuestions || []).map(normalizeQuestion)].filter(Boolean);
-  const wh = normalizeText(input.whWord).toLowerCase();
-  const startsWithWh = wh ? user.startsWith(wh) : true;
-  const exactOrClose = accepted.some((candidate) => user === candidate);
-  const hasDidBaseError = /\bdid\s+(fixed|reviewed|tested|delayed|validated|deployed|resolved|reported)\b/i.test(input.userQuestion);
-  const grammatical = /^(who|whom|whose|what|which|where|when|why|how)(\s+\w+)?\s+(will|would|can|could|should|did|does|do|is|are|was|were|has|have|had)\b/i.test(input.userQuestion)
-    && !hasDidBaseError
-    && accepted.some((candidate) => candidate.split(' ').some((token) => token.length > 4 && user.includes(token)));
-
-  return {
-    accepted: Boolean(startsWithWh && (exactOrClose || grammatical)),
-    feedback: startsWithWh && (exactOrClose || grammatical)
-      ? 'Correct. The question is grammatically clear and targets the hidden information.'
-      : 'The grammar or meaning does not match the original sentence yet. Try keeping the question close to the visible words.',
   };
 }
 

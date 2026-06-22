@@ -134,6 +134,24 @@ try {
     }
     Assert-True -Condition (-not [bool]$askAfter.accepted) -Message 'Ask-after check should reject repeated-letter input.'
 
+    $askAfterSelectedPhrase = Invoke-JsonRequest -Uri "$baseUrl/api/practice/after-talk/check" -Method Post -Payload @{
+        question = "There is one point I'm not clear about repetitive task. Could you say a bit more about that?"
+        expectedQuestion = "There is one point I'm not clear about repetitive task. Could you say a bit more about that?"
+        detail = 'repetitive task'
+        contextPhrase = "There is one point I'm not clear about ..."
+        followUpPhrase = 'Could you say a bit more about that?'
+    }
+    Assert-True -Condition ([bool]$askAfterSelectedPhrase.accepted) -Message 'Ask-after check should accept composed questions built from editable phrase-bank options.'
+
+    $askAfterSelectedShortPhrase = Invoke-JsonRequest -Uri "$baseUrl/api/practice/after-talk/check" -Method Post -Payload @{
+        question = 'You mentioned Repetitive tasks. Could you explain that in a bit more detail?'
+        expectedQuestion = 'You mentioned Repetitive tasks. Could you explain that in a bit more detail?'
+        detail = 'Repetitive tasks'
+        contextPhrase = 'You mentioned'
+        followUpPhrase = 'Could you explain that in a bit more detail?'
+    }
+    Assert-True -Condition ([bool]$askAfterSelectedShortPhrase.accepted) -Message 'Ask-after check should accept the selected lead-in and selected follow-up when the learner detail is meaningful.'
+
     $answering = Invoke-JsonRequest -Uri "$baseUrl/api/answering/session/start" -Method Post -Payload @{
         context = 'I am preparing a sprint review about API stability.'
         mode = 'mixed'

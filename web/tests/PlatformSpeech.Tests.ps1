@@ -48,7 +48,14 @@ foreach ($pattern in @(
     'getAudioUploadFileName',
     'Self-hosted STT error:',
     'readSelfHostedSpeechError',
-    'body: formData'
+    'body: formData',
+    'fetchSelfHostedSpeech',
+    'AbortController',
+    'SELF_HOSTED_STT_TIMEOUT_MS',
+    'Self-hosted \$\{operation\} timed out after',
+    'SELF_HOSTED_TTS_TIMEOUT_MS',
+    "fetchSelfHostedSpeech\([\s\S]*?env\.SELF_HOSTED_STT_TIMEOUT_MS,[\s\S]*?'STT'",
+    "fetchSelfHostedSpeech\([\s\S]*?env\.SELF_HOSTED_TTS_TIMEOUT_MS,[\s\S]*?'TTS'"
 )) {
     Assert-Match -Actual $selfHostedSpeechSource -Pattern $pattern
 }
@@ -79,7 +86,10 @@ foreach ($pattern in @(
     '/api/debug/log',
     'getDebugLogs\(',
     'json.message as string',
-    'response.statusText'
+    'response.statusText',
+    "path\.includes\('/api/speech/stt'\)",
+    "path\.includes\('/api/speech/tts'\)",
+    'return 15000;'
 )) {
     Assert-Match -Actual $apiClientSource -Pattern $pattern
 }
@@ -153,16 +163,26 @@ $localSttServerSource = Get-Content -LiteralPath $localSttServerPath -Raw
 $localSttStartSource = Get-Content -LiteralPath $localSttStartPath -Raw
 $localSttRequirementsSource = Get-Content -LiteralPath (Join-Path $platformRoot 'local-stt\requirements.txt') -Raw
 foreach ($pattern in @(
+    'asyncio',
+    'gc',
     'faster_whisper',
     'warm_model_on_startup',
     '@app\.post\("/v1/warmup"\)',
     'modelLoaded',
+    'MAX_AUDIO_BYTES',
+    'LOCAL_STT_MAX_AUDIO_BYTES',
+    'TRANSCRIBE_CONCURRENCY',
+    'LOCAL_STT_TRANSCRIBE_CONCURRENCY',
+    'async with _transcribe_lock',
+    'status_code=413',
     '@app\.post\("/v1/audio/transcriptions"\)',
     'UploadFile',
     'base\.en',
     '"model": DEFAULT_MODEL',
     '"requestedModel": model or DEFAULT_MODEL',
-    'vad_filter=True'
+    'vad_filter=True',
+    'LOCAL_STT_BEAM_SIZE',
+    'beam_size=BEAM_SIZE'
 )) {
     Assert-Match -Actual $localSttServerSource -Pattern $pattern
 }
@@ -170,12 +190,35 @@ foreach ($pattern in @(
     'local-stt',
     'requirements.txt',
     'base\.en',
+    'LOCAL_STT_WARMUP_ON_STARTUP',
     'uvicorn server:app',
     '--port 8010'
 )) {
     Assert-Match -Actual $localSttStartSource -Pattern $pattern
 }
 Assert-Match -Actual $localSttRequirementsSource -Pattern 'requests==2\.32\.5'
+
+Write-TestStep 'Render STT service is configured for small memory instances'
+$renderSource = Get-Content -LiteralPath (Join-Path $workspaceRoot 'render.yaml') -Raw
+foreach ($pattern in @(
+    'name: clearn-stt',
+    'runtime: python',
+    'cd platform/local-stt && python -m pip install -r requirements.txt',
+    'cd platform/local-stt && uvicorn server:app --host 0.0.0.0 --port \$PORT',
+    'healthCheckPath: /v1/health',
+    'LOCAL_STT_MODEL',
+    'value: base\.en',
+    'LOCAL_STT_WARMUP_ON_STARTUP',
+    'value: 1',
+    'LOCAL_STT_BEAM_SIZE',
+    'value: 5',
+    'LOCAL_STT_TRANSCRIBE_CONCURRENCY',
+    'value: 1',
+    'LOCAL_STT_MAX_AUDIO_BYTES',
+    'value: 8000000'
+)) {
+    Assert-Match -Actual $renderSource -Pattern $pattern
+}
 
 Write-TestStep 'Learner section screen recognizes extended direct audio formats for playback'
 $sectionScreenSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\app\section\[id].tsx') -Raw

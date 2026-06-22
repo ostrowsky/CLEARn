@@ -1,3 +1,5 @@
+import asyncio
+import gc
 import os
 import tempfile
 from pathlib import Path
@@ -13,9 +15,13 @@ app = FastAPI(title="CLEARn local STT", version="1.0.0")
 DEFAULT_MODEL = os.environ.get("LOCAL_STT_MODEL", "base.en")
 DEVICE = os.environ.get("LOCAL_STT_DEVICE", "cpu")
 COMPUTE_TYPE = os.environ.get("LOCAL_STT_COMPUTE_TYPE", "int8")
+MAX_AUDIO_BYTES = int(os.environ.get("LOCAL_STT_MAX_AUDIO_BYTES", "8000000"))
+TRANSCRIBE_CONCURRENCY = max(1, int(os.environ.get("LOCAL_STT_TRANSCRIBE_CONCURRENCY", "1")))
+BEAM_SIZE = max(1, int(os.environ.get("LOCAL_STT_BEAM_SIZE", "5")))
 
 _model: Optional[WhisperModel] = None
 _model_loaded = False
+_transcribe_lock = asyncio.Semaphore(TRANSCRIBE_CONCURRENCY)
 
 
 def get_model() -> WhisperModel:
@@ -42,6 +48,9 @@ def health():
         "device": DEVICE,
         "computeType": COMPUTE_TYPE,
         "modelLoaded": _model_loaded,
+        "maxAudioBytes": MAX_AUDIO_BYTES,
+        "transcribeConcurrency": TRANSCRIBE_CONCURRENCY,
+        "beamSize": BEAM_SIZE,
     }
 
 
@@ -61,17 +70,26 @@ async def transcribe(
     temp_path = ""
     try:
         audio = await file.read()
+        if len(audio) > MAX_AUDIO_BYTES:
+            return JSONResponse(
+                status_code=413,
+                content={"error": f"Audio upload is too large. Max size is {MAX_AUDIO_BYTES} bytes."},
+            )
+
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
             temp_file.write(audio)
             temp_path = temp_file.name
 
-        segments, info = get_model().transcribe(
-            temp_path,
-            language=language or None,
-            vad_filter=True,
-            beam_size=1,
-        )
-        text = " ".join(segment.text.strip() for segment in segments).strip()
+        async with _transcribe_lock:
+            segments, info = get_model().transcribe(
+                temp_path,
+                language=language or None,
+                vad_filter=True,
+                beam_size=BEAM_SIZE,
+            )
+            text = " ".join(segment.text.strip() for segment in segments).strip()
+
+        gc.collect()
         return {
             "text": text,
             "model": DEFAULT_MODEL,

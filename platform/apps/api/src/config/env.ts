@@ -44,6 +44,8 @@ const schema = z.object({
   LLM_SPEECH_FALLBACK_CHAIN: z.string().default('selfhosted,openai,huggingface'),
   SELF_HOSTED_BASE_URL: z.string().default('http://localhost:11434/v1'),
   SELF_HOSTED_SPEECH_BASE_URL: z.string().default('http://localhost:8010/v1'),
+  SELF_HOSTED_STT_TIMEOUT_MS: z.coerce.number().default(15000),
+  SELF_HOSTED_TTS_TIMEOUT_MS: z.coerce.number().default(15000),
   APP_STORAGE_ROOT: z.string().optional(),
   DEV_CONTENT_PATH: z.string().default(defaultDevContentPath),
   ADMIN_AUTH_PATH: z.string().default(defaultAdminAuthPath),

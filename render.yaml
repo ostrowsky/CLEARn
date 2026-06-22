@@ -71,3 +71,29 @@ services:
         value: true
       - key: BROWSERLESS_PROXY_COUNTRY
         value: us
+
+  - type: web
+    name: clearn-stt
+    runtime: python
+    plan: starter
+    region: frankfurt
+    rootDir: .
+    buildCommand: cd platform/local-stt && python -m pip install -r requirements.txt
+    startCommand: cd platform/local-stt && uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /v1/health
+    autoDeploy: true
+    envVars:
+      - key: LOCAL_STT_MODEL
+        value: base.en
+      - key: LOCAL_STT_DEVICE
+        value: cpu
+      - key: LOCAL_STT_COMPUTE_TYPE
+        value: int8
+      - key: LOCAL_STT_WARMUP_ON_STARTUP
+        value: 1
+      - key: LOCAL_STT_BEAM_SIZE
+        value: 5
+      - key: LOCAL_STT_TRANSCRIBE_CONCURRENCY
+        value: 1
+      - key: LOCAL_STT_MAX_AUDIO_BYTES
+        value: 8000000

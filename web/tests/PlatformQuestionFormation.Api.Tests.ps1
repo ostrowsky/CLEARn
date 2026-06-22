@@ -57,6 +57,29 @@ function Invoke-JsonRequest {
     return ($response.Content | ConvertFrom-Json)
 }
 
+function Test-QuestionFormationSourceSentence {
+    param([string]$Sentence)
+
+    $trimmed = ([string]$Sentence).Trim()
+    if ([string]::IsNullOrWhiteSpace($trimmed)) {
+        return $false
+    }
+
+    if ($trimmed -match '\?\s*$') {
+        return $false
+    }
+
+    return ($trimmed -notmatch '(?i)^(who|whom|whose|what|which|where|when|why|how|do|does|did|is|are|was|were|will|would|can|could|should|may|might|must|have|has|had)\b')
+}
+
+function Test-ContainsAnswer {
+    param([string]$Sentence,[string]$Answer)
+
+    $normalizedSentence = ([string]$Sentence).ToLowerInvariant() -replace '[^a-z0-9]+', ' '
+    $normalizedAnswer = ([string]$Answer).ToLowerInvariant() -replace '[^a-z0-9]+', ' '
+    return $normalizedSentence.Contains($normalizedAnswer.Trim())
+}
+
 $nodeCommand = Get-Command node.exe -ErrorAction SilentlyContinue
 if (-not $nodeCommand) {
     $nodeCommand = Get-Command node -ErrorAction SilentlyContinue
@@ -146,6 +169,109 @@ try {
         userQuestion = 'What did the backend team fixed yesterday?'
     }
     Assert-True -Condition (-not [bool]$rejectedPastAfterDid.accepted) -Message 'Question formation should reject past-tense verbs immediately after did.'
+
+    $rejectedMissingAuxiliary = Invoke-JsonRequest -Uri "$baseUrl/api/practice/question-formation/check" -Method Post -Payload @{
+        sentence = 'Stakeholders will review return on investment at the end of the year.'
+        answer = 'return on investment'
+        whWord = 'What'
+        expectedQuestion = 'What will stakeholders review at the end of the year?'
+        acceptedQuestions = @(
+            'What will stakeholders review?',
+            'What will stakeholders review at the end of the year?'
+        )
+        userQuestion = 'What they review?'
+    }
+    Assert-True -Condition (-not [bool]$rejectedMissingAuxiliary.accepted) -Message 'Question formation should reject object WH questions without an auxiliary verb.'
+
+    $acceptedVisibleSubject = Invoke-JsonRequest -Uri "$baseUrl/api/practice/question-formation/check" -Method Post -Payload @{
+        sentence = 'Stakeholders will review return on investment at the end of the year.'
+        answer = 'return on investment'
+        whWord = 'What'
+        expectedQuestion = 'What will stakeholders review at the end of the year?'
+        acceptedQuestions = @(
+            'What will stakeholders review?',
+            'What will stakeholders review at the end of the year?'
+        )
+        userQuestion = 'What will stakeholders review?'
+    }
+    Assert-True -Condition ([bool]$acceptedVisibleSubject.accepted) -Message 'Question formation should accept short object questions that keep the visible subject.'
+
+    $acceptedVisiblePronoun = Invoke-JsonRequest -Uri "$baseUrl/api/practice/question-formation/check" -Method Post -Payload @{
+        sentence = 'Stakeholders will review return on investment at the end of the year.'
+        answer = 'return on investment'
+        whWord = 'What'
+        expectedQuestion = 'What will stakeholders review at the end of the year?'
+        acceptedQuestions = @(
+            'What will stakeholders review?',
+            'What will they review?'
+        )
+        userQuestion = 'What will they review?'
+    }
+    Assert-True -Condition ([bool]$acceptedVisiblePronoun.accepted) -Message 'Question formation should accept natural pronoun references to already visible subjects.'
+
+    $rejectedModalPastVerb = Invoke-JsonRequest -Uri "$baseUrl/api/practice/question-formation/check" -Method Post -Payload @{
+        sentence = 'Stakeholders will review return on investment at the end of the year.'
+        answer = 'return on investment'
+        whWord = 'What'
+        expectedQuestion = 'What will stakeholders review at the end of the year?'
+        acceptedQuestions = @(
+            'What will stakeholders review?',
+            'What will they review?'
+        )
+        userQuestion = 'What will they reviewed?'
+    }
+    Assert-True -Condition (-not [bool]$rejectedModalPastVerb.accepted) -Message 'Question formation should reject past-tense verbs after modal auxiliaries.'
+
+    Write-TestStep 'Every bundled question formation exercise is a statement with three valid targets'
+    $practiceServicePath = (Join-Path $platformRoot 'apps\api\src\modules\practice\practice.service.ts').Replace('\', '/')
+    $deckDumpPath = Join-Path $tempRoot 'dump-question-formation-deck.mts'
+    Set-Content -LiteralPath $deckDumpPath -Encoding UTF8 -Value @"
+import { defaultQuestionFormationDeck, proceduralQuestionFormationCatalog } from 'file:///$practiceServicePath';
+console.log(JSON.stringify([...defaultQuestionFormationDeck, ...proceduralQuestionFormationCatalog]));
+"@
+    $deckOutput = & $nodeCommand.Source $tsxCli $deckDumpPath
+    $deckJson = ($deckOutput | Where-Object { $_ -match '^\s*\[' } | Select-Object -Last 1)
+    Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$deckJson)) -Message 'Could not load bundled question formation exercises for validation.'
+    $allExercises = [System.Collections.ArrayList]::new()
+    foreach ($item in ($deckJson | ConvertFrom-Json)) {
+        [void]$allExercises.Add($item)
+    }
+    Assert-True -Condition ($allExercises.Count -ge 10) -Message 'Question formation should have a broad bundled exercise catalog.'
+
+    foreach ($exercise in $allExercises) {
+        $sentence = [string]$exercise.sentence
+        Assert-True -Condition (Test-QuestionFormationSourceSentence -Sentence $sentence) -Message "Question formation source must be a declarative statement, not a question: $sentence"
+        Assert-True -Condition ((($sentence).Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)).Count -le 15) -Message "Question formation source sentence should stay within 15 words: $sentence"
+        Assert-Equal -Expected 3 -Actual @($exercise.blanks).Count -Message "Question formation exercise should contain exactly three blanks: $sentence"
+
+        foreach ($blank in @($exercise.blanks)) {
+            $acceptedQuestions = if ($blank.PSObject.Properties.Name -contains 'acceptedQuestions') { @($blank.acceptedQuestions) } else { @() }
+            Assert-True -Condition (Test-ContainsAnswer -Sentence $sentence -Answer ([string]$blank.answer)) -Message "Question formation answer '$($blank.answer)' should appear in source sentence: $sentence"
+            Assert-True -Condition (-not [string]::IsNullOrWhiteSpace([string]$blank.expectedQuestion)) -Message "Question formation blank '$($blank.id)' should include an expected question."
+
+            $acceptedExpected = Invoke-JsonRequest -Uri "$baseUrl/api/practice/question-formation/check" -Method Post -Payload @{
+                sentence = $sentence
+                answer = [string]$blank.answer
+                whWord = [string]$blank.whWord
+                expectedQuestion = [string]$blank.expectedQuestion
+                acceptedQuestions = $acceptedQuestions
+                userQuestion = [string]$blank.expectedQuestion
+            }
+            Assert-True -Condition ([bool]$acceptedExpected.accepted) -Message "Expected question should be accepted for '$($blank.answer)': $($blank.expectedQuestion)"
+
+            foreach ($variant in $acceptedQuestions) {
+                $acceptedVariant = Invoke-JsonRequest -Uri "$baseUrl/api/practice/question-formation/check" -Method Post -Payload @{
+                    sentence = $sentence
+                    answer = [string]$blank.answer
+                    whWord = [string]$blank.whWord
+                    expectedQuestion = [string]$blank.expectedQuestion
+                    acceptedQuestions = $acceptedQuestions
+                    userQuestion = [string]$variant
+                }
+                Assert-True -Condition ([bool]$acceptedVariant.accepted) -Message "Accepted variant should pass validation for '$($blank.answer)': $variant"
+            }
+        }
+    }
 }
 finally {
     if ($serverProcess -and -not $serverProcess.HasExited) {

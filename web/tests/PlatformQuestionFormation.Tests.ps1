@@ -28,7 +28,14 @@ foreach ($fileName in @('content.template.json', 'content.json')) {
     Assert-True -Condition (@($content.meta.practice.questionFormationDeck).Count -ge 2) -Message "$fileName should seed fallback question formation sentences."
     foreach ($exercise in @($content.meta.practice.questionFormationDeck)) {
         Assert-True -Condition ((([string]$exercise.sentence).Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)).Count -le 15) -Message "$fileName question formation sentence should stay within 15 words."
+        Assert-True -Condition ([string]$exercise.sentence -notmatch '\?\s*$') -Message "$fileName question formation sentence must be a statement, not a question."
+        Assert-True -Condition ([string]$exercise.sentence -notmatch '(?i)^(who|whom|whose|what|which|where|when|why|how|do|does|did|is|are|was|were|will|would|can|could|should|may|might|must|have|has|had)\b') -Message "$fileName question formation sentence must not start like a question."
         Assert-Equal -Expected 3 -Actual @($exercise.blanks).Count -Message "$fileName question formation exercise should contain three blanks."
+        foreach ($blank in @($exercise.blanks)) {
+            $normalizedSentence = ([string]$exercise.sentence).ToLowerInvariant() -replace '[^a-z0-9]+', ' '
+            $normalizedAnswer = ([string]$blank.answer).ToLowerInvariant() -replace '[^a-z0-9]+', ' '
+            Assert-True -Condition ($normalizedSentence.Contains($normalizedAnswer.Trim())) -Message "$fileName question formation answer should appear in its source sentence: $($blank.answer)"
+        }
     }
 }
 
@@ -65,6 +72,7 @@ foreach ($pattern in @(
     'no more than 15 words',
     'proceduralQuestionFormationCatalog',
     'buildProceduralQuestionFormation',
+    'isQuestionFormationStatement',
     'containsAnswerLeak',
     'startsWithWhWord',
     'hasQuestionFormationGrammar',
@@ -92,6 +100,9 @@ foreach ($pattern in @(
     Assert-Match -Actual $practiceServiceSource -Pattern $pattern
 }
 Assert-True -Condition ($practiceServiceSource -cnotmatch 'hasQuestionMark && startsCorrectly') -Message 'Question formation should not reject STT transcripts only because punctuation is missing.'
+Assert-Match -Actual $practiceServiceSource -Pattern 'declarative professional statement, not a question'
+Assert-Match -Actual $practiceServiceSource -Pattern 'Put questions only in expectedQuestion'
+Assert-True -Condition ($practiceServiceSource -notmatch "sentence:\s*'\\s*(Who|Whom|Whose|What|Which|Where|When|Why|How|Do|Does|Did|Is|Are|Was|Were|Will|Would|Can|Could|Should|May|Might|Must|Have|Has|Had)\b") -Message 'Bundled question formation catalog must not use a question as the source sentence.'
 Assert-True -Condition ($practiceServiceSource -match 'deckOffset < uniqueDeck\.length') -Message 'Question formation should use configured examples first, then procedural fallback for unlimited variety.'
 Assert-True -Condition ($practiceServiceSource -match 'overlap >= 0\.28 \|\| pronounReferenceAccepted') -Message 'Question formation should accept short visible-context questions like "Who will review it?".'
 Assert-True -Condition ($practiceServiceSource -match 'pronounReferenceAccepted \|\| didVerbReferenceAccepted') -Message 'Question formation should accept visible-context did-questions like "Who did fix it yesterday?".'

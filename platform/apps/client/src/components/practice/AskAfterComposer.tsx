@@ -487,7 +487,7 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
     }),
   });
 
-  const finalQuestion = questionDraft.trim() || builtQuestion;
+  const finalQuestion = builtQuestion;
   const speechLines = Array.isArray(brief?.speechLines) ? brief.speechLines : [];
   const speechParagraph = speechLines.map((line) => getSpeechLineText(line)).filter(Boolean).join(' ');
   const hasVideoSource = sourceMode === 'video' && Boolean(selectedVideo);
@@ -502,11 +502,27 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
 
   function handlePhraseDrop(payload: PhraseDragPayload) {
     if (payload.slot === 'context') {
-      setSelectedContextPhrase(payload.value);
+      applyContextPhrase(payload.value);
       return;
     }
 
-    setSelectedFollowPhrase(payload.value);
+    applyFollowPhrase(payload.value);
+  }
+
+  function applyContextPhrase(value: string) {
+    const nextQuestion = buildQuestion(value, selectedFollowPhrase, tail);
+    setSelectedContextPhrase(value);
+    generatedQuestionRef.current = nextQuestion;
+    setQuestionDraft(nextQuestion);
+    setFeedback(null);
+  }
+
+  function applyFollowPhrase(value: string) {
+    const nextQuestion = buildQuestion(selectedContextPhrase, value, tail);
+    setSelectedFollowPhrase(value);
+    generatedQuestionRef.current = nextQuestion;
+    setQuestionDraft(nextQuestion);
+    setFeedback(null);
   }
 
   async function handleGenerate(nextOffset = 0) {
@@ -699,7 +715,7 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
                       key={item}
                       {...(createPhraseDragProps('context', item) as any)}
                       style={[styles.bankItem, selectedContextPhrase === item ? styles.bankItemActive : null]}
-                      onPress={() => setSelectedContextPhrase(item)}
+                      onPress={() => applyContextPhrase(item)}
                     >
                       <Text style={[styles.bankItemText, selectedContextPhrase === item ? styles.bankItemTextActive : null]}>{item}</Text>
                     </Pressable>
@@ -716,7 +732,7 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
                       key={item}
                       {...(createPhraseDragProps('follow', item) as any)}
                       style={[styles.bankItem, selectedFollowPhrase === item ? styles.bankItemActive : null]}
-                      onPress={() => setSelectedFollowPhrase(item)}
+                      onPress={() => applyFollowPhrase(item)}
                     >
                       <Text style={[styles.bankItemText, selectedFollowPhrase === item ? styles.bankItemTextActive : null]}>{item}</Text>
                     </Pressable>
@@ -736,10 +752,10 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
                 <Text style={styles.previewLabel}>{questionPreviewLabel}</Text>
                 <TextInput
                   value={questionDraft}
-                  onChangeText={setQuestionDraft}
                   placeholder={builtQuestion || askAfterTail}
                   style={[styles.input, styles.previewHeroInput]}
                   multiline
+                  editable={false}
                 />
               </View>
 

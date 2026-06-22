@@ -110,6 +110,41 @@ export function toQuestionFormationVerbBase(value: string) {
 
 export function hasQuestionFormationGrammar(value: string) {
   const tokens = normalizeLooseText(value).split(' ').filter(Boolean);
+  const auxiliaries = new Set([
+    'do', 'does', 'did', 'will', 'would', 'can', 'could', 'should',
+    'is', 'are', 'was', 'were', 'am', 'have', 'has', 'had',
+    'may', 'might', 'must',
+  ]);
+  const howModifiers = new Set(['long', 'often', 'far', 'much', 'many', 'soon', 'fast']);
+  const objectWhWords = new Set(['whom', 'whose', 'what', 'which', 'where', 'when', 'why']);
+  const first = tokens[0] || '';
+  const second = tokens[1] || '';
+  const whLength = first === 'how' && howModifiers.has(second) ? 2 : 1;
+  const wordAfterWh = tokens[whLength] || '';
+
+  if (first === 'how' && ['many', 'much'].includes(second) && !auxiliaries.has(wordAfterWh)) {
+    const nounPhraseAuxiliary = tokens.slice(whLength + 1, whLength + 6).find((token) => auxiliaries.has(token));
+    if (!nounPhraseAuxiliary) {
+      return false;
+    }
+  } else if (['whose', 'which'].includes(first) && !auxiliaries.has(wordAfterWh)) {
+    const nounPhraseAuxiliary = tokens.slice(whLength + 1, whLength + 5).find((token) => auxiliaries.has(token));
+    if (!nounPhraseAuxiliary) {
+      return false;
+    }
+  } else if ((objectWhWords.has(first) || first === 'how') && !auxiliaries.has(wordAfterWh)) {
+    return false;
+  }
+
+  const modalAuxiliaries = new Set(['will', 'would', 'can', 'could', 'should', 'may', 'might', 'must', 'do', 'does']);
+  const modalIndex = tokens.findIndex((token) => modalAuxiliaries.has(token));
+  if (modalIndex >= 0) {
+    const afterModal = tokens.slice(modalIndex + 1);
+    if (afterModal.some((token) => token.endsWith('ed') && token.length > 4)) {
+      return false;
+    }
+  }
+
   const didIndex = tokens.indexOf('did');
   if (didIndex >= 0) {
     const afterDid = tokens.slice(didIndex + 1);
@@ -124,7 +159,7 @@ export function hasQuestionFormationGrammar(value: string) {
 export function hasQuestionFormationPronounReference(userQuestion: string, expectedQuestion: string) {
   const userTokens = normalizeLooseText(userQuestion).split(' ').filter(Boolean);
   const expectedTokens = normalizeLooseText(expectedQuestion).split(' ').filter(Boolean);
-  const pronouns = new Set(['it', 'this', 'that', 'them']);
+  const pronouns = new Set(['it', 'this', 'that', 'they', 'them']);
   const auxiliaries = new Set(['who', 'what', 'where', 'when', 'why', 'how', 'long', 'many', 'much', 'will', 'would', 'can', 'could', 'should', 'do', 'does', 'did', 'is', 'are', 'was', 'were']);
   const hasPronoun = userTokens.some((token) => pronouns.has(token));
   const expectedVerb = expectedTokens.find((token) => token.length >= 4 && !auxiliaries.has(token));
@@ -135,7 +170,7 @@ export function hasQuestionFormationPronounReference(userQuestion: string, expec
 export function hasQuestionFormationDidVerbReference(userQuestion: string, expectedQuestion: string) {
   const userTokens = normalizeLooseText(userQuestion).split(' ').filter(Boolean);
   const expectedTokens = normalizeLooseText(expectedQuestion).split(' ').filter(Boolean);
-  const ignoredExpectedTokens = new Set(['who', 'what', 'where', 'when', 'why', 'how', 'long', 'many', 'much', 'will', 'would', 'can', 'could', 'should', 'do', 'does', 'did', 'is', 'are', 'was', 'were', 'it', 'this', 'that', 'them']);
+  const ignoredExpectedTokens = new Set(['who', 'what', 'where', 'when', 'why', 'how', 'long', 'many', 'much', 'will', 'would', 'can', 'could', 'should', 'do', 'does', 'did', 'is', 'are', 'was', 'were', 'it', 'this', 'that', 'they', 'them']);
   const didIndex = userTokens.indexOf('did');
   if (didIndex < 0) {
     return false;
@@ -166,7 +201,7 @@ export function hasQuestionFormationVisibleContextAlignment(
     'who', 'whom', 'whose', 'what', 'which', 'where', 'when', 'why', 'how',
     'long', 'often', 'far', 'much', 'many', 'soon', 'fast',
     'do', 'does', 'did', 'is', 'are', 'was', 'were', 'will', 'would', 'can', 'could', 'should',
-    'a', 'an', 'the', 'it', 'this', 'that', 'them', 'these', 'those',
+    'a', 'an', 'the', 'it', 'this', 'that', 'they', 'them', 'these', 'those',
     'in', 'on', 'at', 'by', 'for', 'to', 'of', 'with', 'from', 'about', 'after', 'before', 'during',
   ]);
 
