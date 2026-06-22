@@ -40,7 +40,7 @@ The app can be hosted, tested, upgraded, backed up, and rolled back without disc
 - Dependency audit failures at high severity or above block production release candidates.
 - `APP_STORAGE_ROOT` may point at a persistent volume and becomes the base for `content.json`, `admin-auth.json`, and uploaded media unless the three paths are explicitly overridden.
 - The repository root must keep Vercel-discoverable build metadata for the frontend: root `package.json`, root `vercel.json`, build command, and output directory.
-- Vercel Analytics must be wired through the Expo/React client shell, not through a Next.js-only layout, because the frontend is an Expo Router static export.
+- Vercel Analytics must be wired through the Expo HTML shell, not through a Next.js-only layout or a Metro-bundled analytics component, because the frontend is an Expo Router static export.
 - Pull requests must include the `pr-description` skill sections: `What`, `Why`, and `Changes`.
 - Static hosting must not assume an API is available on `:4000` for non-local web domains.
 - Public Cloudflare preview builds must honor `EXPO_PUBLIC_API_BASE_URL` so the preview admin talks to the matching public API tunnel rather than production API or browser-local `localhost`.
