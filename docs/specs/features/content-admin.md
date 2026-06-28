@@ -19,6 +19,8 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 ## User-visible behavior
 
 - Admins can edit visible labels, instructional text, section/block/material order, material fields, and media.
+- Learner-visible strings under `meta.ui` appear inside the matching section editor, grouped with the section/block/material content that uses them; administrators do not need a separate unstructured copy list or raw JSON to change UI copy.
+- Each eligible UI string has an independent 8-200 px font-size override stored by its exact content path. Button labels, routes, placeholders, and accessibility-only text remain editable but do not expose font-size controls.
 - Admin access is protected by an initial setup flow. Before the first admin can use `/admin`, the app asks for login, password, password confirmation, and recovery email.
 - After setup, admins must log in before reading or changing `/api/admin/*` content, media, backup, and restore endpoints.
 - Admin sessions use server-issued signed cookies and can be cleared with logout.
@@ -27,6 +29,11 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Admin password reset is available from the login screen after setup. The reset flow requires the configured admin login, recovery email, new password, and password confirmation, then signs the admin in with the new password.
 - Admin setup must reject mismatched passwords and incomplete credentials.
 - Admins can set block layout width (`auto`, `full`, or `half`) so selected blocks can appear on the same horizontal row on wide screens.
+- Admins can configure page layout, card layout, collapsible blocks, primary-card strategy, and featured desktop block count directly inside each section.
+- Raw schema, renderer, routing, runtime-default, block-group, and full meta JSON editors are hidden by default behind an explicit Developer mode warning.
+- Every editable learner-visible text field has its own optional font-size control beside that field in the admin editor.
+- A saved font size applies only to that exact section, block, or material field. Empty values preserve the designed responsive size; valid overrides are 8-200 px.
+- Button labels, admin-interface copy, input placeholders, and accessibility-only alt text are not font-size editable.
 - Saved content appears in learner routes without code changes.
 - Learner navigation must use the editable `section.route` paths configured in content, for example `/asking`, `/answering`, and `/learning-chat`; technical implementation routes such as `/section/{id}` must not appear as the primary public URL.
 - Legacy technical section URLs may remain as a compatibility fallback, but they must redirect to the editable content route when the section can be resolved.
@@ -61,6 +68,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Admin session authorization must not depend on process-local memory only.
 - Localhost and production use the same password only when they point at the same durable `admin-auth.json` data, or when the password is reset to the same value in both environments.
 - Production content migration may fill missing admin metadata from bundled defaults, but must not overwrite non-empty admin-edited values.
+- Missing or invalid per-text font sizes must preserve the designed size without breaking learner rendering.
 
 ## Edge cases and failure policy
 
@@ -87,6 +95,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - `web/tests/Admin.Ui.Tests.ps1`
 - `web/tests/ContentDriven.Tests.ps1`
 - `web/tests/PlatformAdmin.Tests.ps1`
+- `web/tests/PlatformTypography.Tests.ps1`
 - `web/tests/PlatformAdmin.Api.Tests.ps1`
 - `web/tests/PlatformClarify.Tests.ps1`
 - `web/tests/PlatformSpeech.Tests.ps1`

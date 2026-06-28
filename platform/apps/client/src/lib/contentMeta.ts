@@ -72,10 +72,11 @@ export function getRuntimeDefaults(content: AppContent | null | undefined) {
   return getNestedRecord(getRuntimeConfig(content), ['defaults']);
 }
 
-export function getSectionViewConfig(content: AppContent | null | undefined, sectionType: string | undefined) {
+export function getSectionViewConfig(content: AppContent | null | undefined, section: ContentSection | undefined) {
   const defaults = getRuntimeDefaults(content);
   const sectionViews = getNestedRecord(getRuntimeConfig(content), ['sectionViews']);
-  const config = asRecord(sectionType ? sectionViews[sectionType] : undefined);
+  const typeConfig = asRecord(section?.type ? sectionViews[section.type] : undefined);
+  const config = { ...typeConfig, ...asRecord(asRecord(section?.meta).view) };
 
   return {
     view: asString(config.view, asString(defaults.sectionView, 'practice')),

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Linking, Platform, ScrollView, StyleSheet, TextInput, View, Text, Pressable} from 'react-native';
+
 import type { AppContent, AskAfterBrief, AskAfterSpeechLine, ContentBlock, ContentSection } from '@clearn/domain';
 import { useSpeechDraft } from '../../hooks/useSpeechDraft';
 import { apiClient, resolveApiUrl } from '../../lib/api';
@@ -13,6 +14,7 @@ import {
   getPracticeScreenConfig,
   getUiConfig,
 } from '../../lib/contentMeta';
+import { textStyle, uiTextStyle } from '../../lib/contentTypography';
 import { tokens } from '../../theme/tokens';
 
 type PhraseSlot = 'context' | 'follow';
@@ -583,9 +585,9 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
     return (
       <View style={styles.videoSourceShell}>
         <View style={styles.videoMainColumn}>
-          <Text style={styles.eyebrow}>{videoSourceLabel}</Text>
-          <Text style={styles.panelTitle}>{selectedVideo.title}</Text>
-          {selectedVideo.body ? <Text style={styles.speechParagraph}>{selectedVideo.body}</Text> : null}
+          <Text style={uiTextStyle(ui, ['labels', 'videoSource'], styles.eyebrow)}>{videoSourceLabel}</Text>
+          <Text style={textStyle(styles.panelTitle, selectedVideo, 'title')}>{selectedVideo.title}</Text>
+          {selectedVideo.body ? <Text style={textStyle(styles.speechParagraph, selectedVideo, 'body')}>{selectedVideo.body}</Text> : null}
           <View style={styles.videoFrameBox}>
             {Platform.OS === 'web' && embeddedUrl && mediaActive ? (
               <iframe
@@ -610,15 +612,15 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
           {transcriptText ? (
             <View style={styles.videoTranscriptBox}>
               <ScrollView nestedScrollEnabled>
-                <Text style={styles.videoTranscriptText}>{transcriptText}</Text>
+                <Text style={textStyle(styles.videoTranscriptText, selectedVideo, 'transcript')}>{transcriptText}</Text>
               </ScrollView>
             </View>
           ) : null}
         </View>
 
         <View style={styles.videoLibraryColumn}>
-          <Text style={styles.columnTitle}>{videoLibraryLabel}</Text>
-          <Text style={styles.columnHint}>{videoLibraryHint}</Text>
+          <Text style={uiTextStyle(ui, ['labels', 'videoLibrary'], styles.columnTitle)}>{videoLibraryLabel}</Text>
+          <Text style={uiTextStyle(ui, ['feedback', 'videoLibraryHint'], styles.columnHint)}>{videoLibraryHint}</Text>
           <View style={styles.videoList}>
             {videoMaterials.map((item) => {
               const itemUrl = getMaterialUrl(item);
@@ -632,8 +634,8 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
                 >
                   {thumbnail ? <Image source={{ uri: thumbnail }} style={styles.videoThumbnail} resizeMode="cover" /> : <View style={styles.videoThumbnailPlaceholder} />}
                   <View style={styles.videoListTextColumn}>
-                    <Text style={styles.videoListTitle} numberOfLines={2}>{item.title}</Text>
-                    {item.body ? <Text style={styles.videoListDescription} numberOfLines={2}>{item.body}</Text> : null}
+                    <Text style={textStyle(styles.videoListTitle, item, 'title')} numberOfLines={2}>{item.title}</Text>
+                    {item.body ? <Text style={textStyle(styles.videoListDescription, item, 'body')} numberOfLines={2}>{item.body}</Text> : null}
                   </View>
                 </Pressable>
               );
@@ -647,7 +649,7 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
   return (
     <>
       <View style={styles.card}>
-        <Text style={styles.label}>{yourWorkContext}</Text>
+        <Text style={uiTextStyle(ui, ['labels', 'yourWorkContext'], styles.label)}>{yourWorkContext}</Text>
         <TextInput
           value={context}
           onChangeText={setContext}
@@ -662,8 +664,8 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
 
       {videoMaterials.length ? (
         <View style={styles.card}>
-          <Text style={styles.label}>{videoPracticeLibraryLabel}</Text>
-          <Text style={styles.feedbackMuted}>{videoPracticeLibraryDescription}</Text>
+          <Text style={uiTextStyle(ui, ['labels', 'videoPracticeLibrary'], styles.label)}>{videoPracticeLibraryLabel}</Text>
+          <Text style={uiTextStyle(ui, ['feedback', 'videoPracticeLibraryDescription'], styles.feedbackMuted)}>{videoPracticeLibraryDescription}</Text>
           <View style={styles.actionsRow}>
             <Pressable
               style={[styles.secondaryButton, sourceMode === 'generated' ? styles.sourceButtonActive : null]}
@@ -691,16 +693,16 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
 
       {hasGeneratedSource ? (
         <View style={styles.panel}>
-          <Text style={styles.eyebrow}>{generatedTalkEyebrow}</Text>
-          <Text style={styles.panelTitle}>{generatedTalkTitle}</Text>
+          <Text style={uiTextStyle(ui, ['feedback', 'generatedTalkEyebrow'], styles.eyebrow)}>{generatedTalkEyebrow}</Text>
+          <Text style={uiTextStyle(ui, ['feedback', 'generatedTalkTitle'], styles.panelTitle)}>{generatedTalkTitle}</Text>
           <Text style={styles.speechParagraph}>{speechParagraph}</Text>
-          <Text style={styles.tip}><Text style={styles.tipStrong}>{coachingTip}: </Text>{brief?.coachingTip}</Text>
+          <Text style={styles.tip}><Text style={uiTextStyle(ui, ['labels', 'coachingTip'], styles.tipStrong)}>{coachingTip}: </Text>{brief?.coachingTip}</Text>
         </View>
       ) : null}
 
       {!hasActiveSource ? (
         <View style={styles.feedbackCard}>
-          <Text style={styles.feedbackMuted}>{askAfterEmpty}</Text>
+          <Text style={uiTextStyle(ui, ['feedback', 'askAfterEmpty'], styles.feedbackMuted)}>{askAfterEmpty}</Text>
         </View>
       ) : (
         <>
@@ -743,13 +745,13 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
 
             <View style={styles.builderColumn}>
               <View style={styles.builderMeta}>
-                <Text style={styles.builderMetaEyebrow}>{questionBuilderTitle}</Text>
+                <Text style={uiTextStyle(ui, ['feedback', 'questionBuilderTitle'], styles.builderMetaEyebrow)}>{questionBuilderTitle}</Text>
                 <Text style={styles.builderMetaTitle}>{builderTitle}</Text>
                 <Text style={styles.builderMetaDescription}>{builderDescription}</Text>
               </View>
 
               <View style={styles.previewHeroCard}>
-                <Text style={styles.previewLabel}>{questionPreviewLabel}</Text>
+                <Text style={uiTextStyle(ui, ['feedback', 'questionPreviewLabel'], styles.previewLabel)}>{questionPreviewLabel}</Text>
                 <TextInput
                   value={questionDraft}
                   placeholder={builtQuestion || askAfterTail}
@@ -760,14 +762,14 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
               </View>
 
               <View style={styles.builderSlot} {...(createPhraseDropProps('context', handlePhraseDrop) as any)}>
-                <Text style={styles.slotLabel}>{contextLeadIn}</Text>
+                <Text style={uiTextStyle(ui, ['labels', 'contextLeadIn'], styles.slotLabel)}>{contextLeadIn}</Text>
                 <Text style={[styles.slotValue, !selectedContextPhrase ? styles.slotValueMuted : null]}>
                   {getPhraseDisplayText(selectedContextPhrase, 'context') || dragPhraseHint}
                 </Text>
               </View>
 
               <View style={styles.builderSlot}>
-                <Text style={styles.slotLabel}>{topicToFocusOn}</Text>
+                <Text style={uiTextStyle(ui, ['labels', 'topicToFocusOn'], styles.slotLabel)}>{topicToFocusOn}</Text>
                 <TextInput
                   value={tail}
                   onChangeText={setTail}
@@ -796,7 +798,7 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
               </View>
 
               <View style={styles.builderSlot} {...(createPhraseDropProps('follow', handlePhraseDrop) as any)}>
-                <Text style={styles.slotLabel}>{followUpRequest}</Text>
+                <Text style={uiTextStyle(ui, ['labels', 'followUpRequest'], styles.slotLabel)}>{followUpRequest}</Text>
                 <Text style={[styles.slotValue, !selectedFollowPhrase ? styles.slotValueMuted : null]}>
                   {getPhraseDisplayText(selectedFollowPhrase, 'follow') || dragPhraseHint}
                 </Text>

@@ -37,6 +37,84 @@ export function cloneContent<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+export type UiCopyEntry = { path: string[]; value: string };
+
+function defaultUiFontSize(path: string[]) {
+  const key = path.join('.');
+  if (/watermarkText$/.test(key)) return 10;
+  if (/homeMenu\.(pathsTitle|skillsHeading|aboutHeading)$/.test(key)) return 24;
+  if (/homeMenu\.leadText$/.test(key)) return 17;
+  if (path[0] === 'labels') return 12;
+  if (path[0] === 'feedback') return 14;
+  if (path[0] === 'navigation') return 14;
+  return 16;
+}
+
+export type StructuredUiCopyEntry = UiCopyEntry & { defaultFontSize: number };
+
+function filterUiCopy(ui: Record<string, unknown>, scopeKey: string): StructuredUiCopyEntry[] {
+  const all = listEditableUiCopy(ui);
+  const matchers: RegExp[] = [];
+  if (/landing|home/.test(scopeKey)) matchers.push(/^homeMenu\./, /^brandTagline$/, /^footerNote$/, /^watermarkText$/, /^navigation\./);
+  if (/ask-after|after-talk/.test(scopeKey)) matchers.push(/askAfter|generatedTalk|questionBuilder|leadIn|followUp|video|yourWorkContext|contextLeadIn|topicToFocusOn|coachingTip/i);
+  if (/clarify|interrupt/.test(scopeKey)) matchers.push(/clarify|yourClarifyingQuestion|expectedAnswer|openMedia|speech/i);
+  if (/without-context|question-formation/.test(scopeKey)) matchers.push(/questionFormation|withoutContext|showHint|nextSentence/i);
+  if (/answering/.test(scopeKey)) matchers.push(/answering|Reaction|politeness|grammar|improvedAnswer|questionProgress|yourAnswer|describeYourRole|conversationHistory|currentQuestion|speech/i);
+  if (/chat/.test(scopeKey)) matchers.push(/coach|speech/i);
+  if (!matchers.length) return [];
+  return all
+    .filter((entry) => matchers.some((matcher) => matcher.test(entry.path.join('.'))))
+    .map((entry) => ({ ...entry, defaultFontSize: defaultUiFontSize(entry.path) }));
+}
+
+export function listSectionUiCopy(ui: Record<string, unknown>, section: ContentSection): StructuredUiCopyEntry[] {
+  const sectionKey = `${section.type} ${section.id} ${section.route}`.toLowerCase();
+  return /landing|home/.test(sectionKey) ? filterUiCopy(ui, sectionKey) : [];
+}
+
+export function listBlockUiCopy(ui: Record<string, unknown>, section: ContentSection, block: ContentBlock): StructuredUiCopyEntry[] {
+  void section;
+  return filterUiCopy(ui, `${block.kind} ${block.id}`.toLowerCase());
+}
+
+export function listEditableUiCopy(ui: Record<string, unknown>): UiCopyEntry[] {
+  const entries: UiCopyEntry[] = [];
+  function visit(value: unknown, path: string[]) {
+    if (typeof value === 'string') {
+      entries.push({ path, value });
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => visit(item, [...path, String(index)]));
+      return;
+    }
+    if (value && typeof value === 'object') {
+      Object.entries(value as Record<string, unknown>).forEach(([key, item]) => {
+        if (path.length === 0 && (key === 'admin' || key === 'fontSizes')) return;
+        visit(item, [...path, key]);
+      });
+    }
+  }
+  visit(ui, []);
+  return entries;
+}
+
+export function setUiCopyValue(ui: Record<string, unknown>, path: string[], value: string) {
+  let cursor: Record<string, unknown> | unknown[] = ui;
+  path.forEach((segment, index) => {
+    const last = index === path.length - 1;
+    if (Array.isArray(cursor)) {
+      const position = Number.parseInt(segment, 10);
+      if (last) cursor[position] = value;
+      else cursor = cursor[position] as Record<string, unknown> | unknown[];
+    } else if (last) {
+      cursor[segment] = value;
+    } else {
+      cursor = cursor[segment] as Record<string, unknown> | unknown[];
+    }
+  });
+}
+
 export function ensureAdminContentStructures(content: AppContent): AppContent {
   const next = cloneContent(content);
 

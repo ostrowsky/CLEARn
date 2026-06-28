@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
-import { ActivityIndicator, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Image, Linking, Platform, ScrollView, StyleSheet, View, useWindowDimensions, Text, Pressable, type StyleProp, type TextStyle } from 'react-native';
+
 import type { AppContent, ContentBlock, ContentMaterial, ContentSection } from '@clearn/domain';
 import { Screen } from '../../src/components/Screen';
 import { AskAfterComposer } from '../../src/components/practice/AskAfterComposer';
@@ -19,6 +20,7 @@ import {
 } from '../../src/lib/contentMeta';
 import { apiClient, resolveApiUrl } from '../../src/lib/api';
 import { tokens } from '../../src/theme/tokens';
+import { textStyle } from '../../src/lib/contentTypography';
 
 const directVideoPattern = /\.(mp4|webm|ogv|mov|m4v)(?:[?#].*)?$/i;
 const directAudioPattern = /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm)(?:[?#].*)?$/i;
@@ -215,7 +217,7 @@ function getMaterialTranscript(material: ContentMaterial, mediaUrl: string, star
   return directTranscript.trim();
 }
 
-function VideoTranscript({ mediaUrl, initialText, startTime = 0, endTime = 0 }: { mediaUrl: string; initialText: string; startTime?: number; endTime?: number }) {
+function VideoTranscript({ mediaUrl, initialText, startTime = 0, endTime = 0, textStyle: transcriptStyle }: { mediaUrl: string; initialText: string; startTime?: number; endTime?: number; textStyle?: StyleProp<TextStyle> }) {
   const [text, setText] = useState(initialText);
   const [status, setStatus] = useState('');
 
@@ -256,7 +258,7 @@ function VideoTranscript({ mediaUrl, initialText, startTime = 0, endTime = 0 }: 
   return (
     <View style={styles.transcriptBox}>
       <ScrollView nestedScrollEnabled>
-        <Text style={styles.transcriptText}>{text || status}</Text>
+        <Text style={[styles.transcriptText, transcriptStyle]}>{text || status}</Text>
       </ScrollView>
     </View>
   );
@@ -399,8 +401,8 @@ function renderMaterial(material: ContentMaterial, options: { emptyMediaText: st
   if (material.type === 'text') {
     return (
       <View key={material.id} style={styles.materialCard}>
-        <Text style={styles.materialLabel}>{material.title}</Text>
-        <Text style={styles.materialBody}>{material.body}</Text>
+        <Text style={textStyle(styles.materialLabel, material, 'title')}>{material.title}</Text>
+        <Text style={textStyle(styles.materialBody, material, 'body')}>{material.body}</Text>
       </View>
     );
   }
@@ -408,9 +410,9 @@ function renderMaterial(material: ContentMaterial, options: { emptyMediaText: st
   if (isDirectImage) {
     return (
       <View key={material.id} style={styles.materialCard}>
-        <Text style={styles.materialLabel}>{material.title}</Text>
+        <Text style={textStyle(styles.materialLabel, material, 'title')}>{material.title}</Text>
         <Image source={{ uri: mediaUrl }} style={styles.imagePreview} resizeMode="cover" />
-        {material.body ? <Text style={styles.materialBody}>{material.body}</Text> : null}
+        {material.body ? <Text style={textStyle(styles.materialBody, material, 'body')}>{material.body}</Text> : null}
         <MaterialOpenButton url={mediaUrl} label={options.openMediaLabel} />
       </View>
     );
@@ -419,9 +421,9 @@ function renderMaterial(material: ContentMaterial, options: { emptyMediaText: st
   if (isDirectVideo) {
     return (
       <View key={material.id} style={styles.materialCard}>
-        <Text style={styles.materialLabel}>{material.title}</Text>
+        <Text style={textStyle(styles.materialLabel, material, 'title')}>{material.title}</Text>
         <WebVideoPlayer url={mediaUrl} />
-        {material.body ? <Text style={styles.materialBody}>{material.body}</Text> : null}
+        {material.body ? <Text style={textStyle(styles.materialBody, material, 'body')}>{material.body}</Text> : null}
         {Platform.OS !== 'web' ? <MaterialOpenButton url={mediaUrl} label={options.openMediaLabel} /> : null}
       </View>
     );
@@ -430,10 +432,10 @@ function renderMaterial(material: ContentMaterial, options: { emptyMediaText: st
   if (embeddedVideoUrl) {
     return (
       <View key={material.id} style={styles.materialCard}>
-        <Text style={styles.materialLabel}>{material.title}</Text>
+        <Text style={textStyle(styles.materialLabel, material, 'title')}>{material.title}</Text>
         <WebVideoEmbed url={embeddedVideoUrl} />
-        {material.body ? <Text style={styles.materialBody}>{material.body}</Text> : null}
-        {videoInfo ? <VideoTranscript mediaUrl={mediaUrl} initialText={transcript} startTime={startTime} endTime={endTime} /> : null}
+        {material.body ? <Text style={textStyle(styles.materialBody, material, 'body')}>{material.body}</Text> : null}
+        {videoInfo ? <VideoTranscript mediaUrl={mediaUrl} initialText={transcript} startTime={startTime} endTime={endTime} textStyle={textStyle(undefined, material, 'transcript')} /> : null}
         {Platform.OS !== 'web' ? <MaterialOpenButton url={mediaUrl} label={options.openMediaLabel} /> : null}
       </View>
     );
@@ -442,9 +444,9 @@ function renderMaterial(material: ContentMaterial, options: { emptyMediaText: st
   if (isDirectAudio) {
     return (
       <View key={material.id} style={styles.materialCard}>
-        <Text style={styles.materialLabel}>{material.title}</Text>
+        <Text style={textStyle(styles.materialLabel, material, 'title')}>{material.title}</Text>
         <WebAudioPlayer url={mediaUrl} />
-        {material.body ? <Text style={styles.materialBody}>{material.body}</Text> : null}
+        {material.body ? <Text style={textStyle(styles.materialBody, material, 'body')}>{material.body}</Text> : null}
         <MaterialOpenButton url={mediaUrl} label={options.openMediaLabel} />
       </View>
     );
@@ -452,8 +454,8 @@ function renderMaterial(material: ContentMaterial, options: { emptyMediaText: st
 
   return (
     <View key={material.id} style={[styles.materialCard, styles.placeholderCard]}>
-      <Text style={styles.materialLabel}>{material.title}</Text>
-      <Text style={styles.materialBody}>{placeholderCopy}</Text>
+      <Text style={textStyle(styles.materialLabel, material, 'title')}>{material.title}</Text>
+      <Text style={textStyle(styles.materialBody, material, 'body')}>{placeholderCopy}</Text>
       {mediaUrl ? <Text style={styles.inlineNotice}>{options.inlineMediaUnavailable}</Text> : null}
       <MaterialOpenButton url={mediaUrl} label={options.openMediaLabel} />
     </View>
@@ -483,8 +485,8 @@ function BlockAccordion({
     <View style={[styles.blockCard, open ? styles.blockCardOpen : null]}>
       <Pressable style={styles.blockToggle} onPress={onToggle}>
         <View style={styles.blockHeaderCopy}>
-          <Text style={styles.blockTitle}>{block.title}</Text>
-          <Text style={styles.blockDescription}>{block.description}</Text>
+          <Text style={textStyle(styles.blockTitle, block, 'title')}>{block.title}</Text>
+          <Text style={textStyle(styles.blockDescription, block, 'description')}>{block.description}</Text>
         </View>
         <View style={[styles.toggleBadge, open ? styles.toggleBadgeOpen : null]}>
           <Text style={styles.toggleGlyph}>{open ? '-' : '+'}</Text>
@@ -522,8 +524,8 @@ function BlockPanel({
 }) {
   return (
     <View style={styles.blockCard}>
-      <Text style={styles.blockTitle}>{block.title}</Text>
-      <Text style={styles.blockDescription}>{block.description}</Text>
+      <Text style={textStyle(styles.blockTitle, block, 'title')}>{block.title}</Text>
+      <Text style={textStyle(styles.blockDescription, block, 'description')}>{block.description}</Text>
       <View style={styles.blockBody}>
         {(block.materials ?? []).map((material) => renderMaterial(material, { emptyMediaText, inlineMediaUnavailable, openMediaLabel }))}
         {onOpenPractice ? (
@@ -546,7 +548,7 @@ export function LearnerSectionScreen({ sectionId, sectionRoute }: { sectionId?: 
   const parentSection = getParentSection(content, section);
   const [openBlocks, setOpenBlocks] = useState<Record<string, boolean>>({});
   const isWide = width >= 920;
-  const sectionView = getSectionViewConfig(content, section?.type);
+  const sectionView = getSectionViewConfig(content, section);
   const collapsibleSection = Boolean(section && sectionView.collapsible);
   const ui = getUiConfig(content);
   const loadingTitle = getNestedString(ui, ['feedback', 'loadingSectionTitle']);
@@ -623,6 +625,9 @@ export function LearnerSectionScreen({ sectionId, sectionRoute }: { sectionId?: 
       eyebrow={section.eyebrow}
       title={section.title}
       subtitle={section.summary}
+      eyebrowStyle={textStyle(undefined, section, 'eyebrow')}
+      titleStyle={textStyle(undefined, section, 'title')}
+      subtitleStyle={textStyle(undefined, section, 'summary')}
       backHref={parentSection ? parentSection.route as Href : '/'}
       backLabel={parentSection ? parentSection.title : backToHome}
     >
@@ -648,8 +653,8 @@ export function LearnerSectionScreen({ sectionId, sectionRoute }: { sectionId?: 
                 style={[styles.routeCard, index < primaryRouteCount ? styles.routeCardPrimary : null]}
                 onPress={() => router.push(targetSection.route as Href)}
               >
-                <Text style={styles.routeCardTitle}>{block.title}</Text>
-                <Text style={styles.routeCardText}>{block.description}</Text>
+                <Text style={textStyle(styles.routeCardTitle, block, 'title')}>{block.title}</Text>
+                <Text style={textStyle(styles.routeCardText, block, 'description')}>{block.description}</Text>
               </Pressable>
             );
           })}

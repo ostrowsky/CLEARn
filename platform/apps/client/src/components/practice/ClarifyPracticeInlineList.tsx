@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react';
-import { Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Platform, StyleSheet, TextInput, View, Text, Pressable} from 'react-native';
+
 import type { AppContent, ContentBlock, ContentMaterial, ContentSection } from '@clearn/domain';
 import { useSpeechDraft } from '../../hooks/useSpeechDraft';
 import { apiClient, resolveApiUrl } from '../../lib/api';
 import { getNestedString, getUiConfig } from '../../lib/contentMeta';
 import { tokens } from '../../theme/tokens';
+import { getTextFontSize, textStyle } from '../../lib/contentTypography';
 
 type ClarifyExample = {
   id: string;
@@ -15,6 +17,7 @@ type ClarifyExample = {
   expectedQuestion: string;
   acceptedAnswers: string[];
   placeholder: string;
+  statementFontSize?: number;
 };
 
 type FeedbackState = {
@@ -49,6 +52,7 @@ function buildClarifyExamples(block: ContentBlock | null | undefined) {
         expectedQuestion: asString(meta.clarification),
         acceptedAnswers: asStringArray(meta.acceptedAnswers),
         placeholder: asString(meta.placeholder),
+        statementFontSize: getTextFontSize(material, 'statement') || getTextFontSize(material, 'body'),
       } satisfies ClarifyExample;
     })
     .filter((example) => example.expectedQuestion.trim().length > 0);
@@ -202,8 +206,8 @@ export function ClarifyPracticeInlineList({
 
   return (
     <View style={styles.practiceCard}>
-      <Text style={styles.blockTitle}>{block.title}</Text>
-      {block.description ? <Text style={styles.blockDescription}>{block.description}</Text> : null}
+      <Text style={textStyle(styles.blockTitle, block, 'title')}>{block.title}</Text>
+      {block.description ? <Text style={textStyle(styles.blockDescription, block, 'description')}>{block.description}</Text> : null}
 
       <View style={styles.exampleList}>
         {examples.map((example) => {
@@ -230,7 +234,7 @@ export function ClarifyPracticeInlineList({
                 </View>
               )}
 
-              {example.statement || example.description ? <Text style={styles.description}>{example.statement || example.description}</Text> : null}
+              {example.statement || example.description ? <Text style={[styles.description, example.statementFontSize ? { fontSize: example.statementFontSize } : null]}>{example.statement || example.description}</Text> : null}
 
               <View style={styles.inlineActions}>
                 <Pressable

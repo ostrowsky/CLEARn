@@ -29,6 +29,7 @@ export type ContentSection = {
   eyebrow?: string;
   title: string;
   summary?: string;
+  meta?: Record<string, unknown>;
   blocks: ContentBlock[];
 };
 

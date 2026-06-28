@@ -1,7 +1,7 @@
 {
   "meta": {
     "appTitle": "CLEARn",
-    "updatedAt": "2026-05-16T10:54:28.392Z",
+    "updatedAt": "2026-06-28T15:21:25.359Z",
     "ui": {
       "brandTagline": "",
       "footerNote": "",
@@ -116,7 +116,7 @@
         "questionFormationHintUsed": "Hint: start this question with {whWord}.",
         "questionFormationIncorrectReveal": "The hidden answer is shown in red: {answer}.",
         "questionFormationSentenceHidden": "Sentence is hidden. Keep asking from memory.",
-        "videoPracticeLibraryDescription": "Use uploaded videos or streaming links as the talk source. The question builder below stays the same.",
+        "videoPracticeLibraryDescription": "Alternatively, use uploaded videos or streaming links as the talk source. The question builder below stays the same.",
         "videoLibraryHint": "Choose a video, then build a follow-up question from its transcript."
       },
       "labels": {
@@ -127,7 +127,7 @@
         "conversationLines": "Conversation lines",
         "maxFiveLines": "Max: five lines",
         "yourWorkContext": "What is the talk about?",
-        "yourClarifyingQuestion": "    SAMPLE",
+        "yourClarifyingQuestion": "    ",
         "yourQuestion": "Your question",
         "contextLeadIn": "Context lead-in",
         "followUpRequest": "Could you ...",
@@ -691,6 +691,9 @@
           }
         },
         "backupHint": "Download or restore a full application backup including code, content, and uploaded media."
+      },
+      "fontSizes": {
+        "feedback.videoPracticeLibraryDescription": 18
       }
     },
     "practice": {
@@ -1726,12 +1729,12 @@
               "url": "/uploads/the-bug-is-8ebf6d54.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "The bug is only reproducible on ___.",
+                "statement": "",
                 "clarification": "Sorry, the bug is only reproducible on what?",
                 "acceptedAnswers": [
                   "Sorry, the bug is only reproducible on what?"
                 ],
-                "placeholder": "Sorry, the bug is only reproducible on WHAT?"
+                "placeholder": "Type your question here"
               }
             },
             {
@@ -1742,12 +1745,12 @@
               "url": "/uploads/regression-3a1d8607.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "We need to complete the regression suite by ___.",
+                "statement": "",
                 "clarification": "Sorry, we need to complete the regression suite by when?",
                 "acceptedAnswers": [
                   "Sorry, we need to complete the regression suite by when?"
                 ],
-                "placeholder": "Sorry, we need to complete the regression suite by WHEN?"
+                "placeholder": "Type your question here"
               }
             },
             {
@@ -1758,12 +1761,12 @@
               "url": "/uploads/automation-464e223d.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "The automation script failed because of ___.",
+                "statement": "",
                 "clarification": "Sorry, the automation script failed because of what?",
                 "acceptedAnswers": [
                   "Sorry, the automation script failed because of what?"
                 ],
-                "placeholder": "Sorry, the automation script failed because of WHAT?"
+                "placeholder": "Type your question here"
               }
             },
             {
@@ -1774,13 +1777,13 @@
               "url": "/uploads/critical-16034007.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "I've assigned the critical ticket to ___.",
+                "statement": "",
                 "clarification": "Sorry, you've assigned the critical ticket to who?",
                 "acceptedAnswers": [
                   "Sorry, you've assigned the critical ticket to who?",
                   "Sorry, you have assigned the critical ticket to who?"
                 ],
-                "placeholder": "Sorry, you've assigned the critical ticket to WHO?"
+                "placeholder": "Type your question here"
               }
             },
             {
@@ -1791,12 +1794,12 @@
               "url": "/uploads/staging-07ba1dbe.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "The staging environment will be down for ___.",
+                "statement": "",
                 "clarification": "Sorry, the staging environment will be down for how long?",
                 "acceptedAnswers": [
                   "Sorry, the staging environment will be down for how long?"
                 ],
-                "placeholder": "Sorry, the staging environment will be down for HOW LONG?"
+                "placeholder": "Type your question here"
               }
             },
             {
@@ -1807,12 +1810,12 @@
               "url": "/uploads/crash-3f719500.ogg",
               "alt": "Audio prompt",
               "meta": {
-                "statement": "The user reported the crash occurring in the ___ module.",
+                "statement": "",
                 "clarification": "Sorry, the crash occurred in which module?",
                 "acceptedAnswers": [
                   "Sorry, the crash occurred in which module?"
                 ],
-                "placeholder": "Sorry, the crash occurred in WHICH module?"
+                "placeholder": "Type your question here"
               }
             }
           ],
@@ -1828,7 +1831,7 @@
       "eyebrow": "Ask after the talk",
       "type": "practice-ask-after",
       "route": "/asking/after-talk",
-      "summary": "Smart Strategies for Post-Talk Q&A",
+      "summary": "If  you want to ask questions after some talk, first type what will the talk be about, and then create your question with prompts.",
       "blocks": [
         {
           "id": "context-leads",
@@ -2104,24 +2107,6 @@
       "title": "How to Structure Questions Correctly"
     },
     {
-      "id": "answering-hub",
-      "eyebrow": "Practice answering questions",
-      "type": "hub",
-      "route": "/answering",
-      "summary": "Each practice module opens a short conversation capped at five lines.",
-      "blocks": [
-        {
-          "id": "answer-mixed-card",
-          "description": "Answer 10 mixed question types with text or speech and get politeness and grammar coaching after every turn.",
-          "materials": [],
-          "route": "/answering/mixed",
-          "kind": "nav-card",
-          "title": "Start a 10-question mixed session"
-        }
-      ],
-      "title": "Choose the kind of question you want to answer."
-    },
-    {
       "id": "answering-good",
       "eyebrow": "2.1 Somebody asked you a good question",
       "type": "practice-answering",
@@ -2273,7 +2258,7 @@
       "id": "answering-mixed",
       "eyebrow": "Practice answering questions",
       "type": "exercise-answering-mixed",
-      "route": "/answering/mixed",
+      "route": "/answering",
       "title": "Practise answering 10 realistic questions with text or speech.",
       "summary": "Start with the topic of your meeting, react with the right phrase, answer the question, and review the improved answer after every turn.",
       "blocks": [

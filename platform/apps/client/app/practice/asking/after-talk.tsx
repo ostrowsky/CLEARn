@@ -10,6 +10,7 @@ import {
   getSectionByRoute,
   getUiConfig,
 } from '../../../src/lib/contentMeta';
+import { textStyle } from '../../../src/lib/contentTypography';
 
 export default function AskAfterPracticeScreen() {
   const { sectionId, blockId } = useLocalSearchParams<{ sectionId?: string; blockId?: string }>();
@@ -35,6 +36,9 @@ export default function AskAfterPracticeScreen() {
       eyebrow={section?.eyebrow}
       title={practiceBlock?.title ?? section?.title ?? ''}
       subtitle={practiceBlock?.description ?? section?.summary ?? ''}
+      eyebrowStyle={textStyle(undefined, section, 'eyebrow')}
+      titleStyle={textStyle(undefined, practiceBlock || section, 'title')}
+      subtitleStyle={textStyle(undefined, practiceBlock || section, practiceBlock ? 'description' : 'summary')}
       backHref={section ? section.route as never : '/'}
       backLabel={section?.title ?? getNestedString(ui, ['navigation', 'backToHome'])}
     >

@@ -1,6 +1,7 @@
 import { createElement, useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Platform, StyleSheet, TextInput, View, Text, Pressable} from 'react-native';
+
 import type { ContentBlock, ContentMaterial } from '@clearn/domain';
 import { Screen } from '../../../src/components/Screen';
 import { useContent } from '../../../src/hooks/useContent';
@@ -13,6 +14,7 @@ import {
   getSectionByRoute,
   getUiConfig,
 } from '../../../src/lib/contentMeta';
+import { textStyle } from '../../../src/lib/contentTypography';
 import { tokens } from '../../../src/theme/tokens';
 
 type ClarifyExample = {
@@ -746,6 +748,9 @@ export default function ClarifyPracticeScreen() {
       eyebrow={section?.eyebrow}
       title={practiceBlock?.title ?? ''}
       subtitle={practiceBlock?.description ?? ''}
+      eyebrowStyle={textStyle(undefined, section, 'eyebrow')}
+      titleStyle={textStyle(undefined, practiceBlock, 'title')}
+      subtitleStyle={textStyle(undefined, practiceBlock, 'description')}
       backHref={section ? section.route as never : '/'}
       backLabel={section?.title ?? getNestedString(ui, ['navigation', 'backToHome'])}
     >

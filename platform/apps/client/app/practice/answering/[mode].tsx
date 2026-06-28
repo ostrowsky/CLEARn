@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, TextInput, View, Text, Pressable} from 'react-native';
+
 import type { AnsweringMode, AnsweringQuestionTurn, AnsweringReactionCategory, AnsweringReactionOption, AnsweringSession, AnsweringSessionMode } from '@clearn/domain';
 import { Screen } from '../../../src/components/Screen';
 import { useContent } from '../../../src/hooks/useContent';
@@ -13,6 +14,7 @@ import {
   getSectionByRoute,
   getUiConfig,
 } from '../../../src/lib/contentMeta';
+import { textStyle } from '../../../src/lib/contentTypography';
 import {
   MAX_RECORDING_MS,
   getPreferredRecorderMimeType,
@@ -504,6 +506,9 @@ export default function AnsweringPracticeScreen() {
       eyebrow={section?.eyebrow}
       title={practiceBlock?.title ?? section?.title ?? ''}
       subtitle={practiceBlock?.description ?? section?.summary ?? ''}
+      eyebrowStyle={textStyle(undefined, section, 'eyebrow')}
+      titleStyle={textStyle(undefined, practiceBlock || section, 'title')}
+      subtitleStyle={textStyle(undefined, practiceBlock || section, practiceBlock ? 'description' : 'summary')}
       backHref={section ? section.route as never : '/'}
       backLabel={section?.title ?? getNestedString(ui, ['navigation', 'backToHome'])}
     >

@@ -1,10 +1,12 @@
 import { type Href, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, View, useWindowDimensions, Text, Pressable} from 'react-native';
+
 import { BrandLogo } from '../../src/components/BrandLogo';
 import { useContent } from '../../src/hooks/useContent';
 import { findSectionByRoute } from '../../src/lib/contentNavigation';
 import { getNestedRecord, getNestedString, getUiConfig } from '../../src/lib/contentMeta';
+import { uiTextStyle } from '../../src/lib/contentTypography';
 import { tokens } from '../../src/theme/tokens';
 
 type HomeMenuItem = {
@@ -256,7 +258,7 @@ export default function SectionsScreen() {
 
               <View style={styles.sideMenu}>
                 <View style={styles.sideGroup}>
-                  <Text style={styles.sideHeading}>{skillsHeading}</Text>
+                  <Text style={uiTextStyle(ui, ['homeMenu', 'skillsHeading'], styles.sideHeading)}>{skillsHeading}</Text>
                   {skillMenu.map((item, index) => (
                     <Pressable
                       key={`${item.label}-${item.route}`}
@@ -272,7 +274,7 @@ export default function SectionsScreen() {
                   ))}
                 </View>
                 <View style={styles.sideGroup}>
-                  <Text style={styles.sideHeading}>{aboutHeading}</Text>
+                  <Text style={uiTextStyle(ui, ['homeMenu', 'aboutHeading'], styles.sideHeading)}>{aboutHeading}</Text>
                   {aboutMenu.map((item, index) => (
                     <Pressable
                       key={`${item.label}-${item.route}`}
@@ -298,7 +300,7 @@ export default function SectionsScreen() {
             ) : null}
           </View>
         </ScrollView>
-        <Text style={styles.watermark}>{getNestedString(ui, ['watermarkText'])}</Text>
+        <Text style={uiTextStyle(ui, ['watermarkText'], styles.watermark)}>{getNestedString(ui, ['watermarkText'])}</Text>
       </SafeAreaView>
     );
   }
@@ -344,7 +346,7 @@ export default function SectionsScreen() {
             })}
             {compact ? (
               <>
-                <Text style={[styles.homeLead, styles.homeLeadCompact]}>{homeCopy.lead}</Text>
+                <Text style={uiTextStyle(ui, ['homeMenu', 'leadText'], [styles.homeLead, styles.homeLeadCompact])}>{homeCopy.lead}</Text>
                 <View style={styles.homeCtaRow}>
                   <Pressable
                     accessibilityRole="link"
@@ -369,7 +371,7 @@ export default function SectionsScreen() {
               </>
             ) : (
               <>
-                <Text style={styles.homeLead}>{homeCopy.lead}</Text>
+                <Text style={uiTextStyle(ui, ['homeMenu', 'leadText'], styles.homeLead)}>{homeCopy.lead}</Text>
                 <View style={styles.homeCtaRow}>
                   <Pressable
                     accessibilityRole="link"
@@ -396,7 +398,7 @@ export default function SectionsScreen() {
           </View>
 
           <View style={styles.pathSection}>
-            <Text style={styles.pathTitle}>{homeCopy.sectionTitle}</Text>
+            <Text style={uiTextStyle(ui, ['homeMenu', 'pathsTitle'], styles.pathTitle)}>{homeCopy.sectionTitle}</Text>
             <View style={styles.moduleCardList}>
               {homeCards.map((card, index) => {
                 const isHovered = hoveredItem === `card-${index}`;
@@ -440,7 +442,7 @@ export default function SectionsScreen() {
           ) : null}
         </View>
       </ScrollView>
-      <Text style={styles.watermark}>{getNestedString(ui, ['watermarkText'])}</Text>
+      <Text style={uiTextStyle(ui, ['watermarkText'], styles.watermark)}>{getNestedString(ui, ['watermarkText'])}</Text>
     </SafeAreaView>
   );
 }

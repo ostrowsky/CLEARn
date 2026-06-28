@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View, Pressable, Text} from 'react-native';
+
 import type { CoachChatSession } from '@clearn/domain';
 import { Screen } from '../../src/components/Screen';
 import { useContent } from '../../src/hooks/useContent';
@@ -14,6 +15,7 @@ import {
   getSectionByRoute,
   getUiConfig,
 } from '../../src/lib/contentMeta';
+import { textStyle } from '../../src/lib/contentTypography';
 import { tokens } from '../../src/theme/tokens';
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -188,6 +190,9 @@ export default function CoachChatPracticeScreen() {
       eyebrow={section?.eyebrow}
       title={displayedTitle}
       subtitle={practiceBlock?.description ?? section?.summary ?? ''}
+      eyebrowStyle={textStyle(undefined, section, 'eyebrow')}
+      titleStyle={textStyle(undefined, practiceBlock || section, 'title')}
+      subtitleStyle={textStyle(undefined, practiceBlock || section, practiceBlock ? 'description' : 'summary')}
       backHref={section ? section.route as never : '/'}
       backLabel={section?.title ?? getNestedString(ui, ['navigation', 'backToHome'])}
     >

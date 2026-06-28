@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View, Pressable, Text} from 'react-native';
+
 import type { AppContent, ContentBlock, ContentSection, QuestionFormationBlank, QuestionFormationExercise } from '@clearn/domain';
 import { useSpeechDraft } from '../../hooks/useSpeechDraft';
 import { apiClient } from '../../lib/api';
 import { getNestedNumber, getNestedString, getPracticeConfig, getUiConfig } from '../../lib/contentMeta';
 import { tokens } from '../../theme/tokens';
+import { textStyle } from '../../lib/contentTypography';
 
 type BlankResult = {
   status: 'correct' | 'incorrect';
@@ -291,8 +293,8 @@ export function QuestionFormationPractice({
 
   return (
     <View style={styles.card}>
-      <Text style={styles.blockTitle}>{block.title}</Text>
-      {block.description ? <Text style={styles.blockDescription}>{block.description}</Text> : null}
+      <Text style={textStyle(styles.blockTitle, block, 'title')}>{block.title}</Text>
+      {block.description ? <Text style={textStyle(styles.blockDescription, block, 'description')}>{block.description}</Text> : null}
 
       {loading ? (
         <View style={styles.noticeCard}>

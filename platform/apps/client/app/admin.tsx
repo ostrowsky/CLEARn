@@ -30,10 +30,15 @@ import {
   getFeedbackConfig,
   getTaxonomyLabels,
   getTaxonomyValues,
+  listSectionUiCopy,
+  listBlockUiCopy,
+  setUiCopyValue,
 } from '../src/lib/adminContent';
 import { apiClient, resolveApiUrl } from '../src/lib/api';
-import { getNestedString } from '../src/lib/contentMeta';
+import { getNestedString, getSectionViewConfig } from '../src/lib/contentMeta';
 import { tokens } from '../src/theme/tokens';
+import { getTextFontSize, getUiTextFontSize, setTextFontSize, setUiTextFontSize } from '../src/lib/contentTypography';
+
 
 const EMPTY_SCHEMA_DRAFTS: AdminSchemaDrafts = {
   taxonomies: '',
@@ -272,6 +277,33 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+function FontSizeControl({ value, defaultValue, onChange }: { value?: number; defaultValue: number; onChange: (value: string) => void }) {
+  const currentValue = value ?? defaultValue;
+  return (
+    <View style={styles.fontSizeRow}>
+      <Text style={styles.fontSizeLabel}>Font size: {currentValue} px{value ? '' : ' (design)'}</Text>
+      <Pressable style={styles.fontSizeButton} onPress={() => onChange(String(Math.max(8, currentValue - 1)))}>
+        <Text style={styles.fontSizeButtonText}>−</Text>
+      </Pressable>
+      <TextInput
+        key={currentValue}
+        defaultValue={String(currentValue)}
+        onEndEditing={(event) => onChange(event.nativeEvent.text)}
+        keyboardType="numeric"
+        style={[styles.input, styles.fontSizeInput]}
+      />
+      <Pressable style={styles.fontSizeButton} onPress={() => onChange(String(Math.min(200, currentValue + 1)))}>
+        <Text style={styles.fontSizeButtonText}>+</Text>
+      </Pressable>
+      {value ? (
+        <Pressable style={styles.fontSizeReset} onPress={() => onChange('')}>
+          <Text style={styles.fontSizeResetText}>Reset to {defaultValue}px</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
 function ChoiceChips({
   values,
   currentValue,
@@ -344,6 +376,7 @@ export default function AdminScreen() {
   const [selectedSectionId, setSelectedSectionId] = useState('');
   const [metaDraft, setMetaDraft] = useState('');
   const [schemaDrafts, setSchemaDrafts] = useState<AdminSchemaDrafts>(EMPTY_SCHEMA_DRAFTS);
+  const [developerMode, setDeveloperMode] = useState(false);
 
   async function loadPublicContentForAuth() {
     const publicContent = ensureAdminContentStructures(await apiClient.getContent());
@@ -408,6 +441,9 @@ export default function AdminScreen() {
   const blockKindLabels = getTaxonomyLabels(content, 'blockKinds');
   const materialTypeLabels = getTaxonomyLabels(content, 'materialTypes');
   const selectedSection = content?.sections.find((section) => section.id === selectedSectionId) || null;
+  const selectedSectionView = getSectionViewConfig(content, selectedSection || undefined);
+  const uiConfig = asRecord(content?.meta?.ui);
+  const sectionUiCopyEntries = selectedSection ? listSectionUiCopy(uiConfig, selectedSection) : [];
 
   function setStatus(text: string, tone: StatusTone = 'success') {
     setMessage(text);
@@ -449,6 +485,56 @@ export default function AdminScreen() {
 
       (draft.meta.ui as Record<string, unknown>).watermarkText = value;
     });
+  }
+
+  function updateSectionFontSize(sectionId: string, field: string, value: string) {
+    updateContent((draft) => {
+      const section = draft.sections.find((item) => item.id === sectionId);
+      if (section) setTextFontSize(section, field, value);
+    });
+  }
+
+  function updateSectionView(sectionId: string, field: string, value: string | number | boolean) {
+    updateContent((draft) => {
+      const section = draft.sections.find((item) => item.id === sectionId);
+      if (!section) return;
+      section.meta = asRecord(section.meta);
+      const view = asRecord(section.meta.view);
+      view[field] = value;
+      section.meta.view = view;
+    });
+  }
+
+  function updateBlockFontSize(sectionId: string, blockId: string, field: string, value: string) {
+    updateContent((draft) => {
+      const block = draft.sections.find((item) => item.id === sectionId)?.blocks.find((item) => item.id === blockId);
+      if (block) setTextFontSize(block, field, value);
+    });
+  }
+
+  function updateMaterialFontSize(sectionId: string, blockId: string, materialId: string, field: string, value: string) {
+    updateContent((draft) => {
+      const material = draft.sections.find((item) => item.id === sectionId)?.blocks.find((item) => item.id === blockId)?.materials.find((item) => item.id === materialId);
+      if (material) setTextFontSize(material, field, value);
+    });
+  }
+
+  function updateUiCopy(path: string[], value: string) {
+    updateMetaContent((draft) => {
+      if (!draft.meta.ui || typeof draft.meta.ui !== 'object') draft.meta.ui = {};
+      setUiCopyValue(draft.meta.ui as Record<string, unknown>, path, value);
+    });
+  }
+
+  function updateUiCopyFontSize(path: string[], value: string) {
+    updateMetaContent((draft) => {
+      if (!draft.meta.ui || typeof draft.meta.ui !== 'object') draft.meta.ui = {};
+      setUiTextFontSize(draft.meta.ui as Record<string, unknown>, path, value);
+    });
+  }
+
+  function uiCopySupportsFontSize(path: string[]) {
+    return path[0] !== 'buttons' && path[0] !== 'placeholders' && path[path.length - 1] !== 'route' && !path.some((part) => /alt/i.test(part));
   }
 
   async function refreshAuthenticatedContent(nextStatus: AdminAuthStatus) {
@@ -957,6 +1043,9 @@ export default function AdminScreen() {
         <Pressable style={styles.secondaryButton} onPress={() => void handleLogoutAdmin()} disabled={busy}>
           <Text style={styles.secondaryButtonText}>{getAdminAuthText(content, 'logoutButton', 'Log out')}</Text>
         </Pressable>
+        <Pressable style={styles.secondaryButton} onPress={() => setDeveloperMode((current) => !current)}>
+          <Text style={styles.secondaryButtonText}>{developerMode ? 'Hide developer tools' : 'Developer mode'}</Text>
+        </Pressable>
       </View>
 
       <Text style={styles.cardHint}>{getAdminText(content, ['backupHint'])}</Text>
@@ -964,16 +1053,21 @@ export default function AdminScreen() {
       <StatusBanner text={error} tone="error" />
       <StatusBanner text={message} tone={messageTone} />
 
-      <View style={styles.schemaGrid}>
-        <SchemaCard title={getAdminText(content, ['schemaTitle'])} hint={getAdminText(content, ['schemaHint'])} value={schemaDrafts.taxonomies} onChange={(value) => setSchemaDrafts((current) => ({ ...current, taxonomies: value }))} />
-        <SchemaCard title={getAdminText(content, ['defaultsTitle'])} hint={getAdminText(content, ['defaultsHint'])} value={schemaDrafts.defaults} onChange={(value) => setSchemaDrafts((current) => ({ ...current, defaults: value }))} />
-        <SchemaCard title={getAdminText(content, ['sectionViewsTitle'])} hint={getAdminText(content, ['sectionViewsHint'])} value={schemaDrafts.sectionViews} onChange={(value) => setSchemaDrafts((current) => ({ ...current, sectionViews: value }))} />
-        <SchemaCard title={getAdminText(content, ['blockRenderersTitle'])} hint={getAdminText(content, ['blockRenderersHint'])} value={schemaDrafts.blockRenderers} onChange={(value) => setSchemaDrafts((current) => ({ ...current, blockRenderers: value }))} />
-        <SchemaCard title={getAdminText(content, ['practiceScreensTitle'])} hint={getAdminText(content, ['practiceScreensHint'])} value={schemaDrafts.practiceScreens} onChange={(value) => setSchemaDrafts((current) => ({ ...current, practiceScreens: value }))} />
-        <SchemaCard title={getAdminText(content, ['blockGroupsTitle'])} hint={getAdminText(content, ['blockGroupsHint'])} value={schemaDrafts.blockGroups} onChange={(value) => setSchemaDrafts((current) => ({ ...current, blockGroups: value }))} />
-      </View>
-
-      <SchemaCard title={getAdminText(content, ['metaTitle'])} hint={getAdminText(content, ['metaHint'])} value={metaDraft} onChange={setMetaDraft} />
+      {developerMode ? (
+        <View style={styles.developerTools}>
+          <Text style={styles.cardTitle}>Developer tools</Text>
+          <Text style={styles.cardHint}>Technical schema and routing changes can break learner screens. Use only when changing application architecture.</Text>
+          <View style={styles.schemaGrid}>
+            <SchemaCard title={getAdminText(content, ['schemaTitle'])} hint={getAdminText(content, ['schemaHint'])} value={schemaDrafts.taxonomies} onChange={(value) => setSchemaDrafts((current) => ({ ...current, taxonomies: value }))} />
+            <SchemaCard title={getAdminText(content, ['defaultsTitle'])} hint={getAdminText(content, ['defaultsHint'])} value={schemaDrafts.defaults} onChange={(value) => setSchemaDrafts((current) => ({ ...current, defaults: value }))} />
+            <SchemaCard title={getAdminText(content, ['sectionViewsTitle'])} hint={getAdminText(content, ['sectionViewsHint'])} value={schemaDrafts.sectionViews} onChange={(value) => setSchemaDrafts((current) => ({ ...current, sectionViews: value }))} />
+            <SchemaCard title={getAdminText(content, ['blockRenderersTitle'])} hint={getAdminText(content, ['blockRenderersHint'])} value={schemaDrafts.blockRenderers} onChange={(value) => setSchemaDrafts((current) => ({ ...current, blockRenderers: value }))} />
+            <SchemaCard title={getAdminText(content, ['practiceScreensTitle'])} hint={getAdminText(content, ['practiceScreensHint'])} value={schemaDrafts.practiceScreens} onChange={(value) => setSchemaDrafts((current) => ({ ...current, practiceScreens: value }))} />
+            <SchemaCard title={getAdminText(content, ['blockGroupsTitle'])} hint={getAdminText(content, ['blockGroupsHint'])} value={schemaDrafts.blockGroups} onChange={(value) => setSchemaDrafts((current) => ({ ...current, blockGroups: value }))} />
+          </View>
+          <SchemaCard title={`Advanced: ${getAdminText(content, ['metaTitle'])}`} hint={getAdminText(content, ['metaHint'])} value={metaDraft} onChange={setMetaDraft} />
+        </View>
+      ) : null}
 
       <View style={styles.editorCard}>
         <Field label={String(fieldLabels.watermarkText || '')}>
@@ -1018,13 +1112,34 @@ export default function AdminScreen() {
                   const target = draft.sections.find((item) => item.id === selectedSection.id);
                   if (target) target.eyebrow = value;
                 })} style={styles.input} />
+                <FontSizeControl value={getTextFontSize(selectedSection, 'eyebrow')} defaultValue={12} onChange={(value) => updateSectionFontSize(selectedSection.id, 'eyebrow', value)} />
               </Field>
+
+              <View style={styles.sectionDisplayCard}>
+                <Text style={styles.cardTitle}>Section display</Text>
+                <Field label="Page layout">
+                  <ChoiceChips values={['hub', 'practice']} currentValue={selectedSectionView.view} labels={{ hub: 'Hub', practice: 'Practice' }} onPick={(value) => updateSectionView(selectedSection.id, 'view', value)} />
+                </Field>
+                <Field label="Card layout">
+                  <ChoiceChips values={['route-grid', 'hero-actions']} currentValue={selectedSectionView.cardLayout} labels={{ 'route-grid': 'Route grid', 'hero-actions': 'Hero actions' }} onPick={(value) => updateSectionView(selectedSection.id, 'cardLayout', value)} />
+                </Field>
+                <Field label="Collapsible blocks">
+                  <ChoiceChips values={['yes', 'no']} currentValue={selectedSectionView.collapsible ? 'yes' : 'no'} labels={{ yes: 'Yes', no: 'No' }} onPick={(value) => updateSectionView(selectedSection.id, 'collapsible', value === 'yes')} />
+                </Field>
+                <Field label="Primary card">
+                  <ChoiceChips values={['none', 'first']} currentValue={selectedSectionView.primaryCardStrategy} labels={{ none: 'None', first: 'First card' }} onPick={(value) => updateSectionView(selectedSection.id, 'primaryCardStrategy', value)} />
+                </Field>
+                <Field label="Featured blocks on desktop">
+                  <TextInput value={String(selectedSectionView.featuredBlockCount)} onChangeText={(value) => updateSectionView(selectedSection.id, 'featuredBlockCount', Math.max(0, Number.parseInt(value || '0', 10) || 0))} keyboardType="numeric" style={styles.input} />
+                </Field>
+              </View>
 
               <Field label={String(fieldLabels.sectionTitle || '')}>
                 <TextInput value={selectedSection.title || ''} onChangeText={(value) => updateContent((draft) => {
                   const target = draft.sections.find((item) => item.id === selectedSection.id);
                   if (target) target.title = value;
                 })} style={styles.input} />
+                <FontSizeControl value={getTextFontSize(selectedSection, 'title')} defaultValue={60} onChange={(value) => updateSectionFontSize(selectedSection.id, 'title', value)} />
               </Field>
 
               <Field label={String(fieldLabels.summary || '')}>
@@ -1032,7 +1147,31 @@ export default function AdminScreen() {
                   const target = draft.sections.find((item) => item.id === selectedSection.id);
                   if (target) target.summary = value;
                 })} style={[styles.input, styles.textArea]} />
+                <FontSizeControl value={getTextFontSize(selectedSection, 'summary')} defaultValue={17} onChange={(value) => updateSectionFontSize(selectedSection.id, 'summary', value)} />
               </Field>
+
+              {sectionUiCopyEntries.length ? (
+                <View style={styles.structuredCopyCard}>
+                  <Text style={styles.cardTitle}>Interface text for this section</Text>
+                  <Text style={styles.cardHint}>These fields are used only by this type of learner screen.</Text>
+                  {sectionUiCopyEntries.map((entry) => {
+                    const pathLabel = entry.path.join('.');
+                    return (
+                      <View key={pathLabel} style={styles.uiCopyRow}>
+                        <Text style={styles.uiCopyPath}>{pathLabel}</Text>
+                        <TextInput multiline value={entry.value} onChangeText={(value) => updateUiCopy(entry.path, value)} style={[styles.input, styles.uiCopyInput]} />
+                        {uiCopySupportsFontSize(entry.path) ? (
+                          <FontSizeControl
+                            value={getUiTextFontSize(uiConfig, entry.path)}
+                            defaultValue={entry.defaultFontSize}
+                            onChange={(value) => updateUiCopyFontSize(entry.path, value)}
+                          />
+                        ) : null}
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : null}
 
               <View style={styles.inlineActions}>
                 <Pressable style={styles.secondaryButton} onPress={() => updateContent((draft) => {
@@ -1053,6 +1192,7 @@ export default function AdminScreen() {
                       const targetBlock = draft.sections.find((item) => item.id === selectedSection.id)?.blocks.find((item) => item.id === block.id);
                       if (targetBlock) targetBlock.title = value;
                     })} style={styles.input} />
+                    <FontSizeControl value={getTextFontSize(block, 'title')} defaultValue={30} onChange={(value) => updateBlockFontSize(selectedSection.id, block.id, 'title', value)} />
                   </Field>
 
                   <Field label={String(fieldLabels.blockKind || '')}>
@@ -1071,7 +1211,26 @@ export default function AdminScreen() {
                       const targetBlock = draft.sections.find((item) => item.id === selectedSection.id)?.blocks.find((item) => item.id === block.id);
                       if (targetBlock) targetBlock.description = value;
                     })} style={[styles.input, styles.textArea]} />
+                    <FontSizeControl value={getTextFontSize(block, 'description')} defaultValue={16} onChange={(value) => updateBlockFontSize(selectedSection.id, block.id, 'description', value)} />
                   </Field>
+
+                  {listBlockUiCopy(uiConfig, selectedSection, block).length ? (
+                    <View style={styles.structuredCopyCard}>
+                      <Text style={styles.cardTitle}>Interface text for this block</Text>
+                      {listBlockUiCopy(uiConfig, selectedSection, block).map((entry) => {
+                        const pathLabel = entry.path.join('.');
+                        return (
+                          <View key={`${block.id}-${pathLabel}`} style={styles.uiCopyRow}>
+                            <Text style={styles.uiCopyPath}>{pathLabel}</Text>
+                            <TextInput multiline value={entry.value} onChangeText={(value) => updateUiCopy(entry.path, value)} style={[styles.input, styles.uiCopyInput]} />
+                            {uiCopySupportsFontSize(entry.path) ? (
+                              <FontSizeControl value={getUiTextFontSize(uiConfig, entry.path)} defaultValue={entry.defaultFontSize} onChange={(value) => updateUiCopyFontSize(entry.path, value)} />
+                            ) : null}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ) : null}
 
                   <Field label={String(fieldLabels.route || '')}>
                     <TextInput value={block.route || ''} onChangeText={(value) => updateContent((draft) => {
@@ -1194,6 +1353,7 @@ export default function AdminScreen() {
                             const targetMaterial = draft.sections.find((item) => item.id === selectedSection.id)?.blocks.find((item) => item.id === block.id)?.materials.find((item) => item.id === material.id);
                             if (targetMaterial) targetMaterial.title = value;
                           })} style={styles.input} />
+                          <FontSizeControl value={getTextFontSize(material, 'title')} defaultValue={12} onChange={(value) => updateMaterialFontSize(selectedSection.id, block.id, material.id, 'title', value)} />
                         </Field>
 
                         <Field label={String(fieldLabels.materialType || '')}>
@@ -1212,6 +1372,7 @@ export default function AdminScreen() {
                             const targetMaterial = draft.sections.find((item) => item.id === selectedSection.id)?.blocks.find((item) => item.id === block.id)?.materials.find((item) => item.id === material.id);
                             if (targetMaterial) targetMaterial.body = value;
                           })} style={[styles.input, styles.textArea]} />
+                          <FontSizeControl value={getTextFontSize(material, 'body')} defaultValue={16} onChange={(value) => updateMaterialFontSize(selectedSection.id, block.id, material.id, 'body', value)} />
                         </Field>
 
                         <Field label={String(fieldLabels.url || '')}>
@@ -1236,6 +1397,7 @@ export default function AdminScreen() {
                                 const meta = ensureMaterialMeta(targetMaterial);
                                 meta.transcript = value;
                               })} style={[styles.input, styles.textArea]} multiline />
+                              <FontSizeControl value={getTextFontSize(material, 'transcript')} defaultValue={15} onChange={(value) => updateMaterialFontSize(selectedSection.id, block.id, material.id, 'transcript', value)} />
                               {material.url ? (
                                 <Pressable style={styles.secondaryButton} onPress={() => void handleFetchVideoTranscript(selectedSection.id, block.id, material.id, String(material.url || ''))}>
                                   <Text style={styles.secondaryButtonText}>{String(actions.fetchTranscript || '')}</Text>
@@ -1253,6 +1415,7 @@ export default function AdminScreen() {
                                 const meta = ensureMaterialMeta(targetMaterial);
                                 meta.statement = value;
                               })} style={[styles.input, styles.textArea]} multiline />
+                              <FontSizeControl value={getTextFontSize(material, 'statement')} defaultValue={15} onChange={(value) => updateMaterialFontSize(selectedSection.id, block.id, material.id, 'statement', value)} />
                             </Field>
 
                             <Field label={String(fieldLabels.clarification || '')}>
@@ -1431,6 +1594,20 @@ const styles = StyleSheet.create({
   schemaGrid: {
     gap: tokens.spacing.md,
   },
+  developerTools: {
+    gap: tokens.spacing.md,
+    padding: tokens.spacing.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.danger,
+    backgroundColor: tokens.colors.surfaceMuted,
+  },
+  sectionDisplayCard: {
+    gap: tokens.spacing.md,
+    padding: tokens.spacing.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.cardLine,
+    backgroundColor: tokens.colors.surface,
+  },
   schemaCard: {
     backgroundColor: tokens.colors.surfaceMuted,
     borderRadius: tokens.radius.lg,
@@ -1441,6 +1618,69 @@ const styles = StyleSheet.create({
   },
   fieldGroup: {
     gap: 6,
+  },
+  structuredCopyCard: {
+    gap: tokens.spacing.sm,
+    padding: tokens.spacing.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.accent,
+    backgroundColor: tokens.colors.surfaceMuted,
+  },
+  uiCopyRow: {
+    gap: 6,
+    padding: tokens.spacing.sm,
+    borderWidth: 1,
+    borderColor: tokens.colors.cardLine,
+    backgroundColor: tokens.colors.surface,
+  },
+  uiCopyPath: {
+    color: tokens.colors.accentDeep,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  uiCopyInput: {
+    minHeight: 64,
+    textAlignVertical: 'top',
+  },
+  fontSizeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: tokens.spacing.sm,
+    alignSelf: 'flex-start',
+  },
+  fontSizeLabel: {
+    color: tokens.colors.inkSoft,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  fontSizeInput: {
+    width: 76,
+    minHeight: 40,
+    paddingVertical: 8,
+  },
+  fontSizeButton: {
+    width: 36,
+    height: 36,
+    borderWidth: 1,
+    borderColor: tokens.colors.cardLine,
+    backgroundColor: tokens.colors.surfaceStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fontSizeButtonText: {
+    color: tokens.colors.ink,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  fontSizeReset: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  fontSizeResetText: {
+    color: tokens.colors.accentDeep,
+    fontSize: 12,
+    fontWeight: '700',
   },
   fieldLabel: {
     color: tokens.colors.ink,

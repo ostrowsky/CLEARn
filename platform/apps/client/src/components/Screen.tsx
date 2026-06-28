@@ -1,10 +1,12 @@
 ﻿import type { PropsWithChildren } from 'react';
 import { useEffect, useState } from 'react';
 import { type Href, useRouter } from 'expo-router';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, View, useWindowDimensions, Pressable, Text, type StyleProp, type TextStyle } from 'react-native';
+
 import { BrandLogo } from './BrandLogo';
 import { useContent } from '../hooks/useContent';
 import { getNestedRecord, getUiConfig } from '../lib/contentMeta';
+import { uiTextStyle } from '../lib/contentTypography';
 import { tokens } from '../theme/tokens';
 
 type ScreenProps = PropsWithChildren<{
@@ -17,6 +19,9 @@ type ScreenProps = PropsWithChildren<{
   backLabel?: string;
   footerNote?: string;
   watermarkText?: string;
+  eyebrowStyle?: StyleProp<TextStyle>;
+  titleStyle?: StyleProp<TextStyle>;
+  subtitleStyle?: StyleProp<TextStyle>;
 }>;
 
 function getTitleParts(title: string) {
@@ -199,6 +204,9 @@ export function Screen({
   subtitle,
   footerNote,
   watermarkText,
+  eyebrowStyle,
+  titleStyle,
+  subtitleStyle,
   children,
 }: ScreenProps) {
   const router = useRouter();
@@ -234,7 +242,7 @@ export function Screen({
           <View style={styles.topRow}>
             <View style={styles.brandWrap}>
               {appTitle ? <BrandLogo compact /> : null}
-              {brandTagline ? <Text style={styles.topLink}>{brandTagline}</Text> : null}
+              {brandTagline ? <Text style={uiTextStyle(ui, ['brandTagline'], styles.topLink)}>{brandTagline}</Text> : null}
             </View>
 
             <Pressable
@@ -307,27 +315,27 @@ export function Screen({
           ) : (
             <>
               <View style={[styles.heroCard, compact ? styles.heroCardCompact : null]}>
-                {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-                <Text style={[styles.title, compact ? styles.titleCompact : null]}>
+                {eyebrow ? <Text style={[styles.eyebrow, eyebrowStyle]}>{eyebrow}</Text> : null}
+                <Text style={[styles.title, compact ? styles.titleCompact : null, titleStyle]}>
                   {titleParts.map((part, index) => (
                     <Text key={`${part.text}-${index}`} style={part.accent ? styles.titleAccent : null}>
                       {part.text}
                     </Text>
                   ))}
                 </Text>
-                {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+                {subtitle ? <Text style={[styles.subtitle, subtitleStyle]}>{subtitle}</Text> : null}
               </View>
 
               {children}
 
-              {footerNote ? <Text style={styles.footerNote}>{footerNote}</Text> : null}
+              {footerNote ? <Text style={uiTextStyle(ui, ['footerNote'], styles.footerNote)}>{footerNote}</Text> : null}
             </>
           )}
         </View>
       </ScrollView>
       {watermarkText ? (
         <View pointerEvents="none" style={styles.watermark}>
-          <Text style={styles.watermarkText}>{watermarkText}</Text>
+          <Text style={uiTextStyle(ui, ['watermarkText'], styles.watermarkText)}>{watermarkText}</Text>
         </View>
       ) : null}
     </SafeAreaView>
