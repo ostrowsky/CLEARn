@@ -34,6 +34,8 @@ The product can use free AI resources during prototype and early validation, whi
 
 ## Edge cases and failure policy
 
+- Browser STT requests must allow enough time for a self-hosted Render service to wake, transcribe, or fail over; the client timeout must be longer than the configured self-hosted provider timeout.
+
 - Hosted provider returns 402/429: switch to configured fallback or show a clear quota/provider message.
 - Self-hosted STT is unavailable: typed input remains available.
 - LLM returns malformed JSON: sanitize, retry once if safe, or use deterministic fallback.

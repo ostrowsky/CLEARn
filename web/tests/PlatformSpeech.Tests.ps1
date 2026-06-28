@@ -89,6 +89,7 @@ foreach ($pattern in @(
     'response.statusText',
     "path\.includes\('/api/speech/stt'\)",
     "path\.includes\('/api/speech/tts'\)",
+    'return 90000;',
     'return 15000;'
 )) {
     Assert-Match -Actual $apiClientSource -Pattern $pattern

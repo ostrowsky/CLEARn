@@ -34,7 +34,7 @@ type VideoTranscriptResponse = {
 
 function getRequestTimeoutMs(path: string) {
   if (path.includes('/api/speech/stt')) {
-    return 15000;
+    return 90000;
   }
 
   if (path.includes('/api/speech/tts')) {
