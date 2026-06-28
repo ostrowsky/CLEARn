@@ -5,14 +5,15 @@ import { tokens } from '../theme/tokens';
 type BrandLogoProps = {
   href?: Href;
   compact?: boolean;
+  fontSize?: number;
 };
 
-export function BrandLogo({ href = '/', compact = false }: BrandLogoProps) {
+export function BrandLogo({ href = '/', compact = false, fontSize }: BrandLogoProps) {
   const router = useRouter();
 
   return (
     <Pressable accessibilityRole="link" onPress={() => router.push(href)} style={styles.link}>
-      <Text style={[styles.logo, compact ? styles.logoCompact : null]}>
+      <Text style={[styles.logo, compact ? styles.logoCompact : null, fontSize ? { fontSize } : null]}>
         <Text style={styles.accent}>{'<'}</Text>
         <Text style={styles.word}>CLEAR</Text>
         <Text style={styles.script}>n</Text>

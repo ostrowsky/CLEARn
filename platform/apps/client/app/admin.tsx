@@ -444,6 +444,7 @@ export default function AdminScreen() {
   const selectedSectionView = getSectionViewConfig(content, selectedSection || undefined);
   const uiConfig = asRecord(content?.meta?.ui);
   const sectionUiCopyEntries = selectedSection ? listSectionUiCopy(uiConfig, selectedSection) : [];
+  const selectedSectionIsHome = Boolean(selectedSection && /landing|home/i.test(`${selectedSection.type} ${selectedSection.id} ${selectedSection.route}`));
 
   function setStatus(text: string, tone: StatusTone = 'success') {
     setMessage(text);
@@ -1154,6 +1155,16 @@ export default function AdminScreen() {
                 <View style={styles.structuredCopyCard}>
                   <Text style={styles.cardTitle}>Interface text for this section</Text>
                   <Text style={styles.cardHint}>These fields are used only by this type of learner screen.</Text>
+                  {selectedSectionIsHome ? (
+                    <View style={styles.uiCopyRow}>
+                      <Text style={styles.uiCopyPath}>Brand logo</Text>
+                      <FontSizeControl
+                        value={getUiTextFontSize(uiConfig, ['brandLogo'])}
+                        defaultValue={14}
+                        onChange={(value) => updateUiCopyFontSize(['brandLogo'], value)}
+                      />
+                    </View>
+                  ) : null}
                   {sectionUiCopyEntries.map((entry) => {
                     const pathLabel = entry.path.join('.');
                     return (

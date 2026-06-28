@@ -6,7 +6,7 @@ import { SafeAreaView, ScrollView, StyleSheet, View, useWindowDimensions, Pressa
 import { BrandLogo } from './BrandLogo';
 import { useContent } from '../hooks/useContent';
 import { getNestedRecord, getUiConfig } from '../lib/contentMeta';
-import { uiTextStyle } from '../lib/contentTypography';
+import { getUiTextFontSize, uiTextStyle } from '../lib/contentTypography';
 import { tokens } from '../theme/tokens';
 
 type ScreenProps = PropsWithChildren<{
@@ -241,7 +241,7 @@ export function Screen({
         <View style={styles.shell}>
           <View style={styles.topRow}>
             <View style={styles.brandWrap}>
-              {appTitle ? <BrandLogo compact /> : null}
+              {appTitle ? <BrandLogo compact fontSize={getUiTextFontSize(ui, ['brandLogo'])} /> : null}
               {brandTagline ? <Text style={uiTextStyle(ui, ['brandTagline'], styles.topLink)}>{brandTagline}</Text> : null}
             </View>
 

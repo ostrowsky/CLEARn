@@ -6,7 +6,7 @@ import { BrandLogo } from '../../src/components/BrandLogo';
 import { useContent } from '../../src/hooks/useContent';
 import { findSectionByRoute } from '../../src/lib/contentNavigation';
 import { getNestedRecord, getNestedString, getUiConfig } from '../../src/lib/contentMeta';
-import { uiTextStyle } from '../../src/lib/contentTypography';
+import { getUiTextFontSize, uiTextStyle } from '../../src/lib/contentTypography';
 import { tokens } from '../../src/theme/tokens';
 
 type HomeMenuItem = {
@@ -204,7 +204,7 @@ export default function SectionsScreen() {
   function renderTopBar(showActions = true) {
     return (
       <View style={styles.topBar}>
-        <BrandLogo compact />
+        <BrandLogo compact fontSize={getUiTextFontSize(ui, ['brandLogo'])} />
         {showActions ? (
           <View style={styles.headerCta}>
           <Pressable

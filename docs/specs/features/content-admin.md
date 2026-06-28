@@ -21,6 +21,7 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 - Admins can edit visible labels, instructional text, section/block/material order, material fields, and media.
 - Learner-visible strings under `meta.ui` appear inside the matching section editor, grouped with the section/block/material content that uses them; administrators do not need a separate unstructured copy list or raw JSON to change UI copy.
 - Each eligible UI string has an independent 8-200 px font-size override stored by its exact content path. Button labels, routes, placeholders, and accessibility-only text remain editable but do not expose font-size controls.
+- The Home section exposes a dedicated logo font-size control; it updates every learner `<CLEARn />` logo without changing button text.
 - Admin access is protected by an initial setup flow. Before the first admin can use `/admin`, the app asks for login, password, password confirmation, and recovery email.
 - After setup, admins must log in before reading or changing `/api/admin/*` content, media, backup, and restore endpoints.
 - Admin sessions use server-issued signed cookies and can be cleared with logout.

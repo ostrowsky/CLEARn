@@ -4,6 +4,7 @@ $admin = Get-Content (Join-Path $root 'platform/apps/client/app/admin.tsx') -Raw
 $helper = Get-Content (Join-Path $root 'platform/apps/client/src/lib/contentTypography.ts') -Raw
 $renderer = Get-Content -LiteralPath (Join-Path $root 'platform/apps/client/app/section/[id].tsx') -Raw
 $askAfter = Get-Content (Join-Path $root 'platform/apps/client/src/components/practice/AskAfterComposer.tsx') -Raw
+$brandLogo = Get-Content (Join-Path $root 'platform/apps/client/src/components/BrandLogo.tsx') -Raw
 
 foreach ($field in @('eyebrow', 'title', 'summary', 'description', 'body', 'transcript', 'statement')) {
   $pattern = "FontSizeControl.*'$field'"
@@ -18,5 +19,6 @@ if ($admin -notmatch 'Font size: \{currentValue\} px') { throw 'Font-size contro
 if ($admin -notmatch 'Developer mode' -or $admin -notmatch 'developerMode \?') { throw 'Technical JSON editors must be gated by Developer mode.' }
 if ($admin -notmatch 'Section display' -or $admin -notmatch 'Collapsible blocks') { throw 'Section display controls are missing.' }
 if ($askAfter -notmatch "uiTextStyle\(ui, \['feedback', 'videoPracticeLibraryDescription'\]") { throw 'Video library description font size is not rendered.' }
+if ($admin -notmatch "updateUiCopyFontSize\(\['brandLogo'\]" -or $brandLogo -notmatch 'fontSize \? \{ fontSize \}') { throw 'Brand logo font-size control is not wired.' }
 
 Write-Output 'Per-text typography checks passed.'
