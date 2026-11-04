@@ -26,6 +26,8 @@ const types={'.html':'text/html','.js':'text/javascript','.json':'application/js
    if(setup==='after'){await page.locator('textarea').first().fill('The upcoming API release.');await page.getByText(buttons.generateShortTalk,{exact:true}).click();}
    if(setup==='answer')await page.getByText(buttons.startDialogue,{exact:true}).click();
    if(setup==='chat')await page.getByText(buttons.startCoachChat,{exact:true}).click();
+   await page.getByText(buttons.startRecording,{exact:true}).first().waitFor({state:'visible'});
+   if(setup==='after')await page.getByText(buttons.reviewQuestion,{exact:true}).first().waitFor({state:'visible'});
    const draft=['after','answer','chat'].includes(setup)?page.locator('textarea:not([readonly])').last():page.locator('textarea').first();
    await draft.fill('Keep this typed draft after speech failure.');
    await page.getByText(buttons.startRecording,{exact:true}).first().click();

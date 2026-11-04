@@ -26,3 +26,6 @@ Provider fetches buffer their non-streaming response inside a bounded deadline a
 - Production Render remains suspended; restoring billing or replacing the host is outside this patch. Admin writes, uploaded-file STT, TTS, server sessions, real models and mutable storage still need a working API.
 
 Hosted CI/deployment and post-deploy evidence are reported in the chat after publication; no success is inferred from local tests alone.
+
+## Hosted QA refinement
+The first Windows browser CI run caught the test selecting the context textarea before the generated after-talk builder mounted. The test now waits for visible recording controls and Review question before filling the actual draft. The strict draft-preservation assertion remains unchanged; no test is skipped or marked expected-failure.
