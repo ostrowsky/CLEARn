@@ -1,3 +1,4 @@
+import { trackExerciseEvent } from '../../lib/analytics';
 import { useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, TextInput, View, Text, Pressable} from 'react-native';
 
@@ -136,8 +137,14 @@ export function ClarifyPracticeInlineList({
     }),
   });
 
+  const analyticsStarted = useRef(new Set<string>());
+
   async function handleCheckAnswer(example: ClarifyExample) {
     const userQuestion = String(drafts[example.id] || '').trim();
+    if (!analyticsStarted.current.has(example.id)) {
+      analyticsStarted.current.add(example.id);
+      trackExerciseEvent('exercise_start', 'clarification');
+    }
     if (!userQuestion) {
       setFeedbackById((current) => ({
         ...current,
@@ -178,6 +185,7 @@ export function ClarifyPracticeInlineList({
   }
 
   function handleShowExpectedAnswer(example: ClarifyExample) {
+    trackExerciseEvent('hint_view', 'clarification');
     setFeedbackById((current) => ({
       ...current,
       [example.id]: {

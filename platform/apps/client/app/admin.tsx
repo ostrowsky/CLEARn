@@ -535,7 +535,7 @@ export default function AdminScreen() {
   }
 
   function uiCopySupportsFontSize(path: string[]) {
-    return path[0] !== 'buttons' && path[0] !== 'placeholders' && path[path.length - 1] !== 'route' && !path.some((part) => /alt/i.test(part));
+    return !(path[0] === 'analytics' && !['title', 'description'].includes(path[1])) && path[0] !== 'buttons' && path[0] !== 'placeholders' && path[path.length - 1] !== 'route' && !path.some((part) => /alt/i.test(part));
   }
 
   async function refreshAuthenticatedContent(nextStatus: AdminAuthStatus) {

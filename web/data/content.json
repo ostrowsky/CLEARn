@@ -3,6 +3,14 @@
     "appTitle": "CLEARn",
     "updatedAt": "2026-06-28T15:21:25.359Z",
     "ui": {
+      "analytics": {
+        "title": "Optional analytics",
+        "description": "With your permission, CLEARn uses Google Analytics to understand traffic sources, pages visited and exercise actions. We do not send your answers, recordings or transcripts. You can change your choice at any time.",
+        "accept": "Allow analytics",
+        "decline": "Decline analytics",
+        "settings": "Analytics settings",
+        "close": "Close"
+      },
       "brandTagline": "",
       "footerNote": "",
       "watermarkText": "Developed by ostrowskyi@gmail.com",

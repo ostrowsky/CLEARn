@@ -1,3 +1,4 @@
+import { trackExerciseEvent } from '../../lib/analytics';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View, Pressable, Text} from 'react-native';
 
@@ -143,6 +144,7 @@ export function QuestionFormationPractice({
     try {
       const nextExercise = await apiClient.generateQuestionFormation(section?.summary || section?.title || '', nextOffset);
       setExercise(nextExercise);
+      trackExerciseEvent('exercise_start', 'question_formation');
       setOffset(nextOffset);
       const startedAt = Date.now();
       roundTimerRef.current = setInterval(() => {
@@ -276,6 +278,7 @@ export function QuestionFormationPractice({
   }
 
   function handleShowHint(blank: QuestionFormationBlank) {
+    trackExerciseEvent('hint_view', 'question_formation');
     const blankId = getBlankKey(blank);
     const feedback = formatTemplate(hintFeedbackTemplate, { whWord: blank.whWord });
     setHintsByBlank((current) => ({ ...current, [blankId]: `${blank.whWord} ...?` }));
