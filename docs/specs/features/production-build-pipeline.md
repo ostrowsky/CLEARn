@@ -17,6 +17,7 @@ Production frontend and API builds run predictably on hosted CI/deploy platforms
 ## User-visible behavior
 
 - Vercel deploys the static Expo web client using Corepack, the declared pnpm version, and a frozen platform lockfile. Hosted frontend builds must use the same dependency graph as CI.
+- Vercel build metadata supplies the existing public API base URL for both Preview and Production so Git deployments do not require an untracked dashboard variable. This URL is public configuration, not a credential; build preflight still validates it and does not require API uptime. Ready ASK checks remain local when that API is unavailable.
 - The frontend install/build flow must not fail because hosted npm tooling cannot resolve workspace protocol dependencies directly.
 - The API host can build and start the Fastify API from the platform workspace.
 - Production API prebuild/environment verification remains active and fails deployment before runtime when required configuration is missing.
