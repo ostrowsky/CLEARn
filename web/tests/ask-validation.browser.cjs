@@ -82,6 +82,6 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
     console.log(JSON.stringify({ baseUrl, apiUnavailable: true, checkRequests: 0, results }, null, 2));
   } finally {
     if (browser) await browser.close();
-    if (server) await new Promise(resolve => server.close(resolve));
+    if (server) await new Promise(resolve => { server.close(resolve); server.closeAllConnections(); });
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });
