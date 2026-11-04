@@ -16,7 +16,7 @@ Production frontend and API builds run predictably on hosted CI/deploy platforms
 
 ## User-visible behavior
 
-- Vercel can deploy the static Expo web client from repository-tracked build metadata.
+- Vercel deploys the static Expo web client using Corepack, the declared pnpm version, and a frozen platform lockfile. Hosted frontend builds must use the same dependency graph as CI.
 - The frontend install/build flow must not fail because hosted npm tooling cannot resolve workspace protocol dependencies directly.
 - The API host can build and start the Fastify API from the platform workspace.
 - Production API prebuild/environment verification remains active and fails deployment before runtime when required configuration is missing.
@@ -67,6 +67,6 @@ Production frontend and API builds run predictably on hosted CI/deploy platforms
 
 ## Unknowns requiring confirmation
 
-- Whether Vercel should stay on the npm compatibility path or return to native pnpm install once host support is stable.
+- The npm compatibility script is retained for legacy/manual installs; Vercel uses native pnpm with a frozen lockfile to prevent dependency drift.
 - Expo 52 tooling uses tracked, idempotent import adapters for security-fixed image-size and decode-uri-component exports. Installations from npm and pnpm must apply these adapters and verify image decoding and URL parsing.
 - Whether deploy preflight should run live smoke checks against both API and static frontend before promotion.
