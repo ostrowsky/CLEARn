@@ -104,6 +104,9 @@
         "coachChatEmpty": "Add a work context and a learning goal, then start the chat.",
         "clarifyNoExamples": "Add audio clarify examples in admin to use this exercise.",
         "clarifyAudioMissing": "Upload an audio file for this example in admin.",
+        "answeringFallbackNotice": "Built-in practice feedback is being used, not a live AI assessment. Scores are illustrative.",
+        "speechApiUnavailable": "The speech service is unavailable. Press Start recording again to try browser recognition if supported, or type your answer. The previous recording was not transcribed.",
+        "speechBrowserRecognition": "Using your browser speech recognition. Audio may be processed by your browser provider. You can type instead.",
         "speechRecordingUnavailable": "Speech capture is not available in this browser yet. Type your question manually or use the public HTTPS preview.",
         "speechTranscribing": "Transcribing your question...",
         "speechTranscriptEmpty": "No speech was transcribed. Try again or edit the question manually.",
@@ -305,6 +308,8 @@
           "openAsset": "Open asset",
           "moveUp": "Move up",
           "moveDown": "Move down",
+          "downloadMediaBackup": "Download media backup",
+          "restoreMediaBackup": "Restore media backup",
           "downloadBackup": "Download full backup",
           "restoreBackup": "Restore full backup",
           "fetchTranscript": "Fetch transcript"

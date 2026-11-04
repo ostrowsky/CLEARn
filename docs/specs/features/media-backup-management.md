@@ -66,3 +66,6 @@ Admins can export and restore mutable uploaded media independently from editable
 - Maximum expected uploaded media volume per customer.
 - Whether media restore should replace, merge, or version existing media in production.
 - Whether large backup/restore jobs should move to asynchronous background processing before paid traffic.
+
+## API outage handling
+- Backup downloads and restores use the shared credentialed transport, bounded through body consumption, validate ZIP signatures/JSON contracts, catch network errors and show an explicit status. No overlapping auth polling or optimistic success before a successful download/restore. Failed media deletion is reported; the corresponding UI removal is aborted.

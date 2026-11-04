@@ -15,6 +15,7 @@ import type {
 import { apiBaseUrl } from './config';
 import { trackExerciseEvent } from './analytics';
 import { isAppContent, staticContent } from './staticContent';
+import { validApiResponse } from './apiResponse';
 
 let lastLoadedContent = staticContent;
 
@@ -37,7 +38,7 @@ type VideoTranscriptResponse = {
 
 function getRequestTimeoutMs(path: string) {
   if (path.includes('/api/speech/stt')) {
-    return 90000;
+    return 20000;
   }
 
   if (path.includes('/api/speech/tts')) {
@@ -56,6 +57,7 @@ function getRequestTimeoutMs(path: string) {
     return 30000;
   }
 
+  if (/^\/api\/(practice|answering|coach)\//.test(path)) return 15000;
   return 5000;
 }
 
@@ -71,61 +73,67 @@ function describeRequestException(error: unknown, path: string) {
   return error instanceof Error ? error.message : String(error);
 }
 
-async function sendDebugLog(payload: DebugPayload) {
-  try {
-    if (typeof console !== 'undefined' && typeof console.debug === 'function') {
-      console.debug('[CLEARn debug]', payload.scope, payload.event, payload.details || {});
-    }
-
-    await fetch(`${apiBaseUrl}/api/debug/log`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-  } catch {
-  }
+export class ApiRequestError extends Error {
+ constructor(message: string, public kind: 'http'|'contract'|'network'|'timeout', public status?: number) { super(message); this.name='ApiRequestError'; }
 }
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const method = init?.method || 'GET';
-  void sendDebugLog({ scope: 'api', event: 'request:start', details: { path, method } });
-  const headers = {
-    ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-    ...(init?.headers ?? {}),
-  };
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), getRequestTimeoutMs(path));
-  try {
-    const response = await fetch(`${apiBaseUrl}${path}`, {
-      headers,
-      credentials: 'include',
-      signal: controller.signal,
-      ...init,
-    });
-
-    let json: Record<string, unknown> = {};
-    try {
-      json = await response.json();
-    } catch {
-      json = {};
-    }
-
-    if (!response.ok) {
-      const message = (json.message as string) || (json.error as string) || response.statusText || String(response.status);
-      void sendDebugLog({ scope: 'api', event: 'request:error', details: { path, method, status: response.status, message } });
-      throw new Error(message);
-    }
-
-    void sendDebugLog({ scope: 'api', event: 'request:success', details: { path, method, status: response.status } });
-    return json as T;
-  } catch (error) {
-    const message = describeRequestException(error, path);
-    void sendDebugLog({ scope: 'api', event: 'request:exception', details: { path, method, message } });
-    throw new Error(message);
-  } finally {
-    clearTimeout(timeout);
+let apiUnavailableUntil=0;
+export function isApiUnavailable() { return Date.now()<apiUnavailableUntil; }
+export function practiceNotice(key: 'speechApiUnavailable'|'speechBrowserRecognition'|'answeringFallbackNotice') {
+ const current=(lastLoadedContent.meta?.ui as any)?.feedback?.[key];
+ const bundled=(staticContent.meta?.ui as any)?.feedback?.[key];
+ return String(current||bundled||'Speech is unavailable. Type your answer instead.');
+}
+async function sendDebugLog(payload: DebugPayload) {
+ if(process.env.NODE_ENV==='production'||process.env.EXPO_PUBLIC_ENABLE_API_DEBUG!=='1') return;
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),2000);
+ try {
+  console.debug('[CLEARn debug]',payload.scope,payload.event,payload.details||{});
+  const response=await fetch(apiBaseUrl+'/api/debug/log',{method:'POST',credentials:'include',signal:controller.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  await response.body?.cancel();
+ } catch { /* Best effort and never a dependency of user actions. */ } finally { clearTimeout(timeout); }
+}
+async function withResponse<T>(path: string,init: RequestInit|undefined,read: (r: Response)=>Promise<T>): Promise<T> {
+ const controller=new AbortController(),abort=()=>controller.abort();
+ if(init?.signal?.aborted) controller.abort();
+ init?.signal?.addEventListener('abort',abort,{once:true});
+ const timeout=setTimeout(abort,getRequestTimeoutMs(path));
+ const headers=new Headers(init?.headers);
+ if(init?.body&&!headers.has('Content-Type')) headers.set('Content-Type','application/json');
+ try {
+  const response=await fetch(apiBaseUrl+path,{...init,headers,credentials:'include',signal:controller.signal});
+  if(!response.ok){
+   let json: Record<string,unknown>={};
+   if(/json/i.test(response.headers.get('content-type')||'')){try{json=await response.json().then(value=>value&&typeof value==='object'?value:{});}catch(e){if(controller.signal.aborted)throw e;}}
+   else await response.body?.cancel();
+   const message=(json.message as string)||(json.error as string)||response.statusText||String(response.status);
+   throw new ApiRequestError(message,'http',response.status);
   }
+  const value=await read(response); apiUnavailableUntil=0; return value;
+ } catch(error){
+  const next=error instanceof ApiRequestError?error:new ApiRequestError(describeRequestException(error,path),controller.signal.aborted?'timeout':'network');
+  if(next.kind==='network'||next.kind==='timeout'||next.kind==='contract'||(next.status||0)>=500)apiUnavailableUntil=Date.now()+60000;
+  throw next;
+ } finally { clearTimeout(timeout); init?.signal?.removeEventListener('abort',abort); }
+}
+async function request<T>(path: string,init?: RequestInit): Promise<T> {
+ return withResponse(path,init,async response=>{
+  if(!/^application\/(?:[a-z0-9.+-]+\+)?json(?:;|$)/i.test(response.headers.get('content-type')||'')){
+   await response.body?.cancel();throw new ApiRequestError('The API returned non-JSON for '+path.split('?')[0],'contract');
+  }
+  let json: unknown;
+  try{json=await response.json();}catch(error){if(error instanceof Error&&error.name==='AbortError')throw error;throw new ApiRequestError('The API returned invalid JSON for '+path.split('?')[0],'contract');}
+  if(!validApiResponse(path,json))throw new ApiRequestError('The API response does not match '+path.split('?')[0],'contract');
+  return json as T;
+ });
+}
+export async function downloadAdminBackup(media=false){
+ return withResponse(media?'/api/admin/backup/media/export':'/api/admin/backup/export',undefined,async response=>{
+  if(!/^(application\/zip|application\/octet-stream)(?:;|$)/i.test(response.headers.get('content-type')||''))throw new ApiRequestError('The backup endpoint did not return a ZIP archive.','contract');
+  const blob=await response.blob(),magic=new Uint8Array(await blob.slice(0,4).arrayBuffer());
+  if(magic[0]!==0x50||magic[1]!==0x4b||!((magic[2]===3&&magic[3]===4)||(magic[2]===5&&magic[3]===6)))throw new ApiRequestError('Invalid ZIP archive.','contract');
+  const name=/filename="?([^";]+)"?/i.exec(response.headers.get('content-disposition')||'')?.[1]||'clearn-backup.zip';
+  return {blob,fileName:name.replace(/[\\/\r\n]/g,'_')};
+ });
 }
 
 async function requestAppContent(): Promise<AppContent> {
@@ -154,6 +162,7 @@ async function requestWithFallback<T>(path: string, init: RequestInit | undefine
   try {
     return await request<T>(path, init);
   } catch (error) {
+    if(error instanceof ApiRequestError&&error.kind==='http'&&[400,401,403,404,422].includes(error.status||0))throw error;
     const nextError = error instanceof Error ? error : new Error(String(error));
     void sendDebugLog({
       scope: 'api',
@@ -370,6 +379,7 @@ function buildAnsweringTurn(context: string, mode: AnsweringSessionMode, index: 
 }
 
 const fallbackAnsweringSessions = new Map<string, AnsweringSession>();
+export function isLocalAnsweringSession(id:string){return fallbackAnsweringSessions.has(id);}
 
 function buildAnsweringSession(context: string, mode: AnsweringSessionMode, error?: Error): AnsweringSession {
   const session: AnsweringSession = {
@@ -389,7 +399,8 @@ function buildAnsweringSession(context: string, mode: AnsweringSessionMode, erro
 }
 
 function respondAnsweringFallback(sessionId: string, reactionOptionId: string, userReply: string): AnsweringSession {
-  const session = fallbackAnsweringSessions.get(sessionId) || buildAnsweringSession('', 'mixed');
+  const session = fallbackAnsweringSessions.get(sessionId);
+  if(!session)throw new Error('The server session is unavailable. Please reconnect and retry.');
   const turn = session.currentTurn;
   if (!turn) {
     return session;
@@ -454,7 +465,8 @@ function buildCoachSession(context: string, goal: string, scenario: string, erro
 }
 
 function continueCoachFallback(sessionId: string, userReply: string): CoachChatSession {
-  const session = fallbackCoachSessions.get(sessionId) || buildCoachSession('', '', 'meeting');
+  const session = fallbackCoachSessions.get(sessionId);
+  if(!session)throw new Error('The server session is unavailable. Please reconnect and retry.');
   const nextMessages = [
     ...session.messages,
     { id: createId('msg'), role: 'user' as const, text: userReply, createdAt: new Date().toISOString() },
@@ -627,10 +639,10 @@ export const apiClient = {
     );
   },
   respondAnswering(sessionId: string, reactionOptionId: string, userReply: string, transcriptSource: 'text' | 'speech' = 'text'): Promise<AnsweringSession> {
-    return requestWithFallback(
+    if(fallbackAnsweringSessions.has(sessionId))return Promise.resolve(respondAnsweringFallback(sessionId,reactionOptionId,userReply));
+    return request<AnsweringSession>(
       '/api/answering/session/respond',
       { method: 'POST', body: JSON.stringify({ sessionId, reactionOptionId, userReply, transcriptSource }) },
-      () => respondAnsweringFallback(sessionId, reactionOptionId, userReply),
     );
   },
   startCoachChat(context: string, goal: string, scenario: string): Promise<CoachChatSession> {
@@ -641,14 +653,17 @@ export const apiClient = {
     );
   },
   continueCoachChat(sessionId: string, userReply: string): Promise<CoachChatSession> {
-    return requestWithFallback(
+    if(fallbackCoachSessions.has(sessionId))return Promise.resolve(continueCoachFallback(sessionId,userReply));
+    return request<CoachChatSession>(
       '/api/coach/session/respond',
       { method: 'POST', body: JSON.stringify({ sessionId, userReply }) },
-      () => continueCoachFallback(sessionId, userReply),
     );
   },
   speechToText(audioBase64: string, mimeType: string): Promise<SpeechToTextResult> {
-    return request('/api/speech/stt', { method: 'POST', body: JSON.stringify({ audioBase64, mimeType }) });
+    return request<SpeechToTextResult>('/api/speech/stt', { method: 'POST', body: JSON.stringify({ audioBase64, mimeType }) }).catch(error=>{
+      if(isApiUnavailable()||(error instanceof ApiRequestError&&[408,429].includes(error.status||0))){apiUnavailableUntil=Date.now()+60000;throw new ApiRequestError(practiceNotice('speechApiUnavailable'),error.kind||'network',error.status);}
+      throw error;
+    });
   },
   textToSpeech(text: string): Promise<TextToSpeechResult> {
     return request('/api/speech/tts', { method: 'POST', body: JSON.stringify({ text }) });

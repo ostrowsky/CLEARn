@@ -38,9 +38,9 @@ Assert-Match -Actual $backupServiceSource -Pattern 'async restoreMediaBackup\(' 
 Assert-True -Condition ($backupServiceSource -cnotmatch "spawn\(|pwsh|powershell\.exe|POWERSHELL_PATH") -Message 'API backup service must not depend on PowerShell on production Linux hosts.'
 Assert-Match -Actual $adminScreenSource -Pattern "AdminMediaBackupControls authenticated=\{authMode === 'authenticated'\}" -Message 'Admin media backup controls must mount from the authenticated admin screen, not from a generic page shell.'
 Assert-True -Condition ($screenSource -cnotmatch 'AdminMediaBackupControls') -Message 'Media backup controls must not be injected into every Screen instance.'
-Assert-Match -Actual $mediaBackupControlsSource -Pattern 'Download media backup' -Message 'Admin UI should expose a media backup download button.'
-Assert-Match -Actual $mediaBackupControlsSource -Pattern 'Restore media backup' -Message 'Admin UI should expose a media backup restore button.'
-Assert-Match -Actual $mediaBackupControlsSource -Pattern "credentials: 'include'" -Message 'Media backup actions must send admin session cookies.'
+Assert-Match -Actual $mediaBackupControlsSource -Pattern 'downloadMediaBackup' -Message 'Admin UI should expose a media backup download button.'
+Assert-Match -Actual $mediaBackupControlsSource -Pattern 'restoreMediaBackup' -Message 'Admin UI should expose a media backup restore button.'
+Assert-Match -Actual (Get-Content -LiteralPath (Join-Path $workspaceRoot 'platform\apps\client\src\lib\api.ts') -Raw) -Pattern "credentials:\s*'include'" -Message 'Media backup actions must send admin session cookies.'
 
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('clearn-backup-test-' + [Guid]::NewGuid().ToString('N'))
 $extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('clearn-backup-extract-' + [Guid]::NewGuid().ToString('N'))

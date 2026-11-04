@@ -76,13 +76,7 @@ async function api(method, path, payload) {
     options.body = toAsciiJson(payload);
   }
 
-  const response = await fetch(path, options);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || `Request failed: ${response.status}`);
-  }
-
-  return data;
+  return window.CLEARnRequest(path, options);
 }
 
 function getSections() {

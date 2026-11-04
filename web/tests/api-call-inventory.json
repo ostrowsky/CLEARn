@@ -1,0 +1,242 @@
+{
+  "methods": [
+    {
+      "name": "logDebug",
+      "method": "POST",
+      "endpoint": "/api/debug/log",
+      "policy": "best-effort",
+      "usage": "Internal debug logging"
+    },
+    {
+      "name": "getDebugLogs",
+      "method": "GET",
+      "endpoint": "/api/debug/logs",
+      "policy": "reject",
+      "usage": "Developer diagnostics"
+    },
+    {
+      "name": "getContent",
+      "method": "GET",
+      "endpoint": "/api/content",
+      "policy": "fallback",
+      "usage": "All learner pages / consent copy"
+    },
+    {
+      "name": "getAdminContent",
+      "method": "GET",
+      "endpoint": "/api/admin/content",
+      "policy": "reject",
+      "usage": "Admin editor"
+    },
+    {
+      "name": "getAdminAuthStatus",
+      "method": "GET",
+      "endpoint": "/api/admin/auth/status",
+      "policy": "reject",
+      "usage": "Admin login/status"
+    },
+    {
+      "name": "setupAdminAuth",
+      "method": "POST",
+      "endpoint": "/api/admin/auth/setup",
+      "policy": "reject",
+      "usage": "Admin initial setup"
+    },
+    {
+      "name": "loginAdmin",
+      "method": "POST",
+      "endpoint": "/api/admin/auth/login",
+      "policy": "reject",
+      "usage": "Admin sign in"
+    },
+    {
+      "name": "resetAdminPassword",
+      "method": "POST",
+      "endpoint": "/api/admin/auth/reset-password",
+      "policy": "reject",
+      "usage": "Admin password reset"
+    },
+    {
+      "name": "logoutAdmin",
+      "method": "POST",
+      "endpoint": "/api/admin/auth/logout",
+      "policy": "reject",
+      "usage": "Admin logout"
+    },
+    {
+      "name": "saveAdminContent",
+      "method": "POST",
+      "endpoint": "/api/admin/content",
+      "policy": "reject",
+      "usage": "Admin save"
+    },
+    {
+      "name": "uploadAdminMedia",
+      "method": "POST",
+      "endpoint": "/api/admin/media/upload",
+      "policy": "reject",
+      "usage": "Admin media upload"
+    },
+    {
+      "name": "deleteAdminMedia",
+      "method": "POST",
+      "endpoint": "/api/admin/media/delete",
+      "policy": "reject",
+      "usage": "Admin delete: reports failure and aborts corresponding UI removal"
+    },
+    {
+      "name": "getVideoTranscript",
+      "method": "GET",
+      "endpoint": "/api/media/youtube-transcript-segment",
+      "policy": "fallback",
+      "usage": "Video transcript / admin transcript"
+    },
+    {
+      "name": "getAdminBackupExportUrl",
+      "method": "GET",
+      "endpoint": "/api/admin/backup/export",
+      "policy": "url",
+      "usage": "Admin full backup (opens a new location)"
+    },
+    {
+      "name": "restoreAdminBackup",
+      "method": "POST",
+      "endpoint": "/api/admin/backup/import",
+      "policy": "reject",
+      "usage": "Admin full restore"
+    },
+    {
+      "name": "getAdminMediaBackupExportUrl",
+      "method": "GET",
+      "endpoint": "/api/admin/backup/media/export",
+      "policy": "url",
+      "usage": "Media backup URL helper (no direct callers)"
+    },
+    {
+      "name": "restoreAdminMediaBackup",
+      "method": "POST",
+      "endpoint": "/api/admin/backup/media/import",
+      "policy": "reject",
+      "usage": "Media restore helper (current UI uses direct fetch)"
+    },
+    {
+      "name": "generateClarify",
+      "method": "POST",
+      "endpoint": "/api/practice/clarify",
+      "policy": "reject",
+      "usage": "Generation helper (no current screen caller)"
+    },
+    {
+      "name": "checkClarify",
+      "method": "LOCAL",
+      "endpoint": null,
+      "policy": "local",
+      "usage": "Clarification Check answer"
+    },
+    {
+      "name": "askAfter",
+      "method": "POST",
+      "endpoint": "/api/practice/after-talk",
+      "policy": "fallback",
+      "usage": "Ask after the talk generation"
+    },
+    {
+      "name": "checkAskAfter",
+      "method": "LOCAL",
+      "endpoint": null,
+      "policy": "local",
+      "usage": "Review question"
+    },
+    {
+      "name": "generateQuestionFormation",
+      "method": "POST",
+      "endpoint": "/api/practice/question-formation",
+      "policy": "fallback",
+      "usage": "Question formation generation"
+    },
+    {
+      "name": "checkQuestionFormation",
+      "method": "LOCAL",
+      "endpoint": null,
+      "policy": "local",
+      "usage": "Question formation Check correctness"
+    },
+    {
+      "name": "startAnswering",
+      "method": "POST",
+      "endpoint": "/api/answering/session/start",
+      "policy": "fallback",
+      "usage": "ANSWER start"
+    },
+    {
+      "name": "respondAnswering",
+      "method": "POST",
+      "endpoint": "/api/answering/session/respond",
+      "policy": "session",
+      "usage": "ANSWER submit"
+    },
+    {
+      "name": "startCoachChat",
+      "method": "POST",
+      "endpoint": "/api/coach/session/start",
+      "policy": "fallback",
+      "usage": "Learning chat start"
+    },
+    {
+      "name": "continueCoachChat",
+      "method": "POST",
+      "endpoint": "/api/coach/session/respond",
+      "policy": "session",
+      "usage": "Learning chat send"
+    },
+    {
+      "name": "speechToText",
+      "method": "POST",
+      "endpoint": "/api/speech/stt",
+      "policy": "reject",
+      "usage": "Shared speech hook, legacy Clarification, ANSWER, admin upload STT"
+    },
+    {
+      "name": "textToSpeech",
+      "method": "POST",
+      "endpoint": "/api/speech/tts",
+      "policy": "reject",
+      "usage": "TTS helper (no current screen caller)"
+    }
+  ],
+  "clientFetchBoundaries": [
+    "platform/apps/client/src/lib/api.ts"
+  ],
+  "legacyFetchBoundaries": [
+    "web/static/api-request.js"
+  ],
+  "serverFetchBoundaries": [
+    "platform/apps/api/src/lib/networkDeadline.ts",
+    "platform/apps/api/src/routes/registerVideoTranscriptSegmentRoutes.ts"
+  ],
+  "extraBoundaries": [
+    {
+      "file": "platform/apps/client/src/components/AdminMediaBackupControls.tsx",
+      "operations": [
+        "GET /api/admin/auth/status",
+        "GET /api/admin/backup/media/export",
+        "POST /api/admin/backup/media/import"
+      ],
+      "notes": "Uses shared authenticated bounded JSON/ZIP transport. Auth is supplied by the parent; no direct polling/fetch."
+    },
+    {
+      "file": "web/app/Services.ps1",
+      "operations": [
+        "OpenAI chat/completions"
+      ],
+      "notes": "Legacy PowerShell app; not the deployed Expo site."
+    },
+    {
+      "file": "platform/apps/api/src/routes/registerRoutes.ts",
+      "operations": [
+        "Redis-backed answering/coach sessions in production"
+      ],
+      "notes": "Configured provider strings and HTTP health do not prove Redis or model execution."
+    }
+  ]
+}

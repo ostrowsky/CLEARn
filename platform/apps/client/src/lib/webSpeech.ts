@@ -224,3 +224,7 @@ export async function prepareSpeechPayloadForStt(blob: Blob, mimeType: string): 
     }
   }
 }
+
+export function recognitionTranscript(event: {results?: ArrayLike<ArrayLike<{transcript?: string}> & {isFinal?: boolean}>}) {
+ return Array.from(event.results||[]).filter(result=>result.isFinal!==false).map(result=>String(result[0]?.transcript||'').trim()).filter(Boolean).join(' ');
+}

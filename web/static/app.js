@@ -199,11 +199,7 @@ async function loadContent() {
   render();
 
   try {
-    const response = await fetch('/api/content');
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || String(response.status));
-    }
+    const data = await window.CLEARnRequest('/api/content');
 
     state.content = data;
     ensureAskAfterDefaults();
@@ -217,18 +213,7 @@ async function loadContent() {
 }
 
 async function apiPost(path, payload = {}) {
-  const response = await fetch(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || String(response.status));
-  }
-
-  return data;
+  return window.CLEARnRequest(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
 }
 
 function appChrome(content) {

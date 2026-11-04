@@ -1,3 +1,4 @@
+import {fetchWithDeadline,withNetworkBudget} from '../lib/networkDeadline';
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import path from 'node:path';
@@ -300,7 +301,7 @@ function parseXmlTranscript(payload: string): VideoTranscriptSegment[] {
 async function fetchTranscriptTrack(trackUrl: string) {
   const transcriptUrl = new URL(decodeHtmlEntities(trackUrl));
   transcriptUrl.searchParams.set('fmt', 'json3');
-  const transcriptResponse = await fetch(transcriptUrl);
+  const transcriptResponse = await fetchWithDeadline(transcriptUrl);
   if (!transcriptResponse.ok) {
     return [];
   }
@@ -323,7 +324,7 @@ async function fetchTimedTextTranscript(videoId: string) {
     transcriptUrl.searchParams.set('v', videoId);
     transcriptUrl.searchParams.set('lang', language);
     transcriptUrl.searchParams.set('fmt', 'json3');
-    const response = await fetch(transcriptUrl);
+    const response = await fetchWithDeadline(transcriptUrl);
     if (!response.ok) {
       continue;
     }
@@ -350,7 +351,7 @@ async function fetchTimedTextTranscript(videoId: string) {
 }
 
 async function fetchInnertubePlayerResponse(videoId: string) {
-  const response = await fetch('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
+  const response = await fetchWithDeadline('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -442,7 +443,7 @@ async function fetchYouTubeTranscript(url: string): Promise<VideoTranscriptResul
   }
 
   const watchUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(info.id)}`;
-  const watchResponse = await fetch(watchUrl, {
+  const watchResponse = await fetchWithDeadline(watchUrl, {
     headers: {
       'User-Agent': 'Mozilla/5.0 CLEARn transcript fetcher',
       'Accept-Language': 'en-US,en;q=0.9',
@@ -672,7 +673,7 @@ export async function registerRoutes(app: FastifyInstance) {
     }
 
     try {
-      const result = await fetchYouTubeTranscript(url);
+      const result = await withNetworkBudget(()=>fetchYouTubeTranscript(url),25000);
       videoTranscriptCache.set(url, result);
       if (videoTranscriptCache.size > 100) {
         const firstKey = videoTranscriptCache.keys().next().value;

@@ -24,7 +24,7 @@ foreach ($expected in @(
     Assert-Match -Actual $apiSource -Pattern $expected -Message "Client API fallback wiring is missing '$expected'."
 }
 
-foreach ($method in @('askAfter', 'generateQuestionFormation', 'startAnswering', 'respondAnswering', 'startCoachChat', 'continueCoachChat')) {
+foreach ($method in @('askAfter', 'generateQuestionFormation', 'startAnswering', 'startCoachChat')) {
     Assert-Match -Actual $apiSource -Pattern "$method[\s\S]*?requestWithFallback" -Message "$method should use requestWithFallback so learner screens stay usable when the API is unavailable."
 }
 
@@ -39,7 +39,7 @@ Assert-Match -Actual $apiSource -Pattern 'getVideoTranscript\(url: string\): Pro
 Assert-Match -Actual $apiSource -Pattern 'Transcript is temporarily unavailable' -Message 'Video transcript fallback should use a learner-safe message instead of raw Failed to fetch.'
 Assert-Match -Actual $apiSource -Pattern 'getRequestTimeoutMs' -Message 'Practice fallback requests need bounded timeouts so screens do not hang on loading states.'
 Assert-Match -Actual $apiSource -Pattern 'controller\.abort\(\)' -Message 'Client API should abort stalled requests and allow fallbacks to render.'
-Assert-Match -Actual $apiSource -Pattern "path\.includes\('/api/speech/stt'\)[\s\S]*?return 15000;" -Message 'STT calls should keep a short interactive timeout.'
+Assert-Match -Actual $apiSource -Pattern "path\.includes\('/api/speech/stt'\)[\s\S]*?return 20000;" -Message 'STT calls should keep a short interactive timeout.'
 Assert-Match -Actual $apiSource -Pattern "path\.includes\('/api/speech/tts'\)[\s\S]*?return 15000;" -Message 'TTS calls should keep a short interactive timeout.'
 Assert-True -Condition ($apiSource -notmatch "path\.includes\('/api/speech/'\) \|\|") -Message 'Generic speech routes should not inherit the long admin/media timeout.'
 
@@ -72,3 +72,6 @@ Assert-True -Condition ($chatSource -notmatch 'session && !session\.completed') 
 Assert-True -Condition ($chatSource -notmatch '\{session\.completed') -Message 'Learning chat initial render should not crash before start.'
 
 Write-Host 'Platform practice fallback tests passed.'
+
+Assert-Match -Actual $apiSource -Pattern 'fallbackAnsweringSessions.has\(sessionId\)' -Message 'Only offline-created answering sessions may continue in the local map.'
+Assert-Match -Actual $apiSource -Pattern 'fallbackCoachSessions.has\(sessionId\)' -Message 'Server chat sessions must not silently reset into offline sessions.'

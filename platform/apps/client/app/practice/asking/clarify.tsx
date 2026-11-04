@@ -1,3 +1,5 @@
+import {isApiUnavailable,practiceNotice} from '../../../src/lib/api';
+import {recognitionTranscript} from '../../../src/lib/webSpeech';
 import { trackExerciseEvent } from '../../../src/lib/analytics';
 import { createElement, useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
@@ -341,7 +343,7 @@ export default function ClarifyPracticeScreen() {
   const mediaRecorderSupported = supportsBrowserRecording();
   const preferredRecorderMimeType = getPreferredRecorderMimeType();
   const mediaRecorderSttCompatible = !preferredRecorderMimeType || supportsDirectSttMimeType(preferredRecorderMimeType);
-  const shouldPreferSpeechRecognition = speechRecognitionSupported && mediaRecorderSupported && !mediaRecorderSttCompatible;
+  const shouldPreferSpeechRecognition = speechRecognitionSupported && (isApiUnavailable() || (mediaRecorderSupported && !mediaRecorderSttCompatible));
   const recordingSupported = mediaRecorderSupported || speechRecognitionSupported;
 
   const noExamplesText = getNestedString(ui, ['feedback', 'clarifyNoExamples']);
@@ -403,7 +405,8 @@ export default function ClarifyPracticeScreen() {
 
       const recorder = recorderRef.current;
       if (recorder && recorder.state !== 'inactive') {
-        recorder.stop();
+        recorder.onstop = null; recorder.ondataavailable = null; recorder.onerror = null;
+      recorder.stop();
       }
       recorderRef.current = null;
 
@@ -606,13 +609,13 @@ export default function ClarifyPracticeScreen() {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
         recognitionRef.current = recognition;
-        setSpeechStatus(example.id, '');
+        setSpeechStatus(example.id,practiceNotice('speechBrowserRecognition'));
         setRecordingExampleId(example.id);
         setTranscribingExampleId('');
         logAction('recording:started', { exampleId: example.id, mode: 'speech-recognition' });
 
         recognition.onresult = (event) => {
-          const transcript = String(event.results?.[0]?.[0]?.transcript || '').trim();
+          const transcript = recognitionTranscript(event);
           if (!transcript) {
             setSpeechStatus(example.id, emptyTranscriptText);
             logAction('transcription:empty-result', { exampleId: example.id, mode: 'speech-recognition' });
@@ -624,6 +627,11 @@ export default function ClarifyPracticeScreen() {
           logAction('transcription:success', { exampleId: example.id, mode: 'speech-recognition', transcriptLength: transcript.length });
         };
         recognition.onerror = (event) => {
+          clearRecordingTimer();
+          setRecordingExampleId(''); setTranscribingExampleId('');
+          recognitionRef.current = null;
+          try { recognition.abort?.(); } catch {}
+
           const reason = String(event?.error || event?.message || '').trim();
           const message = reason ? `Speech recognition error: ${reason}` : recordingUnavailableText;
           setSpeechStatus(example.id, message);

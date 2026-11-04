@@ -79,3 +79,8 @@ Learners practise workplace English through structured exercises with text input
 
 - Whether learner attempts and scores must be persisted for paid users.
 - Whether teacher/admin review of learner transcripts is required.
+
+## Session and speech outage policy
+- Offline-created sessions continue locally. Existing server sessions stop with a recoverable error when API connectivity fails; preserve the current context, history and typed draft rather than inventing a new session.
+- Local heuristic ANSWER scores are explicitly labelled as illustrative, not live AI assessment.
+- Speech recognition may switch to the browser only on a new explicit recording gesture, where supported. API unavailability is remembered briefly; otherwise retain typed input and tell the learner to repeat/type. Browser recognition errors release the controls and continuous results include all final segments. Leaving the page must not upload a recording from an unmount cleanup.

@@ -134,7 +134,7 @@ function Invoke-OptionalLlmJson {
         }
 
         $headers = @{ Authorization = "Bearer $($env:CLEARN_LLM_API_KEY)"; 'Content-Type' = 'application/json' }
-        $response = Invoke-RestMethod -Method Post -Uri $endpoint -Headers $headers -Body ($body | ConvertTo-Json -Depth 8)
+        $response = Invoke-RestMethod -TimeoutSec 15 -Method Post -Uri $endpoint -Headers $headers -Body ($body | ConvertTo-Json -Depth 8)
         $content = $response.choices[0].message.content
         if ([string]::IsNullOrWhiteSpace($content)) {
             return [PSCustomObject]@{ success = $false; payload = $null; error = 'The provider returned an empty response body.'; source = 'remote-error' }

@@ -1,3 +1,4 @@
+import {fetchWithDeadline} from '../../lib/networkDeadline';
 ﻿import { env } from '../../config/env';
 import type { SpeechProvider } from '../types';
 
@@ -42,7 +43,7 @@ export const openAiSpeechProvider: SpeechProvider = {
       formData.append('language', input.language);
     }
 
-    const response = await fetch(`${env.OPENAI_BASE_URL}/audio/transcriptions`, {
+    const response = await fetchWithDeadline(`${env.OPENAI_BASE_URL}/audio/transcriptions`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}` },
       body: formData,
@@ -60,7 +61,7 @@ export const openAiSpeechProvider: SpeechProvider = {
       throw new Error('OPENAI_API_KEY is not configured.');
     }
 
-    const response = await fetch(`${env.OPENAI_BASE_URL}/audio/speech`, {
+    const response = await fetchWithDeadline(`${env.OPENAI_BASE_URL}/audio/speech`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${env.OPENAI_API_KEY}`,

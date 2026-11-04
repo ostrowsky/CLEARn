@@ -1,3 +1,4 @@
+import {fetchWithDeadline} from '../../lib/networkDeadline';
 import type { AskAfterBrief, ClarifyExercise, CoachChatTurn, QuestionFormationExercise } from '@clearn/domain';
 import { env } from '../../config/env';
 import type { AnsweringEvaluationDraft, AnsweringQuestionDraft, ChatGenerationInput, ChatProvider } from '../types';
@@ -7,7 +8,7 @@ async function callOpenAi<T>(input: ChatGenerationInput): Promise<T> {
     throw new Error('OPENAI_API_KEY is not configured.');
   }
 
-  const response = await fetch(`${env.OPENAI_BASE_URL}/chat/completions`, {
+  const response = await fetchWithDeadline(`${env.OPENAI_BASE_URL}/chat/completions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${env.OPENAI_API_KEY}`,

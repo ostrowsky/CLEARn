@@ -67,6 +67,12 @@ The app can be hosted, tested, upgraded, backed up, and rolled back without disc
 - Content and admin auth are local files in the MVP and should be moved to durable storage before paid traffic.
 - The Fastify API, local STT, backups, and mutable media are stateful runtime concerns and should not be deployed as a plain static Vercel frontend.
 
+## Production availability evidence
+
+- Localhost CI validates code, not uptime of clearn-api.onrender.com.
+- The separate production-api-smoke check must report API health/content/auth/CORS failures independently of successful static Vercel deployment.
+- No provider functionality claim follows from a health response naming a configured provider. See api-availability.md.
+
 ## Verification mapping
 
 - `.github/workflows/ci.yml`
