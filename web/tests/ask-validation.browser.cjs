@@ -15,7 +15,7 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
 
 (async () => {
   fs.mkdirSync(output, { recursive: true });
-  const dist = path.join(root, 'platform/apps/client/dist');
+  const dist = process.env.ASK_BROWSER_DIST || path.join(root, 'platform/apps/client/dist');
   const server = target ? null : http.createServer((req, res) => {
     if (req.url.startsWith('/_vercel/')) { res.writeHead(204).end(); return; }
     let file = path.resolve(dist, '.' + decodeURIComponent(req.url.split('?')[0]));

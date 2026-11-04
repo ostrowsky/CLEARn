@@ -12,6 +12,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const platform = path.join(root, 'platform');
 const pkg = JSON.parse(await fs.readFile(path.join(platform, 'package.json'), 'utf8'));
 const rootPkg = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
+const clientPkg = JSON.parse(await fs.readFile(path.join(platform, 'apps/client/package.json'), 'utf8'));
+assert.ok(clientPkg.dependencies['query-string'], 'Expo Router URL parsing must not depend on an undeclared transitive query-string dependency');
+assert.ok(clientPkg.dependencies['expo-linking'], 'Expo linking must be declared for both package managers');
 assert.equal(rootPkg.engines.node, '22.x');
 assert.equal(pkg.engines.node, '22.x');
 await prepareToolingCompat(platform);

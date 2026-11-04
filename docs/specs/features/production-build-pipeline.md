@@ -31,7 +31,7 @@ Production frontend and API builds run predictably on hosted CI/deploy platforms
 - Workspace package dependencies must match lockfile expectations.
 - npm (Vercel) and pnpm (CI/API) must apply the same security resolutions. Keep overrides and the lockfile aligned, preserve compatible dependency major versions where possible, and verify any required API changes through the full test suite.
 - Temporary Vercel npm compatibility changes must not corrupt pnpm workspace dependency contracts.
-- Client package dependencies needed by web export, including Expo linking support, must be present in package metadata and lockfile.
+- Client package dependencies needed by web export, including Expo linking support and query-string used by Expo Router, must be declared directly in client package metadata and the lockfile. The build must not rely on React Navigation to install an undeclared transitive dependency.
 - Architecture tests must encode expected deploy command shape.
 - Required production API environment verification must not be bypassed.
 - Stateful API runtime concerns must remain separate from the static frontend deployment.
