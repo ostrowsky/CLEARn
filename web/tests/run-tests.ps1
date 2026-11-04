@@ -12,6 +12,7 @@ $tests = @(
     (Join-Path $PSScriptRoot 'PlatformAdmin.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformAdmin.Api.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformClarify.Tests.ps1'),
+    (Join-Path $PSScriptRoot 'PlatformClarifyFallback.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformExerciseTemplates.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformPracticeFallback.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformPractice.ApiSmoke.Tests.ps1'),

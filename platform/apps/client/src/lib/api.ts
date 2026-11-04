@@ -1,3 +1,4 @@
+import { checkClarifyAnswer } from '@clearn/domain';
 import type {
   AnsweringSession,
   AnsweringSessionMode,
@@ -14,6 +15,8 @@ import type {
 import { apiBaseUrl } from './config';
 import { checkQuestionFormationFallback } from './questionFormationFallback';
 import { isAppContent, staticContent } from './staticContent';
+
+let lastLoadedContent = staticContent;
 
 type AnsweringMode = Exclude<AnsweringSessionMode, 'mixed'>;
 
@@ -129,6 +132,7 @@ async function requestAppContent(): Promise<AppContent> {
   try {
     const content = await request<unknown>('/api/content');
     if (isAppContent(content)) {
+      lastLoadedContent = content;
       return content;
     }
 
@@ -142,7 +146,7 @@ async function requestAppContent(): Promise<AppContent> {
         sectionCount: staticContent.sections.length,
       },
     });
-    return staticContent;
+    return lastLoadedContent;
   }
 }
 
@@ -569,7 +573,15 @@ export const apiClient = {
     return request('/api/practice/clarify', { method: 'POST', body: JSON.stringify({ context, offset }) });
   },
   checkClarify(payload: { userQuestion: string; expectedQuestion: string; target?: string; focus?: string; acceptedAnswers?: string[] }) {
-    return request<{ accepted: boolean; feedback: string }>('/api/practice/clarify/check', { method: 'POST', body: JSON.stringify(payload) });
+    return requestWithFallback(
+      '/api/practice/clarify/check',
+      { method: 'POST', body: JSON.stringify(payload) },
+      () => {
+        const practice = lastLoadedContent.meta?.practice as Record<string, unknown> | undefined;
+        const feedback = practice?.clarifyFeedback;
+        return checkClarifyAnswer(payload, feedback && typeof feedback === 'object' ? feedback as Record<string, unknown> : {});
+      },
+    );
   },
   askAfter(context: string, offset = 0): Promise<AskAfterBrief> {
     return requestWithFallback(

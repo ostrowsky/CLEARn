@@ -46,6 +46,9 @@ Learners practise workplace English through structured exercises with text input
 
 ## Edge cases and failure policy
 
+- Clarification Check answer must remain usable when the API returns HTTP 503, cannot be reached, or times out. The browser and API must share the same deterministic checker, including configured alternatives, contraction/punctuation normalization, and rejection of meaningless input.
+- Browser clarification feedback must use the latest loaded content configuration, or bundled content if the API is unavailable. Infrastructure failure must never cause an answer to be accepted automatically.
+
 - If live AI generation fails, deterministic fallback content may be used but must stay natural and context-aware.
 - If STT fails, the learner must keep typed input as a fallback.
 - If validation cannot confidently accept an answer, it should explain what to improve instead of marking it correct.
@@ -58,6 +61,8 @@ Learners practise workplace English through structured exercises with text input
 - Video-library sources for ask-after-talk are regular `video` materials on `practice-ask-after` blocks, with transcript text in material metadata where available.
 
 ## Verification mapping
+
+- `web/tests/PlatformClarifyFallback.Tests.ps1` (HTTP 503, network errors, timeouts, online responses, and server/browser parity).
 
 - `web/tests/PlatformQuestionFormation.Tests.ps1`
 - `web/tests/PlatformQuestionFormation.Api.Tests.ps1`
