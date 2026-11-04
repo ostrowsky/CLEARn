@@ -15,10 +15,10 @@ This split is intentional:
 Project settings:
 
 - Framework preset: `Other`.
-- Install command: `cd platform && npm install --legacy-peer-deps`.
-- Build command: `cd platform && npm run --workspace @clearn/client build`.
+- Install command: `cd platform && corepack pnpm install --frozen-lockfile`.
+- Build command: `cd platform && corepack pnpm --filter @clearn/client build`.
 - Output directory: `platform/apps/client/dist`.
-- Required environment variable: `EXPO_PUBLIC_API_BASE_URL=https://api.clearn.example`.
+- Public build setting: `vercel.json` supplies `EXPO_PUBLIC_API_BASE_URL=https://clearn-api.onrender.com` to Preview and Production builds. Update that tracked setting when moving the API to another host. It contains no credentials.
 
 The Vercel build intentionally fails if `EXPO_PUBLIC_API_BASE_URL` is missing or points back to the static frontend host. Without the API host, admin setup returns `405`, AI generation/STT/TTS cannot run, and upload/backup endpoints are unavailable.
 

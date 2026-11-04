@@ -1,12 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd platform && node ./scripts/prepare-vercel-npm-install.mjs && npm install --legacy-peer-deps",
-  "buildCommand": "cd platform && npm run --workspace @clearn/client build",
+  "installCommand": "cd platform && corepack pnpm install --frozen-lockfile",
+  "buildCommand": "cd platform && corepack pnpm --filter @clearn/client build",
   "outputDirectory": "platform/apps/client/dist",
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "build": {
+    "env": {
+      "EXPO_PUBLIC_API_BASE_URL": "https://clearn-api.onrender.com"
+    }
+  }
 }

@@ -3,7 +3,7 @@
   "private": true,
   "packageManager": "pnpm@10.8.0",
   "engines": {
-    "node": "20.x"
+    "node": "22.x"
   },
   "workspaces": [
     "apps/*",
@@ -14,20 +14,34 @@
     "dev:client": "npm run --workspace @clearn/client start",
     "build": "npm run --workspaces --if-present build",
     "lint": "npm run --workspaces --if-present lint",
-    "test": "npm run --workspaces --if-present test"
+    "test": "npm run --workspaces --if-present test",
+    "postinstall": "node ./scripts/prepare-tooling-compat.mjs"
   },
   "pnpm": {
     "overrides": {
       "@babel/plugin-transform-modules-systemjs": ">=7.29.4",
-      "@xmldom/xmldom": ">=0.8.13",
-      "fast-uri": ">=3.1.2",
-      "fastify": ">=5.8.5",
+      "@xmldom/xmldom": "^0.9.12",
+      "fast-uri": "^3.1.7",
+      "fastify": "^5.12.2",
       "form-data": ">=3.0.5",
-      "postcss": ">=8.5.10",
-      "shell-quote": ">=1.8.4",
-      "tar": ">=7.5.11",
-      "undici": "6.27.0",
-      "ws": ">=8.21.0"
+      "postcss": "^8.5.18",
+      "shell-quote": "^1.11.0",
+      "tar": "^7.5.21",
+      "undici": "^6.29.1",
+      "ws": ">=8.21.0",
+      "find-my-way": "^9.7.0",
+      "brace-expansion@^1.0.0": "^1.1.20",
+      "brace-expansion@^2.0.0": "^2.1.6",
+      "js-yaml@^3.0.0": "^3.15.2",
+      "js-yaml@^4.0.0": "^4.3.2",
+      "nanoid@^3.0.0": "^3.3.18",
+      "browserslist": "^4.28.7",
+      "image-size": "^2.0.3",
+      "node-forge": "^1.4.1",
+      "source-map-js": "^1.2.2",
+      "compression": "^1.8.2",
+      "zod": "^4.6.6",
+      "decode-uri-component": "^0.5.1"
     }
   }
 }

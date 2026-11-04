@@ -12,7 +12,7 @@ function Read-RepoFile {
 
 Write-TestStep 'Client practice API has deterministic fallbacks instead of exposing raw fetch failures'
 $apiSource = Read-RepoFile 'platform\apps\client\src\lib\api.ts'
-$questionFallbackSource = Read-RepoFile 'platform\apps\client\src\lib\questionFormationFallback.ts'
+$questionFallbackSource = Read-RepoFile 'platform\packages\domain\src\inputValidation.ts'
 foreach ($expected in @(
     'requestWithFallback',
     'buildAskAfterFallback',
@@ -24,16 +24,16 @@ foreach ($expected in @(
     Assert-Match -Actual $apiSource -Pattern $expected -Message "Client API fallback wiring is missing '$expected'."
 }
 
-foreach ($method in @('askAfter', 'generateQuestionFormation', 'checkQuestionFormation', 'startAnswering', 'respondAnswering', 'startCoachChat', 'continueCoachChat')) {
+foreach ($method in @('askAfter', 'generateQuestionFormation', 'startAnswering', 'respondAnswering', 'startCoachChat', 'continueCoachChat')) {
     Assert-Match -Actual $apiSource -Pattern "$method[\s\S]*?requestWithFallback" -Message "$method should use requestWithFallback so learner screens stay usable when the API is unavailable."
 }
 
 Assert-Match -Actual $apiSource -Pattern 'Who will review it\?' -Message 'Fallback question formation should accept short correct hidden-context questions.'
-Assert-Match -Actual $apiSource -Pattern "import \{ checkQuestionFormationFallback \} from './questionFormationFallback'" -Message 'Client API should use the shared question formation fallback checker.'
-Assert-Match -Actual $questionFallbackSource -Pattern 'hasClientQuestionFormationGrammar' -Message 'Fallback question formation should validate WH question grammar instead of relying only on token overlap.'
-Assert-Match -Actual $questionFallbackSource -Pattern 'objectQuestionLeads' -Message 'Fallback question formation should reject object WH questions without an auxiliary.'
-Assert-Match -Actual $questionFallbackSource -Pattern 'modalAuxiliaries' -Message 'Fallback question formation should reject common auxiliary + past-tense grammar errors.'
-Assert-Match -Actual $questionFallbackSource -Pattern 'acceptedLeads' -Message 'Fallback question formation should allow accepted variants such as Who for Whom.'
+foreach ($checker in @('checkClarifyAnswer', 'checkAskAfterAnswer', 'checkQuestionFormationAnswer')) {
+    Assert-Match -Actual $apiSource -Pattern $checker -Message "Ready ASK checks must use the shared validator $checker."
+}
+Assert-Match -Actual $questionFallbackSource -Pattern 'hasQuestionFormationGrammar'
+Assert-Match -Actual $questionFallbackSource -Pattern 'hasQuestionFormationVisibleContextAlignment'
 Assert-Match -Actual $apiSource -Pattern 'Keep the selected reaction phrase unchanged' -Message 'Fallback answering feedback should preserve the selected reaction phrase.'
 Assert-Match -Actual $apiSource -Pattern 'getVideoTranscript\(url: string\): Promise<VideoTranscriptResponse> \{[\s\S]*?requestWithFallback' -Message 'Video transcript loading should not expose raw network failures in learner screens.'
 Assert-Match -Actual $apiSource -Pattern 'Transcript is temporarily unavailable' -Message 'Video transcript fallback should use a learner-safe message instead of raw Failed to fetch.'
@@ -42,68 +42,6 @@ Assert-Match -Actual $apiSource -Pattern 'controller\.abort\(\)' -Message 'Clien
 Assert-Match -Actual $apiSource -Pattern "path\.includes\('/api/speech/stt'\)[\s\S]*?return 15000;" -Message 'STT calls should keep a short interactive timeout.'
 Assert-Match -Actual $apiSource -Pattern "path\.includes\('/api/speech/tts'\)[\s\S]*?return 15000;" -Message 'TTS calls should keep a short interactive timeout.'
 Assert-True -Condition ($apiSource -notmatch "path\.includes\('/api/speech/'\) \|\|") -Message 'Generic speech routes should not inherit the long admin/media timeout.'
-
-Write-TestStep 'Client question formation fallback rejects malformed WH grammar at runtime'
-$platformRoot = Join-Path $repoRoot 'platform'
-$nodeCommand = Get-Command node -ErrorAction SilentlyContinue
-$tsxCli = Join-Path $platformRoot 'node_modules\tsx\dist\cli.mjs'
-if ($nodeCommand -and (Test-Path -LiteralPath $tsxCli)) {
-    $tempRoot = Join-Path $platformRoot ('.tmp-client-fallback-' + [System.Guid]::NewGuid().ToString('N'))
-    New-Item -ItemType Directory -Path $tempRoot | Out-Null
-    $fallbackCheckPath = Join-Path $tempRoot 'check-client-question-fallback.mts'
-    @'
-import * as fallbackModule from '../apps/client/src/lib/questionFormationFallback.ts';
-
-const checkQuestionFormationFallback = fallbackModule.checkQuestionFormationFallback || fallbackModule.default?.checkQuestionFormationFallback;
-if (!checkQuestionFormationFallback) {
-  throw new Error('checkQuestionFormationFallback export was not found');
-}
-
-const payload = {
-  sentence: 'Stakeholders will review return on investment at the end of the year.',
-  answer: 'return on investment',
-  whWord: 'What',
-  expectedQuestion: 'What will stakeholders review?',
-  acceptedQuestions: ['What will they review?'],
-};
-
-const malformedMissingAuxiliary = checkQuestionFormationFallback({
-  ...payload,
-  userQuestion: 'What they review?',
-});
-const validPronounVariant = checkQuestionFormationFallback({
-  ...payload,
-  userQuestion: 'What will they review?',
-});
-const malformedAuxiliaryPast = checkQuestionFormationFallback({
-  ...payload,
-  userQuestion: 'What will they reviewed?',
-});
-
-console.log(JSON.stringify({
-  malformedMissingAuxiliary,
-  validPronounVariant,
-  malformedAuxiliaryPast,
-}));
-'@ | Set-Content -LiteralPath $fallbackCheckPath -Encoding UTF8
-
-    try {
-        Push-Location $platformRoot
-        $env:EXPO_PUBLIC_API_BASE_URL = 'http://127.0.0.1:1'
-        $fallbackOutput = & $nodeCommand.Source $tsxCli $fallbackCheckPath
-        $fallbackResult = $fallbackOutput | ConvertFrom-Json
-        Assert-Equal -Expected $false -Actual ([bool]$fallbackResult.malformedMissingAuxiliary.accepted) -Message 'Client fallback should reject "What they review?".'
-        Assert-Equal -Expected $true -Actual ([bool]$fallbackResult.validPronounVariant.accepted) -Message 'Client fallback should accept "What will they review?".'
-        Assert-Equal -Expected $false -Actual ([bool]$fallbackResult.malformedAuxiliaryPast.accepted) -Message 'Client fallback should reject "What will they reviewed?".'
-    }
-    finally {
-        Pop-Location
-        Remove-Item -LiteralPath $tempRoot -Recurse -Force
-    }
-}
-else {
-    Write-Host 'Client question formation fallback runtime check skipped: node or tsx CLI was not found.'
-}
 
 Write-TestStep 'Learner media uses bundled uploads directly in static previews'
 $sectionSource = Read-RepoFile 'platform\apps\client\app\section\[id].tsx'

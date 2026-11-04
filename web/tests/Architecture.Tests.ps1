@@ -127,8 +127,8 @@ foreach ($pattern in @(
 }
 foreach ($pattern in @(
     '"outputDirectory": "platform/apps/client/dist"',
-    '"buildCommand": "cd platform && npm run --workspace @clearn/client build"',
-    '"installCommand": "cd platform && node ./scripts/prepare-vercel-npm-install.mjs && npm install --legacy-peer-deps"',
+    '"buildCommand": "cd platform && corepack pnpm --filter @clearn/client build"',
+    '"installCommand": "cd platform && corepack pnpm install --frozen-lockfile"',
     '"destination": "/index.html"'
 )) {
     Assert-Match -Actual $vercelConfig -Pattern $pattern

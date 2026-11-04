@@ -1,3 +1,4 @@
+import { checkClarifyAnswer, checkAskAfterAnswer, checkQuestionFormationAnswer } from '@clearn/domain';
 import { env } from '../../config/env';
 import type {
   AskAfterBrief,
@@ -10,16 +11,9 @@ import type { ContentService } from '../content/content.service';
 import { withChatProvider } from '../../providers/providerRegistry';
 import { detectPracticeProfileKey, inferConversationContext } from '../shared/contextSummary';
 import {
-  containsAnswerLeak,
-  getTokenOverlapRatio,
-  hasQuestionFormationDidVerbReference,
   hasQuestionFormationGrammar,
-  hasQuestionFormationPronounReference,
-  hasQuestionFormationVisibleContextAlignment,
-  looksMeaningfulUserInput,
   normalizeLooseText,
   normalizeWhitespace,
-  startsWithWhWord,
 } from '../shared/inputValidation';
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -52,51 +46,6 @@ function getNestedString(source: Record<string, unknown>, path: string[], fallba
 
 function formatTemplate(template: string, values: Record<string, string>) {
   return template.replace(/\{([^}]+)\}/g, (_match, key) => values[key] ?? '');
-}
-
-function normalizeClarifyQuestion(value: string) {
-  const contractionMap: Array<[RegExp, string]> = [
-    [/\bwhat's\b/g, 'what is'],
-    [/\bwhen's\b/g, 'when is'],
-    [/\bwho's\b/g, 'who is'],
-    [/\bwhere's\b/g, 'where is'],
-    [/\bhow's\b/g, 'how is'],
-    [/\bit's\b/g, 'it is'],
-    [/\bthat's\b/g, 'that is'],
-    [/\bthere's\b/g, 'there is'],
-    [/\bi'm\b/g, 'i am'],
-    [/\bi've\b/g, 'i have'],
-    [/\byou've\b/g, 'you have'],
-    [/\bwe've\b/g, 'we have'],
-    [/\bthey've\b/g, 'they have'],
-    [/\bcan't\b/g, 'cannot'],
-    [/\bdon't\b/g, 'do not'],
-    [/\bdidn't\b/g, 'did not'],
-    [/\bdoesn't\b/g, 'does not'],
-    [/\bwon't\b/g, 'will not'],
-    [/\bwouldn't\b/g, 'would not'],
-    [/\bcouldn't\b/g, 'could not'],
-    [/\bshouldn't\b/g, 'should not'],
-    [/\bit'll\b/g, 'it will'],
-    [/\byou'll\b/g, 'you will'],
-    [/\bwe'll\b/g, 'we will'],
-    [/\bthey'll\b/g, 'they will'],
-    [/\bmodule\b/g, 'module'],
-  ];
-
-  let normalized = String(value || '')
-    .toLowerCase()
-    .replace(/[РІР‚в„ў`]/g, "'")
-    .replace(/[_-]+/g, ' ');
-
-  for (const [pattern, replacement] of contractionMap) {
-    normalized = normalized.replace(pattern, replacement);
-  }
-
-  return normalized
-    .replace(/[^a-z0-9]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
 }
 
 function uniqueStrings(values: string[]) {
@@ -388,31 +337,6 @@ function buildAskAfterCoachingTip(contextInfo: ReturnType<typeof inferConversati
 
 function normalizeAskAfterText(value: string) {
   return normalizeLooseText(value);
-}
-
-function looksMeaningfulDetail(value: string) {
-  return looksMeaningfulUserInput(value);
-}
-
-function normalizeAskAfterPhraseForMatch(value: string) {
-  return normalizeAskAfterText(value)
-    .replace(/\bthat\b$/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function askAfterPhraseMatchesQuestion(question: string, phrase: string, fallback: RegExp) {
-  const normalizedQuestion = normalizeAskAfterText(question);
-  if (!phrase.trim()) {
-    return fallback.test(normalizedQuestion);
-  }
-
-  const normalizedPhrase = normalizeAskAfterPhraseForMatch(phrase.replace(/\.\.\./g, ''));
-  if (!normalizedPhrase) {
-    return fallback.test(normalizedQuestion);
-  }
-
-  return normalizedQuestion.includes(normalizedPhrase);
 }
 
 function normalizeAskAfterSpeechLines(value: unknown): AskAfterSpeechLine[] {
@@ -900,17 +824,6 @@ function isQuestionFormationStatement(value: string) {
   return true;
 }
 
-function startsWithAcceptedQuestionLead(userQuestion: string, acceptedQuestion: string) {
-  const acceptedTokens = normalizeLooseText(acceptedQuestion).split(' ').filter(Boolean);
-  const first = acceptedTokens[0] || '';
-  const second = acceptedTokens[1] || '';
-  const lead = first === 'how' && ['long', 'often', 'far', 'much', 'many', 'soon', 'fast'].includes(second)
-    ? `${first} ${second}`
-    : first;
-
-  return startsWithWhWord(userQuestion, lead);
-}
-
 function normalizeQuestionFormationBlank(value: unknown, fallback: QuestionFormationBlank, index: number): QuestionFormationBlank {
   const record = asRecord(value);
   const answer = normalizeWhitespace(asString(record.answer, fallback.answer));
@@ -1059,46 +972,7 @@ export class PracticeService {
 
   async checkClarify(input: { userQuestion: string; expectedQuestion: string; target?: string; focus?: string; acceptedAnswers?: string[] }) {
     const config = await this.getPracticeConfig();
-    const feedback = asRecord(config.clarifyFeedback);
-    if (!looksMeaningfulUserInput(input.userQuestion)) {
-      return {
-        accepted: false,
-        feedback: getNestedString(feedback, ['mismatch']) || getNestedString(feedback, ['missingFocus']),
-      };
-    }
-    const normalizedUser = normalizeClarifyQuestion(input.userQuestion);
-    const expectedAnswers = [input.expectedQuestion, ...asStringArray(input.acceptedAnswers)].filter((item) => String(item || '').trim().length > 0);
-
-    if (expectedAnswers.length) {
-      const accepted = expectedAnswers.some((candidate) => normalizeClarifyQuestion(candidate) === normalizedUser);
-      return {
-        accepted,
-        feedback: accepted
-          ? getNestedString(feedback, ['accepted'])
-          : getNestedString(feedback, ['mismatch']) || getNestedString(feedback, ['missingFocus']),
-      };
-    }
-
-    const normalizedTarget = normalizeClarifyQuestion(input.target || '');
-    const accepted = normalizedTarget.length > 0 && normalizedUser.includes(normalizedTarget);
-    const hasFocus = normalizeClarifyQuestion(input.focus || '')
-      .split(' ')
-      .filter((token) => token.length >= 3)
-      .some((token) => normalizedUser.includes(token));
-    const hasPoliteOpener = /\bsorry\b/.test(normalizedUser);
-
-    return {
-      accepted,
-      feedback: accepted
-        ? getNestedString(feedback, ['accepted'])
-        : normalizedTarget && !normalizedUser.includes(normalizedTarget)
-          ? formatTemplate(getNestedString(feedback, ['wrongTarget']), { target: input.target || 'WHAT' })
-          : !hasFocus
-            ? getNestedString(feedback, ['missingFocus'])
-            : !hasPoliteOpener
-              ? getNestedString(feedback, ['missingPolite'])
-              : getNestedString(feedback, ['mismatch']) || getNestedString(feedback, ['missingFocus']),
-    };
+    return checkClarifyAnswer(input, asRecord(config.clarifyFeedback));
   }
 
   async generateAskAfter(context: string, offset = 0) {
@@ -1174,93 +1048,12 @@ export class PracticeService {
     acceptedQuestions?: string[];
   }) {
     const config = await this.getPracticeConfig();
-    const feedback = asRecord(config.questionFormationFeedback);
-    const userQuestion = normalizeWhitespace(input.userQuestion);
-    const expectedQuestion = normalizeWhitespace(input.expectedQuestion);
-    const acceptedQuestions = [expectedQuestion, ...asStringArray(input.acceptedQuestions)].filter(Boolean);
-    const exactAccepted = acceptedQuestions.some((candidate) => normalizeLooseText(candidate) === normalizeLooseText(userQuestion));
-    const startsCorrectly = startsWithWhWord(userQuestion, input.whWord)
-      || acceptedQuestions.some((candidate) => startsWithAcceptedQuestionLead(userQuestion, candidate));
-    const grammarAccepted = exactAccepted || hasQuestionFormationGrammar(userQuestion);
-    const leaksAnswer = containsAnswerLeak(userQuestion, input.answer);
-    const overlap = acceptedQuestions.reduce((best, candidate) => Math.max(best, getTokenOverlapRatio(userQuestion, candidate)), 0);
-    const pronounReferenceAccepted = acceptedQuestions.some((candidate) => hasQuestionFormationPronounReference(userQuestion, candidate));
-    const didVerbReferenceAccepted = acceptedQuestions.some((candidate) => hasQuestionFormationDidVerbReference(userQuestion, candidate));
-    const visibleContextAccepted = acceptedQuestions.some((candidate) =>
-      hasQuestionFormationVisibleContextAlignment(userQuestion, input.sentence, input.answer, candidate),
-    );
-    const accepted = Boolean(userQuestion)
-      && startsCorrectly
-      && grammarAccepted
-      && !leaksAnswer
-      && visibleContextAccepted
-      && (overlap >= 0.28 || pronounReferenceAccepted || didVerbReferenceAccepted);
-
-    return {
-      accepted,
-      feedback: accepted
-        ? getNestedString(feedback, ['accepted'], 'Correct. The question is grammatically clear and targets the hidden information.')
-        : !userQuestion
-          ? getNestedString(feedback, ['empty'], 'Type or dictate a question first.')
-          : !startsCorrectly
-            ? formatTemplate(getNestedString(feedback, ['wrongWhWord'], 'Use {whWord} to ask about this blank.'), { whWord: input.whWord || 'the right WH word' })
-            : !grammarAccepted
-              ? getNestedString(feedback, ['grammar'], 'Check the grammar. After "did", use the base verb form.')
-            : leaksAnswer
-                ? getNestedString(feedback, ['answerLeak'], 'Do not include the hidden answer in your question.')
-                : !visibleContextAccepted
-                  ? getNestedString(feedback, ['mismatch'], 'The grammar or meaning does not match the original sentence yet. Try keeping the question close to the visible words.')
-                : getNestedString(feedback, ['mismatch'], 'The grammar or meaning does not match the original sentence yet. Try keeping the question close to the visible words.'),
-    };
+    return checkQuestionFormationAnswer(input, asRecord(config.questionFormationFeedback));
   }
 
   async checkAskAfter(input: string | { question: string; expectedQuestion?: string; detail?: string; contextPhrase?: string; followUpPhrase?: string }) {
     const config = await this.getPracticeConfig();
-    const feedback = asRecord(config.askAfterFeedback);
-    const payload = typeof input === 'string' ? { question: input } : asRecord(input);
-    const question = normalizeWhitespace(asString(payload.question));
-    const expectedQuestion = normalizeWhitespace(asString(payload.expectedQuestion));
-    const detail = normalizeWhitespace(asString(payload.detail));
-
-    const hasQuestionMark = /\?/.test(question);
-    const hasQuestionLead = /could you|can you|would you|what|when|why|who|which|how/i.test(question);
-    const contextPhrase = normalizeWhitespace(asString(payload.contextPhrase));
-    const followUpPhrase = normalizeWhitespace(asString(payload.followUpPhrase));
-    const hasContext = askAfterPhraseMatchesQuestion(
-      question,
-      contextPhrase,
-      /(you commented|you spoke about|you referred to|you quoted a figure of|you made the point that|you said something about|i think i misunderstood you|there is one thing i m not clear about|there is one point i m not clear about|you didn t mention|you mentioned|you highlighted|i may have missed the point about|i wasn't fully clear on)/i,
-    );
-    const hasFollow = askAfterPhraseMatchesQuestion(
-      question,
-      followUpPhrase,
-      /(explain|run us through|specific|tell us how|elaborate|say a bit more|go over|talk us through)/i,
-    );
-    const meaningfulQuestion = looksMeaningfulUserInput(question);
-    const detailAccepted = !detail || looksMeaningfulDetail(detail);
-    const overlap = expectedQuestion ? getTokenOverlapRatio(question, expectedQuestion) : 1;
-    const onTrack = !expectedQuestion || overlap >= 0.45;
-    const usesPhraseBankStructure = Boolean(contextPhrase || followUpPhrase);
-    const selectedPhraseStructureAccepted = usesPhraseBankStructure && hasQuestionMark && hasQuestionLead;
-    const freeformStructureAccepted = hasQuestionMark && hasQuestionLead && hasContext && hasFollow && onTrack;
-    const accepted = meaningfulQuestion && detailAccepted && (selectedPhraseStructureAccepted || freeformStructureAccepted);
-
-    return {
-      accepted,
-      feedback: accepted
-        ? getNestedString(feedback, ['accepted'])
-        : !meaningfulQuestion
-          ? getNestedString(feedback, ['missingQuestion'])
-          : !detailAccepted
-          ? getNestedString(feedback, ['unclearDetail']) || 'Use one real detail from the talk instead of filler or repeated letters.'
-          : !usesPhraseBankStructure && !hasContext
-            ? getNestedString(feedback, ['missingContext'])
-            : !usesPhraseBankStructure && !hasFollow
-              ? getNestedString(feedback, ['missingFollow'])
-              : !usesPhraseBankStructure && !onTrack
-                ? getNestedString(feedback, ['offTrack']) || 'Keep the question closer to the selected lead-in and follow-up phrase so it stays clear and natural.'
-                : getNestedString(feedback, ['missingQuestion']),
-    };
+    return checkAskAfterAnswer(input, asRecord(config.askAfterFeedback));
   }
 }
 

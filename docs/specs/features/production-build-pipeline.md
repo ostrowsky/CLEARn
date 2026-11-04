@@ -16,21 +16,23 @@ Production frontend and API builds run predictably on hosted CI/deploy platforms
 
 ## User-visible behavior
 
-- Vercel can deploy the static Expo web client from repository-tracked build metadata.
+- Vercel deploys the static Expo web client using Corepack, the declared pnpm version, and a frozen platform lockfile. Hosted frontend builds must use the same dependency graph as CI.
+- Vercel build metadata supplies the existing public API base URL for both Preview and Production so Git deployments do not require an untracked dashboard variable. This URL is public configuration, not a credential; build preflight still validates it and does not require API uptime. Ready ASK checks remain local when that API is unavailable.
 - The frontend install/build flow must not fail because hosted npm tooling cannot resolve workspace protocol dependencies directly.
 - The API host can build and start the Fastify API from the platform workspace.
 - Production API prebuild/environment verification remains active and fails deployment before runtime when required configuration is missing.
 - Public previews can render bundled read-only content when the API is unreachable.
-- Interactive practice, admin save, uploads, speech, backup, and provider-backed flows require a separate reachable API base URL.
+- AI generation, admin save, uploads, speech, backup, and provider-backed flows require a separate reachable API base URL. Ready ASK answer checks run locally in the browser.
 - Build failures stop deployment instead of replacing a working production version.
 
 ## Invariants
 
 - Production build commands must be tracked in Git.
-- Hosted builds must use the Node version declared for that host/workspace.
+- Hosted builds use Node 22.x consistently across the root manifest, platform manifest, and CI. Node 20 is no longer a supported Vercel build runtime.
 - Workspace package dependencies must match lockfile expectations.
+- npm (Vercel) and pnpm (CI/API) must apply the same security resolutions. Keep overrides and the lockfile aligned, preserve compatible dependency major versions where possible, and verify any required API changes through the full test suite.
 - Temporary Vercel npm compatibility changes must not corrupt pnpm workspace dependency contracts.
-- Client package dependencies needed by web export, including Expo linking support, must be present in package metadata and lockfile.
+- Client package dependencies needed by web export, including Expo linking support and query-string used by Expo Router, must be declared directly in client package metadata and the lockfile. The build must not rely on React Navigation to install an undeclared transitive dependency.
 - Architecture tests must encode expected deploy command shape.
 - Required production API environment verification must not be bypassed.
 - Stateful API runtime concerns must remain separate from the static frontend deployment.
@@ -66,6 +68,6 @@ Production frontend and API builds run predictably on hosted CI/deploy platforms
 
 ## Unknowns requiring confirmation
 
-- Whether Vercel should stay on the npm compatibility path or return to native pnpm install once host support is stable.
-- Whether production Node should remain pinned to 20 or move back to 22 after platform compatibility is confirmed.
+- The npm compatibility script is retained for legacy/manual installs; Vercel uses native pnpm with a frozen lockfile to prevent dependency drift.
+- Expo 52 tooling uses tracked, idempotent import adapters for security-fixed image-size and decode-uri-component exports. Installations from npm and pnpm must apply these adapters and verify image decoding and URL parsing.
 - Whether deploy preflight should run live smoke checks against both API and static frontend before promotion.

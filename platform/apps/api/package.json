@@ -16,10 +16,10 @@
     "@clearn/contracts": "workspace:*",
     "@clearn/domain": "workspace:*",
     "dotenv": "^16.4.5",
-    "fastify": ">=5.8.5",
+    "fastify": "^5.12.2",
     "ioredis": "^5.4.1",
     "tsx": "^4.19.1",
-    "zod": "^3.23.8"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "typescript": "^5.6.3"
