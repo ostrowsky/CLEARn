@@ -3,22 +3,35 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Expo 52's CommonJS tooling predates the patched libraries' export shapes.
-// Adapt only these two imports; the actual security-fixed implementations stay in use.
+// Preserve Expo 52 tooling compatibility with security-fixed library exports.
 export async function prepareToolingCompat(platformRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')) {
   const requireClient = createRequire(path.join(platformRoot, 'apps/client/package.json'));
-  const patches = [
-    {
-      file: path.join(path.dirname(requireClient.resolve('metro/package.json')), 'src/Assets.js'),
-      before: ['const getImageSize = require("image-size");', 'const getImageSize = require("image-size").imageSize;'],
-      after: 'const getImageSize = input => require("image-size").imageSize(typeof input === "string" ? fs.readFileSync(input) : input);',
-    },
-    {
-      file: requireClient.resolve('query-string'),
-      before: "const decodeComponent = require('decode-uri-component');",
-      after: "const decodeComponent = require('decode-uri-component').default;",
-    },
-  ];
+  const patches = [{
+    file: path.join(path.dirname(requireClient.resolve('metro/package.json')), 'src/Assets.js'),
+    before: ['const getImageSize = require("image-size");', 'const getImageSize = require("image-size").imageSize;'],
+    after: 'const getImageSize = input => require("image-size").imageSize(typeof input === "string" ? fs.readFileSync(input) : input);',
+  }];
+  const resolvers = [requireClient];
+  try {
+    resolvers.push(createRequire(requireClient.resolve('@react-navigation/core')));
+  } catch (error) {
+    if (error.code !== 'MODULE_NOT_FOUND') throw error;
+  }
+  const queryFiles = new Set();
+  for (const resolveFrom of resolvers) {
+    try {
+      queryFiles.add(resolveFrom.resolve('query-string'));
+    } catch (error) {
+      if (error.code !== 'MODULE_NOT_FOUND') throw error;
+    }
+  }
+  // Newer React Navigation releases no longer depend on query-string.
+  // Its absence in an npm installation must not block the build.
+  for (const file of queryFiles) patches.push({
+    file,
+    before: "const decodeComponent = require('decode-uri-component');",
+    after: "const decodeComponent = require('decode-uri-component').default;",
+  });
   for (const { file, before, after } of patches) {
     const source = await readFile(file, 'utf8');
     if (source.includes(after)) continue;
