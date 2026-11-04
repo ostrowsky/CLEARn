@@ -1,0 +1,121 @@
+{
+  "checkedAt": "2026-11-04T11:59:54.400Z",
+  "baseUrl": "https://clearn-api.onrender.com",
+  "origin": "https://clearn.me",
+  "ok": false,
+  "results": [
+    {
+      "name": "health",
+      "path": "/api/health",
+      "method": "GET",
+      "ok": false,
+      "status": 503,
+      "reasons": [
+        "Missing or incorrect credentialed CORS origin",
+        "Missing credentialed CORS permission",
+        "HTTP 503, expected 200",
+        "Expected JSON, not HTML/other content",
+        "Invalid JSON"
+      ],
+      "elapsedMs": 387
+    },
+    {
+      "name": "content",
+      "path": "/api/content",
+      "method": "GET",
+      "ok": false,
+      "status": 503,
+      "reasons": [
+        "Missing or incorrect credentialed CORS origin",
+        "Missing credentialed CORS permission",
+        "HTTP 503, expected 200",
+        "Expected JSON, not HTML/other content",
+        "Invalid JSON"
+      ],
+      "elapsedMs": 98
+    },
+    {
+      "name": "admin-auth-status",
+      "path": "/api/admin/auth/status",
+      "method": "GET",
+      "ok": false,
+      "status": 503,
+      "reasons": [
+        "Missing or incorrect credentialed CORS origin",
+        "Missing credentialed CORS permission",
+        "HTTP 503, expected 200",
+        "Expected JSON, not HTML/other content",
+        "Invalid JSON"
+      ],
+      "elapsedMs": 55
+    },
+    {
+      "name": "admin-access-protected",
+      "path": "/api/admin/content",
+      "method": "GET",
+      "ok": false,
+      "status": 429,
+      "reasons": [
+        "Missing or incorrect credentialed CORS origin",
+        "Missing credentialed CORS permission",
+        "HTTP 429, expected 401",
+        "Expected JSON, not HTML/other content",
+        "Invalid JSON"
+      ],
+      "elapsedMs": 40
+    },
+    {
+      "name": "debug-access-protected",
+      "path": "/api/debug/logs",
+      "method": "GET",
+      "ok": false,
+      "status": 429,
+      "reasons": [
+        "Missing or incorrect credentialed CORS origin",
+        "Missing credentialed CORS permission",
+        "HTTP 429, expected 401",
+        "Expected JSON, not HTML/other content",
+        "Invalid JSON"
+      ],
+      "elapsedMs": 31
+    },
+    {
+      "name": "stt-cors-preflight",
+      "path": "/api/speech/stt",
+      "method": "OPTIONS",
+      "ok": false,
+      "status": 429,
+      "reasons": [
+        "Missing or incorrect credentialed CORS origin",
+        "Missing credentialed CORS permission",
+        "Preflight HTTP 429",
+        "Preflight does not permit POST",
+        "Preflight does not permit content-type"
+      ],
+      "elapsedMs": 84
+    },
+    {
+      "name": "tts-cors-preflight",
+      "path": "/api/speech/tts",
+      "method": "OPTIONS",
+      "ok": false,
+      "status": 429,
+      "reasons": [
+        "Missing or incorrect credentialed CORS origin",
+        "Missing credentialed CORS permission",
+        "Preflight HTTP 429",
+        "Preflight does not permit POST",
+        "Preflight does not permit content-type"
+      ],
+      "elapsedMs": 76
+    }
+  ],
+  "unverified": [
+    "Actual STT transcription",
+    "Actual TTS generation",
+    "LLM generation/quality",
+    "Authenticated admin mutations/backups",
+    "Redis/session continuity",
+    "YouTube/provider availability"
+  ]
+}

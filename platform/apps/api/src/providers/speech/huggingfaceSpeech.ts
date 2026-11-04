@@ -1,3 +1,4 @@
+import {fetchWithDeadline} from '../../lib/networkDeadline';
 ﻿import { env } from '../../config/env';
 import type { SpeechProvider } from '../types';
 
@@ -41,7 +42,7 @@ export const huggingFaceSpeechProvider: SpeechProvider = {
     }
 
     const audioBytes = decodeAudioBytes(input.audioBase64);
-    const response = await fetch(`https://router.huggingface.co/hf-inference/models/${env.HF_STT_MODEL}`, {
+    const response = await fetchWithDeadline(`https://router.huggingface.co/hf-inference/models/${env.HF_STT_MODEL}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${env.HF_TOKEN}`,
@@ -62,7 +63,7 @@ export const huggingFaceSpeechProvider: SpeechProvider = {
       throw new Error('HF_TOKEN is not configured.');
     }
 
-    const response = await fetch(`https://router.huggingface.co/hf-inference/models/${env.LLM_TTS_MODEL}`, {
+    const response = await fetchWithDeadline(`https://router.huggingface.co/hf-inference/models/${env.LLM_TTS_MODEL}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${env.HF_TOKEN}`,

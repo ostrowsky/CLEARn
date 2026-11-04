@@ -1,3 +1,4 @@
+import {fetchWithDeadline} from '../../lib/networkDeadline';
 import type { AskAfterBrief, ClarifyExercise, CoachChatTurn, QuestionFormationExercise } from '@clearn/domain';
 import { env } from '../../config/env';
 import { parseModelJsonContent } from './jsonResponse';
@@ -9,7 +10,7 @@ async function readSelfHostedErrorDetails(response: Response) {
 }
 
 async function callSelfHosted<T>(input: ChatGenerationInput): Promise<T> {
-  const response = await fetch(`${env.SELF_HOSTED_BASE_URL}/chat/completions`, {
+  const response = await fetchWithDeadline(`${env.SELF_HOSTED_BASE_URL}/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

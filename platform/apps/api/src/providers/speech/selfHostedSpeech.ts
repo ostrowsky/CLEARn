@@ -1,3 +1,4 @@
+import {fetchWithDeadline} from '../../lib/networkDeadline';
 import { env } from '../../config/env';
 import type { SpeechProvider } from '../types';
 
@@ -47,7 +48,7 @@ async function fetchSelfHostedSpeech(path: string, init: RequestInit, timeoutMs:
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(`${env.SELF_HOSTED_SPEECH_BASE_URL}${path}`, {
+    return await fetchWithDeadline(`${env.SELF_HOSTED_SPEECH_BASE_URL}${path}`, {
       ...init,
       signal: controller.signal,
     });

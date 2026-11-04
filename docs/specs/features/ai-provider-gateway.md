@@ -34,7 +34,7 @@ The product can use free AI resources during prototype and early validation, whi
 
 ## Edge cases and failure policy
 
-- Browser STT requests must allow enough time for a self-hosted Render service to wake, transcribe, or fail over; the client timeout must be longer than the configured self-hosted provider timeout.
+- Interactive STT is bounded to 20 seconds client-side. Provider attempts are bounded (including response bodies); a cold server that exceeds this budget must return a recoverable failure, not hold the learner indefinitely. Browser recognition is selected on a new explicit recording gesture when API unavailability is known; never replay a file into a live recognizer.
 
 - Hosted provider returns 402/429: switch to configured fallback or show a clear quota/provider message.
 - Self-hosted STT is unavailable: typed input remains available.
@@ -49,7 +49,7 @@ The product can use free AI resources during prototype and early validation, whi
 - STT/TTS uses a separate `LLM_SPEECH_FALLBACK_CHAIN`, which must default to `selfhosted,openai,huggingface` so Hugging Face credit exhaustion does not block speech when a self-hosted or paid speech provider is available.
 - Self-hosted STT calls must use a bounded provider timeout such as `SELF_HOSTED_STT_TIMEOUT_MS` so a slow CPU model or cold service cannot keep the learner screen waiting indefinitely.
 - Self-hosted TTS calls must use a bounded provider timeout such as `SELF_HOSTED_TTS_TIMEOUT_MS` for the same reason; speech playback failures should be recoverable rather than blocking the learner UI.
-- Client speech requests must use short interactive timeouts for STT and TTS. Long media/admin backup operations may keep longer timeouts, but learner speech controls should not wait for minutes.
+- Client speech requests use 20-second STT and 15-second TTS timeouts. Long media/admin backup operations may keep longer timeouts, but learner speech controls should not wait for minutes.
 - The hosted self-contained STT service must fit small Render instances by default: use a small CPU/int8 model, avoid startup warmup unless explicitly enabled, reject oversized audio uploads, and limit concurrent transcription work.
 - STT model names are provider-specific: `SELF_HOSTED_STT_MODEL` for faster-whisper models such as `tiny.en` or `base.en`, `OPENAI_STT_MODEL` for OpenAI models such as `whisper-1`, and `HF_STT_MODEL` for Hugging Face model ids such as `openai/whisper-large-v3`.
 - Production STT should set `LLM_STT_PROVIDER=selfhosted`, `LLM_SPEECH_FALLBACK_CHAIN=selfhosted,openai,huggingface`, and `SELF_HOSTED_SPEECH_BASE_URL=https://<speech-service>/v1`; `localhost` is valid only when the API and local STT service run on the same machine.

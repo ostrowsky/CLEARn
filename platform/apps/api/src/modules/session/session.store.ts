@@ -23,7 +23,7 @@ export class InMemorySessionStore<TSession extends PersistedSession> implements 
 }
 
 export class RedisSessionStore<TSession extends PersistedSession> implements SessionStore<TSession> {
-  private readonly redis = new Redis(env.REDIS_URL);
+  private readonly redis = new Redis(env.REDIS_URL,{connectTimeout:3000,commandTimeout:5000,maxRetriesPerRequest:1,enableOfflineQueue:false});
 
   async get(sessionId: string): Promise<TSession | null> {
     const raw = await this.redis.get(`clearn:session:${sessionId}`);

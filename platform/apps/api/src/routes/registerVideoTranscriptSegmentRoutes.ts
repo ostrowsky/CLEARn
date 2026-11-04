@@ -1,3 +1,4 @@
+import {fetchWithDeadline,withNetworkBudget} from '../lib/networkDeadline';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -440,7 +441,7 @@ async function fetchBrowserlessTranscriptSegment(info: VideoInfo): Promise<Trans
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), env.TRANSCRIPT_FETCH_TIMEOUT_MS);
   try {
-    const response = await fetch(buildBrowserlessFunctionUrl(), {
+    const response = await fetchWithDeadline(buildBrowserlessFunctionUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
@@ -673,7 +674,7 @@ async function fetchWatchHtml(videoId: string, consentCookie = '') {
     headers.Cookie = consentCookie;
   }
 
-  const response = await fetch(watchUrl, {
+  const response = await fetchWithDeadline(watchUrl, {
     headers,
   });
 
@@ -715,7 +716,7 @@ async function fetchTimedTextTranscript(videoId: string) {
     transcriptUrl.searchParams.set('lang', language);
     transcriptUrl.searchParams.set('fmt', 'json3');
 
-    const response = await fetch(transcriptUrl, { headers: { 'User-Agent': youtubeUserAgent } });
+    const response = await fetchWithDeadline(transcriptUrl, { headers: { 'User-Agent': youtubeUserAgent } });
     if (!response.ok) continue;
 
     const raw = await response.text();
@@ -740,7 +741,7 @@ async function fetchInnertubePlayerResponse(videoId: string, apiKey = '') {
     endpoint.searchParams.set('key', apiKey);
   }
 
-  const response = await fetch(endpoint, {
+  const response = await fetchWithDeadline(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -768,7 +769,7 @@ async function fetchInnertubePlayerResponse(videoId: string, apiKey = '') {
 async function fetchTranscriptTrack(trackUrl: string) {
   const transcriptUrl = new URL(decodeHtmlEntities(trackUrl));
 
-  const response = await fetch(transcriptUrl, { headers: { 'User-Agent': youtubeUserAgent } });
+  const response = await fetchWithDeadline(transcriptUrl, { headers: { 'User-Agent': youtubeUserAgent } });
   if (!response.ok) return [];
 
   const raw = await response.text();
@@ -972,7 +973,7 @@ export async function registerVideoTranscriptSegmentRoutes(app: FastifyInstance)
     }
 
     try {
-      const transcript = await fetchTranscriptWithProviders(info);
+      const transcript = await withNetworkBudget(()=>fetchTranscriptWithProviders(info),25000);
       const segmentStart = Math.max(0, info.start || 0);
       const segmentEnd = info.end > segmentStart ? info.end : segmentStart + 45;
       const result = {

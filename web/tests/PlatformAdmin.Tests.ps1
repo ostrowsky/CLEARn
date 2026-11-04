@@ -57,7 +57,7 @@ foreach ($pattern in @(
     'apiClient.resetAdminPassword',
     'apiClient.logoutAdmin',
     'apiClient.saveAdminContent',
-    'apiClient.getAdminBackupExportUrl',
+    'downloadAdminBackup',
     'apiClient.restoreAdminBackup',
     'apiClient.uploadAdminMedia',
     'apiClient.deleteAdminMedia',

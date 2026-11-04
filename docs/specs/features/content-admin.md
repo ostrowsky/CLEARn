@@ -105,3 +105,6 @@ Admins can create, edit, reorder, delete, backup, and restore all learner-visibl
 
 - Whether admin is web-only for the commercial product.
 - Whether admin edits require draft/publish approval before learner visibility.
+
+## API outage handling
+- Backup downloads and restores use the shared credentialed transport, bounded through body consumption, validate ZIP signatures/JSON contracts, catch network errors and show an explicit status. No overlapping auth polling or optimistic success before a successful download/restore. Failed media deletion is reported; the corresponding UI removal is aborted.

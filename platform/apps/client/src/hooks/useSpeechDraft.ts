@@ -1,3 +1,5 @@
+import {isApiUnavailable,practiceNotice} from '../lib/api';
+import {recognitionTranscript} from '../lib/webSpeech';
 ﻿import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { apiClient } from '../lib/api';
@@ -34,7 +36,7 @@ export function useSpeechDraft(options: UseSpeechDraftOptions) {
   const mediaRecorderSupported = supportsBrowserRecording();
   const preferredRecorderMimeType = getPreferredRecorderMimeType();
   const mediaRecorderSttCompatible = !preferredRecorderMimeType || supportsDirectSttMimeType(preferredRecorderMimeType);
-  const shouldPreferSpeechRecognition = speechRecognitionSupported && mediaRecorderSupported && !mediaRecorderSttCompatible;
+  const shouldPreferSpeechRecognition = speechRecognitionSupported && (isApiUnavailable() || (mediaRecorderSupported && !mediaRecorderSttCompatible));
   const recordingSupported = mediaRecorderSupported || speechRecognitionSupported;
 
   function log(event: string, details: Record<string, unknown> = {}) {
@@ -82,6 +84,7 @@ export function useSpeechDraft(options: UseSpeechDraftOptions) {
 
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== 'inactive') {
+      recorder.onstop = null; recorder.ondataavailable = null; recorder.onerror = null;
       recorder.stop();
     }
     recorderRef.current = null;
@@ -195,9 +198,10 @@ export function useSpeechDraft(options: UseSpeechDraftOptions) {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
         recognitionRef.current = recognition;
+        setSpeechStatus(practiceNotice('speechBrowserRecognition'));
         setRecording(true);
         recognition.onresult = (event: any) => {
-          const transcript = String(event.results?.[0]?.[0]?.transcript || '').trim();
+          const transcript = recognitionTranscript(event);
           if (!transcript) {
             setSpeechStatus(options.emptyTranscriptMessage);
             log('transcription:empty', { source: 'speech-recognition' });
@@ -209,6 +213,11 @@ export function useSpeechDraft(options: UseSpeechDraftOptions) {
           log('transcription:success', { source: 'speech-recognition', textLength: transcript.length });
         };
         recognition.onerror = (event: any) => {
+          clearRecordingTimer();
+          setRecording(false); setTranscribing(false);
+          recognitionRef.current = null;
+          try { recognition.abort?.(); } catch {}
+
           const reason = String(event?.error || event?.message || '').trim();
           const message = reason ? `Speech recognition error: ${reason}` : options.unsupportedMessage;
           setSpeechStatus(message);

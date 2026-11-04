@@ -42,6 +42,22 @@ jobs:
         working-directory: platform
         run: pnpm build
 
+      - name: Install Chromium for outage UI regressions
+        working-directory: platform
+        run: pnpm --filter @clearn/client exec playwright install chromium
+
+      - name: Check outage UI contracts (mocked speech, no paid providers)
+        shell: pwsh
+        run: |
+          node web/tests/api-outage.browser.cjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node web/tests/api-outage.browser.cjs --probe-admin-backup
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node web/tests/api-outage.browser.cjs --browser-recognition
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node web/tests/api-outage.browser.cjs --recognition-error
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Smoke API runtime
         shell: pwsh
         run: |

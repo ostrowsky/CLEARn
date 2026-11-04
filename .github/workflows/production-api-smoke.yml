@@ -1,0 +1,32 @@
+name: Production API availability
+
+on:
+  workflow_dispatch:
+  deployment_status:
+
+permissions:
+  contents: read
+
+jobs:
+  production-api-smoke:
+    if: github.event_name == 'workflow_dispatch' || (github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check deployed API JSON contracts and CORS (not paid providers)
+        env:
+          API_SMOKE_REPORT_PATH: production-api-report.json
+        run: node platform/scripts/check-production-api.mjs
+      - name: Upload availability evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-api-availability
+          path: production-api-report.json
+          if-no-files-found: warn

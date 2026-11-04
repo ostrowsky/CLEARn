@@ -1,3 +1,5 @@
+import {downloadAdminBackup} from '../src/lib/api';
+import {saveBackupFile} from '../src/lib/backupDownload';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
@@ -630,10 +632,10 @@ export default function AdminScreen() {
 
   async function deleteUploadedAsset(url: string) {
     if (!url || !url.startsWith('/uploads/')) {
-      return;
+      return true;
     }
 
-    await apiClient.deleteAdminMedia(url).catch(() => undefined);
+    try { await apiClient.deleteAdminMedia(url); return true; } catch(error) { setStatus(error instanceof Error?error.message:String(error),'error'); return false; }
   }
 
   async function saveContent() {
@@ -687,7 +689,7 @@ export default function AdminScreen() {
     const section = content?.sections.find((item) => item.id === sectionId);
     for (const block of section?.blocks || []) {
       for (const material of block.materials || []) {
-        await deleteUploadedAsset(material.url || '');
+        if (!await deleteUploadedAsset(material.url || '')) return;
       }
     }
 
@@ -703,7 +705,7 @@ export default function AdminScreen() {
     const section = content?.sections.find((item) => item.id === sectionId);
     const block = section?.blocks.find((item) => item.id === blockId);
     for (const material of block?.materials || []) {
-      await deleteUploadedAsset(material.url || '');
+      if (!await deleteUploadedAsset(material.url || '')) return;
     }
 
     updateContent((draft) => {
@@ -719,7 +721,7 @@ export default function AdminScreen() {
     const section = content?.sections.find((item) => item.id === sectionId);
     const block = section?.blocks.find((item) => item.id === blockId);
     const material = block?.materials.find((item) => item.id === materialId);
-    await deleteUploadedAsset(material?.url || '');
+    if (!await deleteUploadedAsset(material?.url || '')) return;
 
     updateContent((draft) => {
       const targetMaterialBlock = draft.sections.find((item) => item.id === sectionId)?.blocks.find((item) => item.id === blockId);
@@ -820,9 +822,10 @@ export default function AdminScreen() {
     });
   }
 
-  function handleDownloadBackup() {
-    openExternal(apiClient.getAdminBackupExportUrl());
-    setStatus(String(messages.backupDownloadStarted || ''), 'success');
+  async function handleDownloadBackup() {
+    setBusy(true);
+    try { saveBackupFile(await downloadAdminBackup()); setStatus(String(messages.backupDownloadStarted || ''),'success'); }
+    catch(error) { setStatus(error instanceof Error?error.message:String(error),'error'); } finally { setBusy(false); }
   }
 
   async function handleRestoreBackup() {
@@ -889,7 +892,7 @@ export default function AdminScreen() {
           meta.audioTranscriptModel = transcriptModel;
         }
       });
-      await deleteUploadedAsset(previousUrl);
+      if (!await deleteUploadedAsset(previousUrl)) return;
       const uploadedMessage = String(messages.uploadedPattern || '').replace('{fileName}', file.fileName);
       if (transcript) {
         setStatus(`${uploadedMessage} ${String(messages.audioTranscriptGenerated || '')}`.trim(), 'success');
@@ -930,7 +933,7 @@ export default function AdminScreen() {
   }
 
   async function handleDeleteMaterialAsset(sectionId: string, blockId: string, materialId: string, url: string) {
-    await deleteUploadedAsset(url);
+    if (!await deleteUploadedAsset(url)) return;
     updateContent((draft) => {
       const targetMaterial = draft.sections.find((item) => item.id === sectionId)?.blocks.find((item) => item.id === blockId)?.materials.find((item) => item.id === materialId);
       if (targetMaterial) {
@@ -1021,7 +1024,7 @@ export default function AdminScreen() {
       backHref="/"
       backLabel={getAdminText(content, ['openLearnerApp'])}
     >
-      <AdminMediaBackupControls authenticated={authMode === 'authenticated'} />
+      <AdminMediaBackupControls authenticated={authMode === 'authenticated'} content={content} onStatus={setStatus} />
 
       <View style={styles.actionRow}>
         <Pressable style={styles.primaryButton} onPress={() => void saveContent()} disabled={busy}>

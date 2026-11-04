@@ -1,3 +1,5 @@
+import {isApiUnavailable,practiceNotice} from '../../../src/lib/api';
+import {recognitionTranscript} from '../../../src/lib/webSpeech';
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Platform, ScrollView, StyleSheet, TextInput, View, Text, Pressable} from 'react-native';
@@ -5,7 +7,7 @@ import { Platform, ScrollView, StyleSheet, TextInput, View, Text, Pressable} fro
 import type { AnsweringMode, AnsweringQuestionTurn, AnsweringReactionCategory, AnsweringReactionOption, AnsweringSession, AnsweringSessionMode } from '@clearn/domain';
 import { Screen } from '../../../src/components/Screen';
 import { useContent } from '../../../src/hooks/useContent';
-import { apiClient } from '../../../src/lib/api';
+import { apiClient,isLocalAnsweringSession } from '../../../src/lib/api';
 import {
   fillRuntimeTemplate,
   findFirstBlockByRenderer,
@@ -185,7 +187,7 @@ export default function AnsweringPracticeScreen() {
   const mediaRecorderSupported = supportsBrowserRecording();
   const preferredRecorderMimeType = getPreferredRecorderMimeType();
   const mediaRecorderSttCompatible = !preferredRecorderMimeType || supportsDirectSttMimeType(preferredRecorderMimeType);
-  const shouldPreferSpeechRecognition = speechRecognitionSupported && mediaRecorderSupported && !mediaRecorderSttCompatible;
+  const shouldPreferSpeechRecognition = speechRecognitionSupported && (isApiUnavailable() || (mediaRecorderSupported && !mediaRecorderSttCompatible));
   const recordingSupported = mediaRecorderSupported || speechRecognitionSupported;
 
   const describeYourRole = getNestedString(ui, ['labels', 'describeYourRole']);
@@ -282,6 +284,7 @@ export default function AnsweringPracticeScreen() {
 
     const recorder = recorderRef.current;
     if (recorder && recorder.state !== 'inactive') {
+      recorder.onstop = null; recorder.ondataavailable = null; recorder.onerror = null;
       recorder.stop();
     }
     recorderRef.current = null;
@@ -437,10 +440,10 @@ export default function AnsweringPracticeScreen() {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
         recognitionRef.current = recognition;
-        setSpeechStatus('');
+        setSpeechStatus(practiceNotice('speechBrowserRecognition'));
         setRecording(true);
         recognition.onresult = (event: any) => {
-          const transcript = String(event.results?.[0]?.[0]?.transcript || '').trim();
+          const transcript = recognitionTranscript(event);
           if (!transcript) {
             setSpeechStatus(emptyTranscriptText);
             return;
@@ -450,6 +453,11 @@ export default function AnsweringPracticeScreen() {
           setSpeechStatus('');
         };
         recognition.onerror = (event: any) => {
+          clearRecordingTimer();
+          setRecording(false); setTranscribing(false);
+          recognitionRef.current = null;
+          try { recognition.abort?.(); } catch {}
+
           const reason = String(event?.error || event?.message || '').trim();
           setSpeechStatus(reason ? `Speech recognition error: ${reason}` : recordingUnavailableText);
         };
@@ -526,6 +534,8 @@ export default function AnsweringPracticeScreen() {
           ) : null}
         </View>
       </View>
+
+      {session && (isLocalAnsweringSession(session.sessionId) || session.currentTurn?.providerError || session.turns.some(turn=>turn.evaluation?.providerError)) ? <View style={styles.feedbackCard}><Text style={styles.feedbackText}>{getNestedString(ui,['feedback','answeringFallbackNotice'],practiceNotice('answeringFallbackNotice'))}</Text></View> : null}
 
       {screenError ? <View style={styles.feedbackCard}><Text style={styles.feedbackText}>{screenError}</Text></View> : null}
 
