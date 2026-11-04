@@ -13,6 +13,7 @@ import type {
   TextToSpeechResult,
 } from '@clearn/domain';
 import { apiBaseUrl } from './config';
+import { trackExerciseEvent } from './analytics';
 import { isAppContent, staticContent } from './staticContent';
 
 let lastLoadedContent = staticContent;
@@ -583,7 +584,9 @@ export const apiClient = {
     return request('/api/practice/clarify', { method: 'POST', body: JSON.stringify({ context, offset }) });
   },
   async checkClarify(payload: { userQuestion: string; expectedQuestion: string; target?: string; focus?: string; acceptedAnswers?: string[] }) {
-    return checkClarifyAnswer(payload, getPracticeFeedback('clarifyFeedback'));
+    const result = checkClarifyAnswer(payload, getPracticeFeedback('clarifyFeedback'));
+    trackExerciseEvent('answer_check', 'clarification', result.accepted);
+    return result;
   },
   askAfter(context: string, offset = 0): Promise<AskAfterBrief> {
     return requestWithFallback(
@@ -593,7 +596,9 @@ export const apiClient = {
     );
   },
   async checkAskAfter(payload: { question: string; expectedQuestion?: string; detail?: string; contextPhrase?: string; followUpPhrase?: string }) {
-    return checkAskAfterAnswer(payload, getPracticeFeedback('askAfterFeedback'));
+    const result = checkAskAfterAnswer(payload, getPracticeFeedback('askAfterFeedback'));
+    trackExerciseEvent('answer_check', 'ask_after_talk', result.accepted);
+    return result;
   },
   generateQuestionFormation(context = '', offset = 0): Promise<QuestionFormationExercise> {
     return requestWithFallback(
@@ -610,7 +615,9 @@ export const apiClient = {
     expectedQuestion: string;
     acceptedQuestions?: string[];
   }) {
-    return checkQuestionFormationAnswer(payload, getPracticeFeedback('questionFormationFeedback'));
+    const result = checkQuestionFormationAnswer(payload, getPracticeFeedback('questionFormationFeedback'));
+    trackExerciseEvent('answer_check', 'question_formation', result.accepted);
+    return result;
   },
   startAnswering(context: string, mode: AnsweringSessionMode): Promise<AnsweringSession> {
     return requestWithFallback(

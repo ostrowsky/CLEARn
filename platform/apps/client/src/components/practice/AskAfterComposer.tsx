@@ -1,3 +1,4 @@
+import { trackExerciseEvent } from '../../lib/analytics';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { Image, Linking, Platform, ScrollView, StyleSheet, TextInput, View, Text, Pressable} from 'react-native';
@@ -536,6 +537,7 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
     try {
       const nextBrief = await apiClient.askAfter(context, nextOffset);
       setBrief(nextBrief);
+      trackExerciseEvent('exercise_start', 'ask_after_talk');
       setSourceMode('generated');
       setTail(nextBrief.suggestedFocus || '');
       setQuestionDraft('');
@@ -564,6 +566,7 @@ export function AskAfterComposer({ content, section, practiceBlock }: AskAfterCo
   }
 
   function handleSelectVideo(id: string) {
+    trackExerciseEvent('exercise_start', 'ask_after_talk');
     setSelectedVideoId(id);
     setSourceMode('video');
     setFeedback(null);

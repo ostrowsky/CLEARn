@@ -55,7 +55,7 @@ export type StructuredUiCopyEntry = UiCopyEntry & { defaultFontSize: number };
 function filterUiCopy(ui: Record<string, unknown>, scopeKey: string): StructuredUiCopyEntry[] {
   const all = listEditableUiCopy(ui);
   const matchers: RegExp[] = [];
-  if (/landing|home/.test(scopeKey)) matchers.push(/^homeMenu\./, /^brandTagline$/, /^footerNote$/, /^watermarkText$/, /^navigation\./);
+  if (/landing|home/.test(scopeKey)) matchers.push(/^analytics\./, /^homeMenu\./, /^brandTagline$/, /^footerNote$/, /^watermarkText$/, /^navigation\./);
   if (/ask-after|after-talk/.test(scopeKey)) matchers.push(/askAfter|generatedTalk|questionBuilder|leadIn|followUp|video|yourWorkContext|contextLeadIn|topicToFocusOn|coachingTip/i);
   if (/clarify|interrupt/.test(scopeKey)) matchers.push(/clarify|yourClarifyingQuestion|expectedAnswer|openMedia|speech/i);
   if (/without-context|question-formation/.test(scopeKey)) matchers.push(/questionFormation|withoutContext|showHint|nextSentence/i);

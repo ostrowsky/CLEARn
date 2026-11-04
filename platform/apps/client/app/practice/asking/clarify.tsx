@@ -1,3 +1,4 @@
+import { trackExerciseEvent } from '../../../src/lib/analytics';
 import { createElement, useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Linking, Platform, StyleSheet, TextInput, View, Text, Pressable} from 'react-native';
@@ -675,12 +676,18 @@ export default function ClarifyPracticeScreen() {
     }
   }
 
+  const analyticsStarted = useRef(new Set<string>());
+
   async function handleCheckAnswer() {
     if (!activeExample) {
       return;
     }
 
     const userQuestion = activeDraft.trim();
+    if (!analyticsStarted.current.has(activeExample.id)) {
+      analyticsStarted.current.add(activeExample.id);
+      trackExerciseEvent('exercise_start', 'clarification');
+    }
     logAction('answer:check-requested', { exampleId: activeExample.id, hasText: Boolean(userQuestion), textLength: userQuestion.length });
     if (!userQuestion) {
       setFeedbackById((current) => ({
@@ -724,6 +731,7 @@ export default function ClarifyPracticeScreen() {
   }
 
   function handleShowExpectedAnswer() {
+    trackExerciseEvent('hint_view', 'clarification');
     if (!activeExample) {
       return;
     }
