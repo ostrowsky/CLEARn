@@ -130,6 +130,7 @@ foreach ($pattern in @(
 }
 
 $practiceServiceSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\modules\practice\practice.service.ts') -Raw
+$practiceServiceSource += Get-Content -LiteralPath (Join-Path $platformRoot 'packages\domain\src\practiceValidation.ts') -Raw
 foreach ($pattern in @(
     'normalizeAskAfterBrief',
     'normalizeAskAfterSpeechLines',

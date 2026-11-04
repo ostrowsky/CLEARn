@@ -1,4 +1,4 @@
-import { checkClarifyAnswer } from '@clearn/domain';
+import { checkClarifyAnswer, checkAskAfterAnswer, checkQuestionFormationAnswer } from '@clearn/domain';
 import type {
   AnsweringSession,
   AnsweringSessionMode,
@@ -13,7 +13,6 @@ import type {
   TextToSpeechResult,
 } from '@clearn/domain';
 import { apiBaseUrl } from './config';
-import { checkQuestionFormationFallback } from './questionFormationFallback';
 import { isAppContent, staticContent } from './staticContent';
 
 let lastLoadedContent = staticContent;
@@ -162,6 +161,17 @@ async function requestWithFallback<T>(path: string, init: RequestInit | undefine
     });
     return fallback(nextError);
   }
+}
+
+function getPracticeFeedback(key: string): Record<string, unknown> {
+  const bundledPractice = staticContent.meta?.practice as Record<string, unknown> | undefined;
+  const loadedPractice = lastLoadedContent.meta?.practice as Record<string, unknown> | undefined;
+  const bundled = bundledPractice?.[key];
+  const loaded = loadedPractice?.[key];
+  return {
+    ...(bundled && typeof bundled === 'object' ? bundled as Record<string, unknown> : {}),
+    ...(loaded && typeof loaded === 'object' ? loaded as Record<string, unknown> : {}),
+  };
 }
 
 function createId(prefix: string) {
@@ -572,16 +582,8 @@ export const apiClient = {
   generateClarify(context: string, offset = 0): Promise<ClarifyExercise> {
     return request('/api/practice/clarify', { method: 'POST', body: JSON.stringify({ context, offset }) });
   },
-  checkClarify(payload: { userQuestion: string; expectedQuestion: string; target?: string; focus?: string; acceptedAnswers?: string[] }) {
-    return requestWithFallback(
-      '/api/practice/clarify/check',
-      { method: 'POST', body: JSON.stringify(payload) },
-      () => {
-        const practice = lastLoadedContent.meta?.practice as Record<string, unknown> | undefined;
-        const feedback = practice?.clarifyFeedback;
-        return checkClarifyAnswer(payload, feedback && typeof feedback === 'object' ? feedback as Record<string, unknown> : {});
-      },
-    );
+  async checkClarify(payload: { userQuestion: string; expectedQuestion: string; target?: string; focus?: string; acceptedAnswers?: string[] }) {
+    return checkClarifyAnswer(payload, getPracticeFeedback('clarifyFeedback'));
   },
   askAfter(context: string, offset = 0): Promise<AskAfterBrief> {
     return requestWithFallback(
@@ -590,22 +592,8 @@ export const apiClient = {
       (error) => buildAskAfterFallback(context, offset, error),
     );
   },
-  checkAskAfter(payload: { question: string; expectedQuestion?: string; detail?: string; contextPhrase?: string; followUpPhrase?: string }) {
-    return requestWithFallback(
-      '/api/practice/after-talk/check',
-      { method: 'POST', body: JSON.stringify(payload) },
-      () => {
-        const question = normalizeText(payload.question).toLowerCase();
-        const detail = normalizeText(payload.detail || '').toLowerCase();
-        const accepted = Boolean(question && question.includes('could') && question.endsWith('?') && (!detail || question.includes(detail)));
-        return {
-          accepted,
-          feedback: accepted
-            ? 'Strong follow-up. You anchored the question in the talk and then asked for a clear extra detail.'
-            : 'Try to include the detail from the talk and finish with one clear follow-up question.',
-        };
-      },
-    );
+  async checkAskAfter(payload: { question: string; expectedQuestion?: string; detail?: string; contextPhrase?: string; followUpPhrase?: string }) {
+    return checkAskAfterAnswer(payload, getPracticeFeedback('askAfterFeedback'));
   },
   generateQuestionFormation(context = '', offset = 0): Promise<QuestionFormationExercise> {
     return requestWithFallback(
@@ -614,7 +602,7 @@ export const apiClient = {
       (error) => buildQuestionFormationFallback(offset, error),
     );
   },
-  checkQuestionFormation(payload: {
+  async checkQuestionFormation(payload: {
     userQuestion: string;
     sentence: string;
     answer: string;
@@ -622,11 +610,7 @@ export const apiClient = {
     expectedQuestion: string;
     acceptedQuestions?: string[];
   }) {
-    return requestWithFallback(
-      '/api/practice/question-formation/check',
-      { method: 'POST', body: JSON.stringify(payload) },
-      () => checkQuestionFormationFallback(payload),
-    );
+    return checkQuestionFormationAnswer(payload, getPracticeFeedback('questionFormationFeedback'));
   },
   startAnswering(context: string, mode: AnsweringSessionMode): Promise<AnsweringSession> {
     return requestWithFallback(

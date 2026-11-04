@@ -41,6 +41,12 @@ async function patchPackageJson(relativePath) {
   }
 }
 
+// npm does not read pnpm.overrides. Apply the same security resolutions on Vercel.
+const platformManifestPath = path.join(root, 'package.json');
+const platformManifest = JSON.parse(await readFile(platformManifestPath, 'utf8'));
+platformManifest.overrides = platformManifest.pnpm?.overrides || {};
+await writeFile(platformManifestPath, JSON.stringify(platformManifest, null, 2) + '\n', 'utf8');
+
 await Promise.all([
   patchPackageJson('apps/client/package.json'),
   patchPackageJson('apps/api/package.json'),

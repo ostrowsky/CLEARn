@@ -1,6 +1,3 @@
 packages:
   - apps/*
   - packages/*
-
-overrides:
-  undici: '6.27.0'

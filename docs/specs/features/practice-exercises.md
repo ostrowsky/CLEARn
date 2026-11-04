@@ -46,8 +46,9 @@ Learners practise workplace English through structured exercises with text input
 
 ## Edge cases and failure policy
 
-- Clarification Check answer must remain usable when the API returns HTTP 503, cannot be reached, or times out. The browser and API must share the same deterministic checker, including configured alternatives, contraction/punctuation normalization, and rejection of meaningless input.
-- Browser clarification feedback must use the latest loaded content configuration, or bundled content if the API is unavailable. Infrastructure failure must never cause an answer to be accepted automatically.
+- Ready ASK exercise checks (Clarification, Ask after the talk, and Question formation) run immediately in the browser without sending validation or debug requests to the API. Checking must not wait for a failed request or timeout.
+- The browser and API use the same deterministic validators, including configured alternatives, contraction/punctuation normalization, rejection of meaningless input, phrase-bank handling, grammar checks, and hidden-answer leak checks. API validation endpoints remain available for other clients.
+- Browser ASK feedback uses the latest loaded content configuration with bundled defaults. Infrastructure failure never causes an answer to be accepted automatically. Content or exercise generation may use the API independently; AI generation, STT, admin saves and server persistence are not replaced by local answer validation.
 
 - If live AI generation fails, deterministic fallback content may be used but must stay natural and context-aware.
 - If STT fails, the learner must keep typed input as a fallback.
@@ -62,7 +63,8 @@ Learners practise workplace English through structured exercises with text input
 
 ## Verification mapping
 
-- `web/tests/PlatformClarifyFallback.Tests.ps1` (HTTP 503, network errors, timeouts, online responses, and server/browser parity).
+- `web/tests/PlatformAskValidation.Tests.ps1` (zero validation network requests, online/offline invariance, negative cases, configured feedback, and server/browser parity).
+- `node web/tests/ask-validation.browser.cjs` after web export (three ASK screens, desktop/mobile, API HTTP 503, zero validation requests).
 
 - `web/tests/PlatformQuestionFormation.Tests.ps1`
 - `web/tests/PlatformQuestionFormation.Api.Tests.ps1`

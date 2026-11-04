@@ -1,57 +1,6 @@
+import { looksMeaningfulUserInput } from './inputValidation';
+
 // Shared deterministic clarification validation for the API and browser fallback.
-
-function normalizeWhitespace(value: string) {
-  return String(value || '').replace(/\s+/g, ' ').trim();
-}
-
-function normalizeLooseText(value: string) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[’`]/g, "'")
-    .replace(/[^a-z0-9]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function looksMeaningfulUserInput(value: string) {
-  const raw = normalizeWhitespace(value);
-  if (!raw) {
-    return false;
-  }
-
-  if (/(.)\1{4,}/i.test(raw)) {
-    return false;
-  }
-
-  const normalized = normalizeLooseText(raw);
-  const compact = normalized.replace(/\s+/g, '');
-  if (!compact) {
-    return false;
-  }
-
-  const uniqueCharacters = new Set(compact.split(''));
-  if (compact.length >= 6 && uniqueCharacters.size <= 2) {
-    return false;
-  }
-
-  const tokens = normalized.split(' ').filter(Boolean);
-  if (!tokens.length) {
-    return false;
-  }
-
-  if (tokens.length === 1) {
-    const token = tokens[0] || '';
-    if (token.length < 3) {
-      return false;
-    }
-
-    if (!/[aeiou]/i.test(token) && token.length >= 5) {
-      return false;
-    }
-  }
-
-  return true;
-}
 
 function asStringArray(value: unknown): string[] {
   if (typeof value === 'string') {

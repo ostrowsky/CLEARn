@@ -6,7 +6,7 @@ $platformRoot = Join-Path $workspaceRoot 'platform'
 . (Join-Path $PSScriptRoot 'Assertions.ps1')
 
 Write-TestStep 'Shared input validation module centralizes reusable user-input checks'
-$validationSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\modules\shared\inputValidation.ts') -Raw
+$validationSource = Get-Content -LiteralPath (Join-Path $platformRoot 'packages\domain\src\inputValidation.ts') -Raw
 foreach ($pattern in @(
     'normalizeWhitespace',
     'normalizeLooseText',
@@ -28,6 +28,7 @@ $answeringSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\s
 $coachSource = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\api\src\modules\session\coach.service.ts') -Raw
 
 Assert-Match -Actual $practiceSource -Pattern "\.\./shared/inputValidation"
+$practiceSource += Get-Content -LiteralPath (Join-Path $platformRoot 'packages\domain\src\practiceValidation.ts') -Raw
 Assert-Match -Actual $practiceSource -Pattern 'looksMeaningfulUserInput'
 Assert-Match -Actual $practiceSource -Pattern 'hasQuestionFormationVisibleContextAlignment'
 

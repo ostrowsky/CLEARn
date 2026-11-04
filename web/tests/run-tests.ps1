@@ -12,7 +12,7 @@ $tests = @(
     (Join-Path $PSScriptRoot 'PlatformAdmin.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformAdmin.Api.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformClarify.Tests.ps1'),
-    (Join-Path $PSScriptRoot 'PlatformClarifyFallback.Tests.ps1'),
+    (Join-Path $PSScriptRoot 'PlatformAskValidation.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformExerciseTemplates.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformPracticeFallback.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformPractice.ApiSmoke.Tests.ps1'),
@@ -33,6 +33,7 @@ $tests = @(
     (Join-Path $PSScriptRoot 'PlatformCoach.Tests.ps1'),
     (Join-Path $PSScriptRoot 'PlatformCoach.Api.Tests.ps1'),
     (Join-Path $PSScriptRoot 'VercelAnalytics.Tests.ps1'),
+    (Join-Path $PSScriptRoot 'PlatformBuildPipeline.Tests.ps1'),
     (Join-Path $PSScriptRoot 'Architecture.Tests.ps1')
 )
 
