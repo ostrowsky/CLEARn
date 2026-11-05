@@ -27,8 +27,10 @@ export function getAnalyticsConsent(): AnalyticsConsent {
     if (saved && ['granted', 'denied'].includes(saved.choice) && typeof saved.at === 'number' && saved.at <= Date.now() && Date.now() - saved.at < MAX_AGE) {
       return saved.choice;
     }
-  } catch { /* Storage can be disabled. Ask again instead of assuming consent. */ }
-  return null;
+  } catch { /* Public mode asks again; closed-test mode can use documented prior consent. */ }
+  // Explicit closed-test build only: the operator obtained consent beforehand.
+  // Do not persist this fallback; removing the flag must restore public opt-in.
+  return process.env.EXPO_PUBLIC_ANALYTICS_CONSENT_MODE === 'preconsented' ? 'granted' : null;
 }
 function learnerPath(value: string) {
   if (!value) return '';
