@@ -28,6 +28,7 @@ Production frontend and API builds run predictably on hosted CI/deploy platforms
 ## Invariants
 
 - Production build commands must be tracked in Git.
+- Production Expo exports clear the Metro transform cache so changing public build-time analytics consent configuration cannot reuse an earlier preconsented bundle. Mode rollback must be verified on the exported application, not only on the TypeScript source.
 - Hosted builds use Node 22.x consistently across the root manifest, platform manifest, and CI. Node 20 is no longer a supported Vercel build runtime.
 - Workspace package dependencies must match lockfile expectations.
 - npm (Vercel) and pnpm (CI/API) must apply the same security resolutions. Keep overrides and the lockfile aligned, preserve compatible dependency major versions where possible, and verify any required API changes through the full test suite.

@@ -12,7 +12,7 @@ $injectScript = Get-Content -LiteralPath (Join-Path $platformRoot 'apps\client\s
 $deploymentSpec = Get-Content -LiteralPath (Join-Path $workspaceRoot 'docs\specs\features\deployment-readiness.md') -Raw
 
 Assert-True -Condition ($clientPackage -notmatch '"@vercel/analytics"') -Message 'Expo Router static export should not make Vercel Analytics part of the Metro dependency graph.'
-Assert-Match -Actual $clientPackage -Pattern 'expo export --platform web && node ./scripts/inject-vercel-analytics\.mjs'
+Assert-Match -Actual $clientPackage -Pattern 'expo export --platform web --clear && node ./scripts/inject-vercel-analytics\.mjs'
 Assert-True -Condition ($clientLayout -notmatch '@vercel/analytics') -Message 'Root layout should not import Vercel Analytics through Metro.'
 Assert-Match -Actual $injectScript -Pattern 'dist'
 Assert-Match -Actual $injectScript -Pattern 'index\.html'

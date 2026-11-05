@@ -17,9 +17,9 @@ function environment(href = 'https://clearn.me/asking?utm_source=newsletter&utm_
   Object.defineProperty(document, 'cookie', { get: () => '_ga=abc; _ga_5EJ2691BS9=xyz; session=keep', set: value => cookies.push(value) });
   return { storage, scripts, cookies, commands: () => (window.dataLayer || []).map(item => Array.from(item)), events: () => (window.dataLayer || []).map(item => Array.from(item)).filter(item => item[0] === 'event') };
 }
-async function fresh() { return import(pathToFileURL(path.join(temp, 'web.mjs')).href + '?case=' + serial++); }
+async function fresh(mode = 'web') { return import(pathToFileURL(path.join(temp, mode + '.mjs')).href + '?case=' + serial++); }
 try {
-  for (const [name, source] of [['web', 'analytics.web.ts'], ['native', 'analytics.ts']]) await build({ entryPoints: [path.join(root, 'platform/apps/client/src/lib', source)], outfile: path.join(temp, name + '.mjs'), bundle: true, format: 'esm', platform: 'browser' });
+  for (const [name, source, mode] of [['web', 'analytics.web.ts', ''], ['preconsented', 'analytics.web.ts', 'preconsented'], ['invalid-mode', 'analytics.web.ts', 'preconsent'], ['native', 'analytics.ts', 'preconsented']]) await build({ entryPoints: [path.join(root, 'platform/apps/client/src/lib', source)], outfile: path.join(temp, name + '.mjs'), bundle: true, format: 'esm', platform: 'browser', define: { 'process.env.EXPO_PUBLIC_ANALYTICS_CONSENT_MODE': JSON.stringify(mode) } });
   delete globalThis.window; delete globalThis.document;
   let ga = await fresh(); assert.equal(ga.analyticsAvailable(), false); ga.setAnalyticsPage('/asking'); ga.trackExerciseEvent('answer_check', 'clarification', true);
   let env = environment(); ga = await fresh();
@@ -66,10 +66,45 @@ try {
   assert.equal(ga.getAnalyticsConsent(), null); ga.setAnalyticsPage('/asking'); ga.setAnalyticsConsent('granted'); assert.equal(env.scripts.length, 1);
   window.gtag = () => {throw Error('blocked tag');}; ga.trackExerciseEvent('hint_view','question_formation');
   env = environment('https://clearn.me/asking?utm_source=private%40example.com&utm_campaign=https://secret'); ga = await fresh(); ga.setAnalyticsPage('/asking'); ga.setAnalyticsConsent('granted'); assert.doesNotMatch(JSON.stringify(env.commands()), /utm_|secret|private%40/);
+  env = environment(); ga = await fresh('preconsented');
+  assert.equal(ga.restoreAnalyticsConsent(), 'granted');
+  assert.equal(env.scripts.length, 0, 'Prior consent must not create a phantom root view');
+  ga.setAnalyticsPage('/asking'); ga.setAnalyticsPage('/asking');
+  assert.equal(env.scripts.length, 1); assert.equal(env.events().length, 1);
+  assert.equal(env.storage.has(KEY), false, 'An automatic prior-consent grant must not be persisted');
+  ga.trackExerciseEvent('answer_check', 'clarification', true, {answer:'PRIVATE'});
+  assert.equal(env.events().at(-1)[1], 'answer_check');
+  assert.doesNotMatch(JSON.stringify(env.commands()), /PRIVATE|SECRET|private@example/);
+  ga.setAnalyticsConsent('denied'); assert.deepEqual(env.events(), []);
+  ga = await fresh('preconsented'); assert.equal(ga.restoreAnalyticsConsent(), 'denied');
+  ga.setAnalyticsPage('/asking'); assert.deepEqual(env.events(), []);
+  assert.equal(env.scripts.length, 1, 'An explicit refusal must block tag loading on remount');
+  ga.setAnalyticsConsent('granted'); assert.equal(env.events().length, 1);
+
+  env = environment(); ga = await fresh('preconsented'); ga.restoreAnalyticsConsent(); ga.setAnalyticsPage('/asking');
+  ga = await fresh(); assert.equal(ga.restoreAnalyticsConsent(), null, 'Returning to public mode must require opt-in');
+  const previousEvents = env.events().length; ga.setAnalyticsPage('/asking');
+  assert.equal(env.events().length, previousEvents); assert.equal(window['ga-disable-' + ID], true);
+  env = environment(); ga = await fresh('invalid-mode'); assert.equal(ga.restoreAnalyticsConsent(), null);
+  ga.setAnalyticsPage('/asking'); assert.equal(env.scripts.length, 0, 'Misspelled flag must fail closed');
+
+  env = environment(); window.localStorage.getItem = () => {throw Error('blocked');};
+  ga = await fresh('preconsented'); assert.equal(ga.restoreAnalyticsConsent(), 'granted');
+  ga.setAnalyticsPage('/asking'); assert.equal(env.scripts.length, 1);
+  ga.setAnalyticsConsent('denied'); ga.setAnalyticsPage('/asking'); assert.deepEqual(env.events(), []);
+  for (const href of ['http://localhost:8081', 'https://preview.vercel.app', 'http://clearn.me']) {
+    env = environment(href); ga = await fresh('preconsented'); ga.restoreAnalyticsConsent(); ga.setAnalyticsPage('/asking');
+    assert.equal(env.scripts.length, 0);
+  }
+  env = environment(); ga = await fresh('preconsented'); ga.restoreAnalyticsConsent(); ga.setAnalyticsPage('/admin');
+  ga.trackExerciseEvent('hint_view', 'clarification'); assert.equal(env.scripts.length, 0); assert.deepEqual(env.events(), []);
+  ga.setAnalyticsPage('/asking'); assert.equal(env.scripts.length, 1);
+  const deployment = JSON.parse(await fs.readFile(path.join(root, 'vercel.json'), 'utf8'));
+  assert.equal(deployment.build.env.EXPO_PUBLIC_ANALYTICS_CONSENT_MODE, 'preconsented');
   delete globalThis.window; delete globalThis.document;
   const native = await import(pathToFileURL(path.join(temp, 'native.mjs')).href); native.setAnalyticsConsent('granted'); native.setAnalyticsPage('/asking'); native.trackExerciseEvent('answer_check','clarification',true); assert.equal(native.analyticsAvailable(),false);
   const api = await fs.readFile(path.join(root,'platform/apps/client/src/lib/api.ts'),'utf8');
   for (const type of ['clarification','ask_after_talk','question_formation']) assert.ok(api.includes("trackExerciseEvent('answer_check', '" + type + "', result.accepted)"));
   const admin = await fs.readFile(path.join(root,'platform/apps/client/src/lib/adminContent.ts'),'utf8'); assert.ok(admin.includes('/^analytics\\./'));
-  console.log('GA4 runtime tests passed: consent, expiry, script idempotency, safe payloads, SPA, admin/host exclusion, revoke, blocked storage/tag, native no-op and action wiring.');
+  console.log('GA4 runtime tests passed: public and closed-test prior consent, rollback, preserved refusals, expiry, script idempotency, safe payloads, SPA, admin/host exclusion, revoke, blocked storage/tag, native no-op and action wiring.');
 } finally { delete globalThis.window; delete globalThis.document; await fs.rm(temp, {recursive:true,force:true}); }

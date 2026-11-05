@@ -7,9 +7,10 @@ const root = path.resolve(__dirname, '../..');
 const { chromium } = createRequire(path.join(root,'platform/apps/client/package.json'))('playwright');
 const content = JSON.parse(fs.readFileSync(path.join(root,'web/data/content.json'),'utf8'));
 const copy = content.meta.ui.analytics, buttons = content.meta.ui.buttons;
-const dist = path.join(root,'platform/apps/client/dist');
+const dist = process.env.GA4_TEST_DIST ? path.resolve(root, process.env.GA4_TEST_DIST) : path.join(root,'platform/apps/client/dist');
 const output = path.join(root,'tmp-platform-ga4');
 const realTag = process.env.GA4_REAL_TAG === '1';
+const preconsented = process.env.GA4_PRECONSENTED === '1';
 const mime = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.svg':'image/svg+xml','.woff2':'font/woff2','.ogg':'audio/ogg'};
 (async()=>{
  fs.mkdirSync(output,{recursive:true});
@@ -44,13 +45,23 @@ const mime = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.js
  try{
   const context=await setup(); const page=await context.newPage(); const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('https://clearn.me/?utm_source=qa&utm_medium=test&utm_campaign=ga4&email=PRIVATE#SECRET');
-  await page.getByRole('heading',{name:copy.title,exact:true}).waitFor();
-  assert.equal(tagRequests,0);assert.deepEqual(await events(page),[]);
+  if(preconsented){
+   await page.waitForFunction(()=>Array.from(window.dataLayer||[],item=>Array.from(item)).some(item=>item[0]==='event'&&item[1]==='page_view'));
+   await page.waitForTimeout(300);
+   assert.equal(tagRequests,1);assert.equal((await events(page)).filter(item=>item[1]==='page_view').length,1);
+   assert.equal(await page.getByRole('heading',{name:copy.title,exact:true}).count(),0);
+   assert.equal(await page.evaluate(()=>localStorage.getItem('clearn.analytics.consent.v1')),null);
+   await page.getByRole('button',{name:copy.settings,exact:true}).click();
+  }else{
+   await page.getByRole('heading',{name:copy.title,exact:true}).waitFor();
+   assert.equal(tagRequests,0);assert.deepEqual(await events(page),[]);
+  }
+  const initialTagRequests=tagRequests;
   await page.getByRole('button',{name:copy.decline,exact:true}).click();
-  await page.reload();await page.getByRole('button',{name:copy.settings,exact:true}).waitFor();assert.equal(tagRequests,0);
+  await page.reload();await page.getByRole('button',{name:copy.settings,exact:true}).waitFor();assert.equal(tagRequests,initialTagRequests);
   await page.getByRole('button',{name:copy.settings,exact:true}).click();await page.getByRole('button',{name:copy.accept,exact:true}).click();
   await page.waitForFunction(()=>Array.from(window.dataLayer||[],item=>Array.from(item)).some(item=>item[0]==='event'&&item[1]==='page_view'));
-  await page.waitForTimeout(500);assert.equal(tagRequests,1);
+  await page.waitForTimeout(500);assert.equal(tagRequests,initialTagRequests+1);
   assert.equal((await events(page)).filter(item=>item[1]==='page_view').length,1);
   await page.getByText(content.meta.ui.homeMenu.primaryCtaLabel||'Start with asking',{exact:true}).first().click();
   await page.waitForURL('**/asking');await page.waitForTimeout(100);
@@ -74,12 +85,21 @@ const mime = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.js
   await page.getByRole('button',{name:copy.settings,exact:true}).click();await page.getByRole('button',{name:copy.decline,exact:true}).click();
   assert.equal(await page.evaluate(()=>window['ga-disable-G-5EJ2691BS9']),true);
   assert.deepEqual(await events(page),[]);
-  await page.reload();await page.getByRole('button',{name:copy.settings,exact:true}).waitFor();assert.equal(tagRequests,1);
+  await page.reload();await page.getByRole('button',{name:copy.settings,exact:true}).waitFor();assert.equal(tagRequests,initialTagRequests+1);
   assert.deepEqual(errors,[]);await context.close();
-  const mobile=await setup(390);const p=await mobile.newPage();await p.goto('https://clearn.me/asking');await p.getByRole('heading',{name:copy.title,exact:true}).waitFor();await p.screenshot({path:path.join(output,'consent-mobile.png'),fullPage:true});
-  await p.getByRole('button',{name:copy.accept,exact:true}).click();await p.waitForTimeout(300);const beforeAdmin=tagRequests;
+  const mobile=await setup(390);const p=await mobile.newPage();await p.goto('https://clearn.me/asking');
+  if(preconsented){
+   await p.getByRole('button',{name:copy.settings,exact:true}).waitFor();
+   assert.equal(await p.getByRole('heading',{name:copy.title,exact:true}).count(),0);
+   await p.waitForFunction(()=>Array.from(window.dataLayer||[],item=>Array.from(item)).some(item=>item[0]==='event'&&item[1]==='page_view'));
+  }else{
+   await p.getByRole('heading',{name:copy.title,exact:true}).waitFor();
+   await p.getByRole('button',{name:copy.accept,exact:true}).click();
+  }
+  await p.screenshot({path:path.join(output,preconsented?'preconsented-mobile.png':'consent-mobile.png'),fullPage:true});
+  await p.waitForTimeout(300);const beforeAdmin=tagRequests;
   await p.goto('https://clearn.me/admin');await p.waitForTimeout(1500);assert.equal(tagRequests,beforeAdmin);assert.deepEqual(await events(p),[]);await mobile.close();
   const preview=await setup();const previewPage=await preview.newPage();await previewPage.goto('https://clearn-preview.vercel.app/asking');await previewPage.waitForTimeout(600);assert.equal(await previewPage.getByRole('button',{name:copy.accept,exact:true}).count(),0);assert.equal(tagRequests,beforeAdmin);await preview.close();
-  console.log(JSON.stringify({passed:true,realGoogleTag:realTag,collectedRequestsIntercepted:collected.length,transportEvents:collected.flatMap(item=>[new URL(item.url).searchParams,...item.body.split('\n').filter(Boolean).map(line=>new URLSearchParams(line))]).map(params=>params.get('en')).filter(Boolean),checks:['opt-in','decline persists','one tag','SPA pageviews and back','correct/incorrect checks','start/hint','no learner text','revoke','admin exclusion','preview exclusion','mobile banner','API 503']},null,2));
+  console.log(JSON.stringify({passed:true,preconsented,realGoogleTag:realTag,collectedRequestsIntercepted:collected.length,transportEvents:collected.flatMap(item=>[new URL(item.url).searchParams,...item.body.split('\n').filter(Boolean).map(line=>new URLSearchParams(line))]).map(params=>params.get('en')).filter(Boolean),checks:[preconsented?'prior-consent auto-start without banner':'opt-in','decline persists','one tag','SPA pageviews and back','correct/incorrect checks','start/hint','no learner text','revoke','admin exclusion','preview exclusion',preconsented?'mobile without banner':'mobile banner','API 503']},null,2));
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
